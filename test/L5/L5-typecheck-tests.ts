@@ -1,0 +1,160 @@
+import { expect } from 'chai';
+import { makeDefineExp, makeNumExp, makeProcExp, makeVarDecl, makeVarRef, parse } from '../../src/L5/L5-ast';
+import { typeofExp, L5typeof } from '../../src/L5/L5-typecheck';
+import { makeEmptyTEnv, makeExtendTEnv } from '../../src/L5/TEnv';
+import { makeBoolTExp, makeNumTExp, makeProcTExp, makeTVar, makeVoidTExp, parseTE, unparseTExp } from '../../src/L5/TExp';
+
+describe('L5 Type Checker', () => {
+    describe('parseTE', () => {
+        it('parses atoms', () => {
+            expect(parseTE("number")).to.deep.equal(makeNumTExp());
+            expect(parseTE("boolean")).to.deep.equal(makeBoolTExp());
+        });
+
+        it('parses type variables', () => {
+            expect(parseTE("T1")).to.deep.equal(makeTVar("T1"));
+        });
+
+        it('parses procedures', () => {
+            expect(parseTE("(T * T -> boolean)")).to.deep.equal(makeProcTExp([makeTVar("T"), makeTVar("T")], makeBoolTExp()));
+            expect(parseTE("(number -> (number -> number))")).to.deep.equal(makeProcTExp([makeNumTExp()], makeProcTExp([makeNumTExp()], makeNumTExp())));
+        });
+
+        it('parses "void" and "Empty"', () => {
+            expect(parseTE("void")).to.deep.equal(makeVoidTExp());
+            expect(parseTE("(Empty -> void)")).to.deep.equal(makeProcTExp([], makeVoidTExp()));
+        });
+    });
+
+    describe('unparseTExp', () => {
+        it('unparses atoms', () => {
+            expect(unparseTExp(makeNumTExp())).to.equal("number");
+            expect(unparseTExp(makeBoolTExp())).to.equal("boolean");
+        });
+
+        it('unparses type variables', () => {
+            expect(unparseTExp(makeTVar("T1"))).to.equal("T1");
+        });
+
+        it('unparses procedures', () => {
+            expect(unparseTExp(makeProcTExp([makeTVar("T"), makeTVar("T")], makeBoolTExp()))).to.equal("(T * T -> boolean)");
+            expect(unparseTExp(makeProcTExp([makeNumTExp()], makeProcTExp([makeNumTExp()], makeNumTExp())))).to.equal("(number -> (number -> number))");
+        });
+    });
+
+    describe('parse (with type annotations)', () => {
+        it('parses "define" expressions', () => {
+            expect(parse("(define (a : number) 1)")).to.deep.equal(makeDefineExp(makeVarDecl("a", makeNumTExp()), makeNumExp(1)));
+        });
+
+        it('parses procedures', () => {
+            expect(parse("(lambda ((x : number)) : number x)")).to.deep.equal(makeProcExp([makeVarDecl("x", makeNumTExp())], [makeVarRef("x")], makeNumTExp()));
+        });
+    });
+
+    describe('L5typeof', () => {
+        it('returns the types of atoms', () => {
+            expect(L5typeof("5")).to.equal("number");
+            expect(L5typeof("#t")).to.equal("boolean");
+        });
+
+        it('returns the type of primitive procedures', () => {
+            expect(L5typeof("+")).to.equal("(number * number -> number)");
+            expect(L5typeof("-")).to.equal("(number * number -> number)");
+            expect(L5typeof("*")).to.equal("(number * number -> number)");
+            expect(L5typeof("/")).to.equal("(number * number -> number)");
+            expect(L5typeof("=")).to.equal("(number * number -> boolean)");
+            expect(L5typeof("<")).to.equal("(number * number -> boolean)");
+            expect(L5typeof(">")).to.equal("(number * number -> boolean)");
+            expect(L5typeof("not")).to.equal("(boolean -> boolean)");
+        });
+
+        it('returns the type of a VarRef in a given TEnv', () => {
+            expect(typeofExp(parse("x"), makeExtendTEnv(["x"], [makeNumTExp()], makeEmptyTEnv()))).to.deep.equal(makeNumTExp());
+        });
+
+        it('returns the type of "if" expressions', () => {
+            expect(L5typeof("(if (> 1 2) 1 2)")).to.equal("number");
+            expect(L5typeof("(if (= 1 2) #t #f)")).to.equal("boolean");
+        });
+
+        it('returns the type of procedures', () => {
+            expect(L5typeof("(lambda ((x : number)) : number x)")).to.equal("(number -> number)");
+            expect(L5typeof("(lambda ((x : number)) : boolean (> x 1))")).to.equal("(number -> boolean)");
+            expect(L5typeof("(lambda((x : number)) : (number -> number) (lambda((y : number)) : number (* y x)))")).to.equal("(number -> (number -> number))");
+            expect(L5typeof("(lambda((f : (number -> number))) : number (f 2))")).to.equal("((number -> number) -> number)");
+            expect(L5typeof("(lambda((x : number)) : number (let (((y : number) x)) (+ x y)))")).to.equal("(number -> number)");
+        });
+
+        it('returns the type of "let" expressions', () => {
+            expect(L5typeof("(let (((x : number) 1)) (* x 2))")).to.equal("number");
+            expect(L5typeof("(let (((x : number) 1) ((y : number) 2)) (lambda((a : number)) : number (+ (* x a) y)))")).to.equal("(number -> number)");
+        });
+
+        it('returns the type of "letrec" expressions', () => {
+            expect(L5typeof("(letrec (((p1 : (number -> number)) (lambda((x : number)) : number (* x x)))) p1)")).to.equal("(number -> number)");
+            expect(L5typeof("(letrec (((p1 : (number -> number)) (lambda((x : number)) : number (* x x)))) (p1 2))")).to.equal("number");
+            expect(L5typeof(`
+                (letrec (((odd? : (number -> boolean)) (lambda((n : number)) : boolean (if (= n 0) #f (even? (- n 1)))))
+                         ((even? : (number -> boolean)) (lambda((n : number)) : boolean (if (= n 0) #t (odd? (- n 1))))))
+                  (odd? 12))`)).to.equal("boolean");
+        });
+
+        it('returns "void" as the type of "define" expressions', () => {
+            expect(L5typeof("(define (foo : number) 5)")).to.equal("void");
+            expect(L5typeof("(define (foo : (number * number -> number)) (lambda((x : number) (y : number)) : number (+ x y)))")).to.equal("void");
+            expect(L5typeof("(define (x : (Empty -> number)) (lambda () : number 1))")).to.equal("void");
+        });
+
+        it.skip('returns "literal" as the type for literal expressions', () => {
+            expect(L5typeof("(quote ())")).to.equal("literal");
+        });
+
+        describe.skip('Pairs', () => {
+            it('returns the pair type for "cons" applications', () => {
+                expect(L5typeof("(cons 1 '())")).to.equal("(Pair number literal)");
+                expect(L5typeof("(cons 1 1)")).to.equal("(Pair number number)");
+            });
+    
+            it('returns the correct type for applications of "car" and "cdr" on pairs', () => {
+                expect(L5typeof("(car (cons 1 1))")).to.equal("number");
+                expect(L5typeof("(cdr (cons 1 #t))")).to.equal("boolean");
+                expect(L5typeof("(cdr (cons (cons 1 2) (cons 1 2)))")).to.equal("(Pair number number)");
+                expect(L5typeof("(cdr (cons (cons 1 2) (cons 1 #f)))")).to.equal("(Pair number boolean)");
+                expect(L5typeof("(car (cons (cons 1 2) (cons 1 #f)))")).to.equal("(Pair number number)");
+                expect(L5typeof("(car (cons (cons (cons #t #t) 2) (cons 1 #f)))")).to.equal("(Pair (Pair boolean boolean) number)");
+                expect(L5typeof("(cdr (cons (cons (cons #t #t) 2) (cons 1 #f)))")).to.equal("(Pair number boolean)");
+            });
+            
+            it('returns the correct type for procedures that return pairs', () => {
+                expect(L5typeof("(lambda((a : number) (b : number)) : (Pair number number) (cons a b))")).to.equal("(number * number -> (Pair number number))");
+            });
+    
+            it('returns the correct type for procedures that take pairs as arguments', () => {
+                expect(L5typeof("(lambda((a : number) (b : (Pair number boolean))) : (Pair number (Pair number boolean)) (cons a b))")).to.equal("(number * (Pair number boolean) -> (Pair number (Pair number boolean)))");
+            });
+
+            it('returns the correct type for procedures that take and return pairs', () => {
+                expect(L5typeof(`(lambda ((a : (Pair number number))
+                                          (b : (Pair number boolean))) : (Pair (Pair number number) (Pair (Pair number number) (Pair number boolean)))
+                                   (cons a (cons a b)))`)).to.equal("((Pair number number) * (Pair number boolean) -> (Pair (Pair number number) (Pair (Pair number number) (Pair number boolean))))");
+            });
+
+            it('returns "void" when defining pairs', () => {
+                expect(L5typeof("(define (x : (Pair number boolean)) (cons 1 #t))")).to.equal("void");
+                expect(L5typeof("(define (x : (Pair (T1 -> T1) number)) (cons (lambda ((y : T1)) : T1 y) 2))")).to.equal("void");
+            });
+        });
+
+        it('returns the type of polymorphic procedures', () => {
+            expect(L5typeof("(lambda((x : T1)) : T1 x)")).to.equal("(T1 -> T1)");
+            expect(L5typeof(`(let (((x : number) 1))
+                                         (lambda((y : T) (z : T)) : T
+                                           (if (> x 2) y z)))`)).to.equal("(T * T -> T)");
+            expect(L5typeof("(lambda () : number 1)")).to.equal("(Empty -> number)");
+            expect(L5typeof(`(define (x : (T1 -> (T1 -> number)))
+                                         (lambda ((x : T1)) : (T1 -> number)
+                                           (lambda((y : T1)) : number 5)))`)).to.equal("void");
+        });
+    });
+});
