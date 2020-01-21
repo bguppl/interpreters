@@ -163,7 +163,7 @@ describe('L7 Eval', () => {
                                   l
                                   (cons (f (car l)) (map f (cdr l))))))
                 (map (lambda (x) (* x x)) '(1 2 3)))`)).to.deep.equal(evalParse("'(1 4 9)"));
-        
+
         expect(evalParse(`
             (L5 (define empty? (lambda (x) (eq? x '())))
                 (define filter (lambda (pred l)
@@ -173,7 +173,7 @@ describe('L7 Eval', () => {
                                          (cons (car l) (filter pred (cdr l)))
                                          (filter pred (cdr l))))))
                 (filter (lambda (x) (not (= x 2))) '(1 2 3 2)))`)).to.deep.equal(evalParse("'(1 3)"));
-        
+
         expect(evalParse(`
             (L5 (define compose (lambda (f g) (lambda (x) (f (g x)))))
                 ((compose not number?) 2))`)).to.be.false;
@@ -185,7 +185,7 @@ describe('L7 Eval', () => {
                 (define a6 (makeAdder 6))
                 (define a7 (makeAdder 7))
                 (+ (a6 1) (a7 1)))`)).to.equal(15);
-        
+
         expect(evalParse(`
             (L5 (define makeCounter (lambda () (let ((c 0)) (lambda () (set! c (+ c 1)) c))))
                 (define c1 (makeCounter))
@@ -209,6 +209,6 @@ describe('L7 Eval', () => {
                     (if (= n 0)
                         (cont 0)
                         (sumCPS (- n 1) (lambda (sn1) (cont (+ n sn1)))))))
-                (sumCPS 10000 (lambda (x) x)))`)).to.equal(50005000);
+                (sumCPS 1000 (lambda (x) x)))`)).to.equal(500500);
     });
 });
