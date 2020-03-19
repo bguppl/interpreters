@@ -1,3 +1,4 @@
+/// <reference path="../shared/s-expression.d.ts" />
 // ===========================================================
 // AST type models
 import { filter, map } from "ramda";
@@ -49,13 +50,12 @@ export const isCExp = (x: any): x is CExp => isNumExp(x) || isBoolExp(x) || isPr
 // Parsing
 
 // Make sure to run "npm install ramda s-expression --save"
-// @ts-ignore
-import parseSexp from "s-expression";
+import parseSexp, { StringTree } from "s-expression";
 
 export const parseL1 = (x: string): Program | DefineExp | CExp | Error =>
     parseL1Sexp(parseSexp(x));
 
-export const parseL1Sexp = (sexp: any): Program | DefineExp | CExp | Error =>
+export const parseL1Sexp = (sexp: StringTree): Program | DefineExp | CExp | Error =>
     isEmpty(sexp) ? Error("Unexpected empty") :
     isArray(sexp) ? parseL1Compound(sexp) :
     isString(sexp) ? parseL1Atomic(sexp) :
@@ -63,11 +63,10 @@ export const parseL1Sexp = (sexp: any): Program | DefineExp | CExp | Error =>
 
 // There are type errors which we will address in L3 with more precise
 // type definitions for the AST.
-const parseL1Compound = (sexps: any[]): Program | DefineExp | CExp | Error =>
+const parseL1Compound = (sexps: StringTree[]): Program | DefineExp | CExp | Error =>
     // @ts-ignore: type error
     first(sexps) === "L1" ? makeProgram(map(parseL1Sexp, rest(sexps))) :
-    first(sexps) === "define" ? makeDefineExp(makeVarDecl(sexps[1]),
-                                              parseL1CExp(sexps[2])) :
+    first(sexps) === "define" && isString(sexps[1]) ? makeDefineExp(makeVarDecl(sexps[1]), parseL1CExp(sexps[2])) :
     parseL1CExp(sexps);
 
 const parseL1Atomic = (sexp: string): CExp =>
@@ -78,14 +77,7 @@ const parseL1Atomic = (sexp: string): CExp =>
     makeVarRef(sexp);
 
 const isPrimitiveOp = (x: string): boolean =>
-    x === "+" ||
-    x === "-" ||
-    x === "*" ||
-    x === "/" ||
-    x === ">" ||
-    x === "<" ||
-    x === "=" ||
-    x === "not";
+    ["+", "-", "*", "/", ">", "<", "=", "not"].includes(x)
 
 const parseL1CExp = (sexp: any): CExp | Error =>
     isArray(sexp) ? makeAppExp(parseL1CExp(first(sexp)),
