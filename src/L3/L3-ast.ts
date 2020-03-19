@@ -4,7 +4,7 @@
 import { map, zipWith } from "ramda";
 import { makeEmptySExp, makeSymbolSExp, SExp, makeCompoundSExp, valueToString } from './L3-value'
 import { first, second, rest, allT, isArray, isString, isEmpty, isSexpString, isNumericString } from "../shared/list";
-import p, { StringTree } from "s-expression";
+import p, { StringTree, SexpString } from "s-expression";
 import {hasNoError, safeF, safeFL, safeF2, getErrorMessages} from '../shared/error'
 
 /*
@@ -162,7 +162,7 @@ const parseProgram = (es: Array<Parsed | Error>): Program | Error =>
     hasNoError(es) ? Error(`Program cannot be embedded in another program - ${es}`) :
     Error(getErrorMessages(es));
 
-const parseL3Atomic = (sexp: string | String): CExp =>
+const parseL3Atomic = (sexp: string | SexpString): CExp =>
     sexp === "#t" ? makeBoolExp(true) :
     sexp === "#f" ? makeBoolExp(false) :
     isString(sexp) && isNumericString(sexp) ? makeNumExp(+sexp) :

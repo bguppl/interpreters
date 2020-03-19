@@ -6,7 +6,7 @@
 // optional type annotations
 
 import { join, map, zipWith } from "ramda";
-import p, { StringTree } from 's-expression';
+import p, { StringTree, SexpString } from 's-expression';
 import { isCompoundSExp, isEmptySExp, isSymbolSExp, makeCompoundSExp, makeEmptySExp, makeSymbolSExp, SExp, valueToString } from './L5-value';
 import { isTVar, makeFreshTVar, parseTExp, unparseTExp, TExp } from './TExp';
 import { getErrorMessages, hasNoError, isError, safeF, safeFL, safeF2 } from '../shared/error';
@@ -185,7 +185,7 @@ export const parseSexp = (sexp: StringTree): Parsed | Error =>
     isSexpString(sexp) ? parseAtomic(sexp) :
     Error(`Parse: Unexpected type ${sexp}`);
 
-export const parseAtomic = (sexp: string | String): AtomicExp =>
+export const parseAtomic = (sexp: string | SexpString): AtomicExp =>
     sexp === "#t" ? makeBoolExp(true) :
     sexp === "#f" ? makeBoolExp(false) :
     isString(sexp) && isNumericString(sexp) ? makeNumExp(+sexp) :

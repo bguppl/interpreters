@@ -2,7 +2,7 @@
 // ===========================================================
 // AST type models
 import { map, zipWith } from "ramda";
-import p, { StringTree } from "s-expression";
+import p, { StringTree, SexpString } from "s-expression";
 import { allT, first, second, rest, isArray, isEmpty, isSexpString, isString, isNumericString } from "../shared/list";
 import {isError, hasNoError, safeF, safeFL, safeF2, getErrorMessages} from '../shared/error'
 import { isSymbolSExp, isEmptySExp, isCompoundSExp } from './L4-value';
@@ -185,7 +185,7 @@ const parseProgram = (es: Array<Parsed | Error>): Program | Error =>
     hasNoError(es) ? Error(`Program cannot be embedded in another program - ${es}`) :
     Error(getErrorMessages(es));
 
-export const parseAtomic = (sexp: string | String): CExp =>
+export const parseAtomic = (sexp: string | SexpString): CExp =>
     sexp === "#t" ? makeBoolExp(true) :
     sexp === "#f" ? makeBoolExp(false) :
     isString(sexp) && isNumericString(sexp) ? makeNumExp(+sexp) :

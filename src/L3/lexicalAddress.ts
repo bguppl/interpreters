@@ -100,7 +100,7 @@ Examples:
 parseLA("1") -> '(num-exp 1)
 parseLA("(if #t (+ 1 2) 'ok)") -> '(IfExpLA (BoolExp true) (AppExpLA (VarRef +) ((num-exp 1) (num-exp 2))) (literal-exp ok))
 */
-import parseSexp, { StringTree } from "s-expression";
+import parseSexp, { StringTree, SexpString } from "s-expression";
 
 export const parseLA = (x: string): CExpLA | Error =>
     parseLASExp(parseSexp(x));
@@ -112,7 +112,7 @@ export const parseLASExp = (sexp: StringTree): CExpLA | Error =>
     isSexpString(sexp) ? parseLAAtomic(sexp) :
     Error(`Parse: Unexpected type ${sexp}`);
 
-const parseLAAtomic = (sexp: string | String): CExpLA =>
+const parseLAAtomic = (sexp: string | SexpString): CExpLA =>
     sexp === "#t" ? makeBoolExp(true) :
     sexp === "#f" ? makeBoolExp(false) :
     isString(sexp) && isNumericString(sexp) ? makeNumExp(+sexp) :
