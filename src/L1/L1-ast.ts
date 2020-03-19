@@ -79,7 +79,7 @@ const parseL1Atomic = (sexp: string): CExp =>
 const isPrimitiveOp = (x: string): boolean =>
     ["+", "-", "*", "/", ">", "<", "=", "not"].includes(x)
 
-const parseL1CExp = (sexp: any): CExp | Error =>
+const parseL1CExp = (sexp: StringTree): CExp | Error =>
     isArray(sexp) ? makeAppExp(parseL1CExp(first(sexp)),
                                map(parseL1CExp, rest(sexp))) :
     isString(sexp) ? parseL1Atomic(sexp) :
