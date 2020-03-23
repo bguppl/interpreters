@@ -30,8 +30,7 @@
 ;; [Empty -> void]
 */
 import { chain, concat, filter, map, uniq } from "ramda";
-// @ts-ignore
-import p = require("s-expression");
+import p, { StringTree } from "s-expression";
 import { isArray, isBoolean, isEmpty, isString } from './L5-ast';
 import { makeBox, setBox, unbox, Box } from '../shared/box';
 import { getErrorMessages, hasNoError, isError, safeF, safeFL } from '../shared/error';
@@ -147,7 +146,7 @@ export const parseTE = (t: string): TExp | Error =>
 ;; parseTExp('(T * T -> boolean)') => '(proc-te ((tvar T) (tvar T)) bool-te)
 ;; parseTExp('(number -> (number -> number)') => '(proc-te (num-te) (proc-te (num-te) num-te))
 */
-export const parseTExp = (texp: any): TExp | Error =>
+export const parseTExp = (texp: StringTree): TExp | Error =>
     (texp === "number") ? makeNumTExp() :
     (texp === "boolean") ? makeBoolTExp() :
     (texp === "void") ? makeVoidTExp() :

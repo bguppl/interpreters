@@ -22,7 +22,7 @@ import { concat, map } from 'ramda';
 import { BoolExp, LitExp, NumExp, StrExp, VarDecl, VarRef } from './L3-ast';
 import { isBoolExp, isLitExp, isNumExp, isStrExp, isVarRef } from './L3-ast';
 import { makeBoolExp, makeNumExp, makeStrExp, makeVarDecl, makeVarRef } from './L3-ast';
-import { isArray, isEmpty, isNumericString, isSexpString, isString } from '../shared/list';
+import { isArray, isEmpty, isNumericString, isSexpString, isString, allT } from '../shared/list';
 import { parseLitExp } from './L3-ast';
 import { isError, safeFL } from '../shared/error';
 import { first, rest} from '../shared/list';
@@ -100,41 +100,45 @@ Examples:
 parseLA("1") -> '(num-exp 1)
 parseLA("(if #t (+ 1 2) 'ok)") -> '(IfExpLA (BoolExp true) (AppExpLA (VarRef +) ((num-exp 1) (num-exp 2))) (literal-exp ok))
 */
-// @ts-ignore
-import parseSexp from "s-expression";
+import parseSexp, { StringTree, SexpString } from "s-expression";
 
 export const parseLA = (x: string): CExpLA | Error =>
     parseLASExp(parseSexp(x));
 
-export const parseLASExp = (sexp: any): CExpLA | Error =>
+export const parseLASExp = (sexp: StringTree): CExpLA | Error =>
     isEmpty(sexp) ? Error("Parse: Unexpected empty") :
     isArray(sexp) ? parseLACompound(sexp) :
     isString(sexp) ? parseLAAtomic(sexp) :
     isSexpString(sexp) ? parseLAAtomic(sexp) :
     Error(`Parse: Unexpected type ${sexp}`);
 
-const parseLAAtomic = (sexp: string): CExpLA =>
+const parseLAAtomic = (sexp: string | SexpString): CExpLA =>
     sexp === "#t" ? makeBoolExp(true) :
     sexp === "#f" ? makeBoolExp(false) :
-    isNumericString(sexp) ? makeNumExp(+sexp) :
+    isString(sexp) && isNumericString(sexp) ? makeNumExp(+sexp) :
     isSexpString(sexp) ? makeStrExp(sexp.toString()) :
     makeVarRef(sexp);
 
-const parseLACompound = (sexps: any[]): CExpLA | Error =>
+const parseLACompound = (sexps: StringTree[]): CExpLA | Error =>
     first(sexps) === "if" ? parseIfExpLA(sexps) :
     first(sexps) === "lambda" ? parseProcExpLA(sexps) :
     first(sexps) === "quote" ? parseLitExp(sexps) :
     parseAppExpLA(sexps);
 
-const parseAppExpLA = (sexps: any[]): AppExpLA | Error =>
+const parseAppExpLA = (sexps: StringTree[]): AppExpLA | Error =>
     safeFL((cexps: CExpLA[]) => makeAppExpLA(first(cexps), rest(cexps)))(map(parseLASExp, sexps));
 
-const parseIfExpLA = (sexps: any[]): IfExpLA | Error =>
+const parseIfExpLA = (sexps: StringTree[]): IfExpLA | Error =>
     safeFL((cexps: CExpLA[]) => makeIfExpLA(cexps[0], cexps[1], cexps[2]))(map(parseLASExp, rest(sexps)));
 
-const parseProcExpLA = (sexps: any[]): ProcExpLA | Error =>
-    safeFL((body: CExpLA[]) => makeProcExpLA( map(makeVarDecl, sexps[1]), body))
-        (map(parseLASExp, rest(rest(sexps))));
+const parseProcExpLA = (sexps: StringTree[]): ProcExpLA | Error => {
+    const vars = sexps[1];
+    if (isArray(vars) && allT(isString, vars)) {
+        return safeFL((body: CExpLA[]) => makeProcExpLA(map(makeVarDecl, vars), body))(map(parseLASExp, rest(rest(sexps))));
+    } else {
+        return Error("Invalid vars for ProcExp");
+    }
+}
 
 // ========================================================
 // Unparse

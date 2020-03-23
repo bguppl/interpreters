@@ -1,6 +1,7 @@
 // List operations similar to car/cdr/cadr in Scheme
 
 import { all } from 'ramda';
+import { SexpString } from 's-expression';
 
 export const first = <T>(x: T[]): T => x[0];
 export const second = <T>(x: T[]): T => x[1];
@@ -22,7 +23,7 @@ export const isBoolean = (x: any): x is boolean => typeof x === "boolean";
 // to distinguish them from symbols - which are encoded as 'a'
 // These are constructed using the new String("a") constructor
 // and can be distinguished from regular strings based on the constructor.
-export const isSexpString = (x: any): boolean =>
+export const isSexpString = (x: any): x is SexpString =>
     ! isString(x) && x.constructor && x.constructor.name === "String";
 // A weird method to check that a string is a string encoding of a number
 export const isNumericString = (x: string): boolean => JSON.stringify(+x) === x;
