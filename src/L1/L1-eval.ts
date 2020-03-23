@@ -1,6 +1,5 @@
 // L1-eval.ts
 
-import { strict as assert } from 'assert';
 import { filter, map, reduce } from "ramda";
 import { first, isEmpty, rest } from "../shared/list";
 import { CExp, DefineExp, Exp, PrimOp, Program } from "./L1-ast";
