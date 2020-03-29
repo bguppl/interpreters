@@ -28,11 +28,6 @@ export const map = <T, U>(f: (x: T) => U, r: Result<T>): Result<U> =>
 export const bind = <T, U>(r: Result<T>, f: (x: T) => Result<U>): Result<U> =>
     isOk(r) ? f(r.value) : r;
 
-export const sequence = <T>(results: Result<T>[]): Result<T[]> => {
-    if (results.length === 0) {
-        return makeOk([]);
-    } else {
-        const [r, ...rs] = results;
-        return bind(r, r => bind(sequence(rs), rs => makeOk([r].concat(rs))));
-    }
-}
+export const mapResult = <T, U>(f: (x: T) => Result<U>, list: T[]): Result<U[]> =>
+    list.length === 0 ? makeOk([]) :
+    bind(f(list[0]), fa => bind(mapResult(f, list.slice(1)), fas => makeOk([fa].concat(fas))));

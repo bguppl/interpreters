@@ -3,7 +3,7 @@
 // AST type models
 import { filter, map } from "ramda";
 import { first, rest, isEmpty, isString, isArray, isNumericString } from '../shared/list';
-import { Result, makeOk, makeFailure, bind, sequence, isOk } from "../shared/result";
+import { Result, makeOk, makeFailure, bind, mapResult, isOk } from "../shared/result";
 
 export type Exp = DefineExp | CExp;
 export type CExp = NumExp | BoolExp | PrimOp | VarRef | AppExp;
@@ -71,7 +71,7 @@ export const parseL1Sexp = (sexp: StringTree): Result<Program | DefineExp | CExp
 const parseL1Compound = (sexps: StringTree[]): Result<Program | DefineExp | CExp> => {
     if (first(sexps) === "L1") {
         //@ts-ignore
-        return bind(sequence(map(parseL1Sexp, rest(sexps))), exps => makeOk(makeProgram(exps)));
+        return bind(mapResult(parseL1Sexp, rest(sexps)), exps => makeOk(makeProgram(exps)));
     } else if (first(sexps) === "define") {
         const v = sexps[1];
         if (isString(v)) {
@@ -98,7 +98,7 @@ const isPrimitiveOp = (x: string): boolean =>
 const parseL1CExp = (sexp: StringTree): Result<CExp> => {
     if (isArray(sexp)) {
         return bind(parseL1CExp(first(sexp)), 
-                    rator => bind(sequence(map(parseL1CExp, rest(sexp))),
+                    rator => bind(mapResult(parseL1CExp, rest(sexp)),
                                   rands => makeOk(makeAppExp(rator, rands))));
     } else if (isString(sexp)) {
         return makeOk(parseL1Atomic(sexp));

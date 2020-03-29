@@ -2,7 +2,7 @@
 
 import { map, reduce } from "ramda";
 import { first, isEmpty, rest } from "../shared/list";
-import { Result, makeOk, makeFailure, bind, sequence, isOk } from "../shared/result";
+import { Result, makeOk, makeFailure, bind, mapResult, isOk } from "../shared/result";
 import { CExp, DefineExp, Exp, PrimOp, Program } from "./L1-ast";
 import { isAppExp, isBoolExp, isDefineExp, isNumExp, isPrimOp,
          isVarRef } from "./L1-ast";
@@ -41,7 +41,8 @@ const L1applicativeEval = (exp: CExp, env: Env): Result<Value> =>
     isBoolExp(exp) ? makeOk(exp.val) :
     isPrimOp(exp) ? makeOk(exp) :
     isVarRef(exp) ? applyEnv(env, exp.var) :
-    isAppExp(exp) ? bind(sequence(map(rand =>  L1applicativeEval(rand, env), exp.rands)), rands => L1applyProcedure(exp.rator, rands)):
+    isAppExp(exp) ? bind(mapResult(rand =>  L1applicativeEval(rand, env), exp.rands),
+                         rands => L1applyProcedure(exp.rator, rands)) :
     makeFailure("Bad L1 AST " + exp);
 
 const L1applyProcedure = (proc: CExp, args: Value[]): Result<Value> =>
