@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { parseL1, isProgram, isCExp } from "../../src/L1/L1-ast";
-import { evalL1program, makeEnv, makeEmptyEnv, isEnv, evalExps } from '../../src/L1/L1-eval';
+import { evalL1program, makeEnv, makeEmptyEnv, isEnv, evalL1Exps } from '../../src/L1/L1-eval';
 
 describe('L1 Eval', () => {
     it('Evaluates a program without an explicit environment', () => {
@@ -14,7 +14,7 @@ describe('L1 Eval', () => {
         const env = makeEnv("x", 1, makeEmptyEnv());
         const exp = parseL1("(+ x 2)");
         if (isCExp(exp) && isEnv(env)) {
-            expect(evalExps([exp], env)).to.be.equal(3);
+            expect(evalL1Exps([exp], env)).to.be.equal(3);
         }
     });
 });

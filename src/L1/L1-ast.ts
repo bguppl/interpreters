@@ -3,9 +3,10 @@
 // AST type models
 import { filter, map } from "ramda";
 import { first, rest, isEmpty, isString, isArray, isNumericString } from '../shared/list';
+import { Result, makeOk, makeFailure, bind, sequence, isOk } from "../shared/result";
 
 export type Exp = DefineExp | CExp;
-export type CExp = NumExp | BoolExp | PrimOp | VarRef | AppExp | Error;
+export type CExp = NumExp | BoolExp | PrimOp | VarRef | AppExp;
 
 export interface Program {tag: "Program"; exps: Exp[]; };
 
@@ -52,22 +53,37 @@ export const isCExp = (x: any): x is CExp => isNumExp(x) || isBoolExp(x) || isPr
 // Make sure to run "npm install ramda s-expression --save"
 import parseSexp, { StringTree } from "s-expression";
 
-export const parseL1 = (x: string): Program | DefineExp | CExp | Error =>
-    parseL1Sexp(parseSexp(x));
+export const parseL1 = (x: string): Program | DefineExp | CExp | Error => {
+    const result = parseL1Sexp(parseSexp(x));
+    if (isOk(result)) {
+        return result.value;
+    } else {
+        return Error(result.message);
+    }
+}
 
-export const parseL1Sexp = (sexp: StringTree): Program | DefineExp | CExp | Error =>
-    isEmpty(sexp) ? Error("Unexpected empty") :
+export const parseL1Sexp = (sexp: StringTree): Result<Program | DefineExp | CExp> =>
+    isEmpty(sexp) ? makeFailure("Unexpected empty") :
     isArray(sexp) ? parseL1Compound(sexp) :
-    isString(sexp) ? parseL1Atomic(sexp) :
-    Error("Unexpected type" + sexp);
+    isString(sexp) ? makeOk(parseL1Atomic(sexp)) :
+    makeFailure("Unexpected type" + sexp);
 
-// There are type errors which we will address in L3 with more precise
-// type definitions for the AST.
-const parseL1Compound = (sexps: StringTree[]): Program | DefineExp | CExp | Error =>
-    // @ts-ignore: type error
-    first(sexps) === "L1" ? makeProgram(map(parseL1Sexp, rest(sexps))) :
-    first(sexps) === "define" && isString(sexps[1]) ? makeDefineExp(makeVarDecl(sexps[1]), parseL1CExp(sexps[2])) :
-    parseL1CExp(sexps);
+const parseL1Compound = (sexps: StringTree[]): Result<Program | DefineExp | CExp> => {
+    if (first(sexps) === "L1") {
+        //@ts-ignore
+        return bind(sequence(map(parseL1Sexp, rest(sexps))), exps => makeOk(makeProgram(exps)));
+    } else if (first(sexps) === "define") {
+        const v = sexps[1];
+        if (isString(v)) {
+            return bind(parseL1CExp(sexps[2]),
+                        val => makeOk(makeDefineExp(makeVarDecl(v), val)));
+        } else {
+            return makeFailure("define was given a compound expression as a variable");
+        }
+    } else {
+        return parseL1CExp(sexps);
+    }
+}
 
 const parseL1Atomic = (sexp: string): CExp =>
     sexp === "#t" ? makeBoolExp(true) :
@@ -79,8 +95,14 @@ const parseL1Atomic = (sexp: string): CExp =>
 const isPrimitiveOp = (x: string): boolean =>
     ["+", "-", "*", "/", ">", "<", "=", "not"].includes(x)
 
-const parseL1CExp = (sexp: StringTree): CExp | Error =>
-    isArray(sexp) ? makeAppExp(parseL1CExp(first(sexp)),
-                               map(parseL1CExp, rest(sexp))) :
-    isString(sexp) ? parseL1Atomic(sexp) :
-    Error("Unexpected type" + sexp);
+const parseL1CExp = (sexp: StringTree): Result<CExp> => {
+    if (isArray(sexp)) {
+        return bind(parseL1CExp(first(sexp)), 
+                    rator => bind(sequence(map(parseL1CExp, rest(sexp))),
+                                  rands => makeOk(makeAppExp(rator, rands))));
+    } else if (isString(sexp)) {
+        return makeOk(parseL1Atomic(sexp));
+    } else {
+        return makeFailure("Unexpected type " + sexp);
+    }
+}
