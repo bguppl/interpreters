@@ -1,11 +1,21 @@
 /// <reference path="../shared/s-expression.d.ts" />
-// ===========================================================
-// AST type models
-import { filter, map } from "ramda";
-import { first, rest, isEmpty, isString, isArray, isNumericString } from '../shared/list';
-import { Result, makeOk, makeFailure, bind, mapResult, isOk } from "../shared/result";
+// L1 Parser
+// =========
 
+// A parser provides 2 components to the clients:
+// - Type definitions for the AST of the language (with type predicates, constructors, getters)
+// - A parser function which constructs AST values from strings.
+
+import { isString, isArray, isNumericString, isToken } from '../shared/type-predicates';
+import { first, rest, second, isEmpty } from '../shared/list';
+import { Result, makeOk, makeFailure, bind, mapResult } from "../shared/result";
+
+// ===============
+// AST type models
+
+// A toplevel expression in L1 - can appear in a program
 export type Exp = DefineExp | CExp;
+// An expression which can be embedded inside other expressions (constituent expression)
 export type CExp = NumExp | BoolExp | PrimOp | VarRef | AppExp;
 
 export interface Program {tag: "Program"; exps: Exp[]; };
@@ -39,70 +49,86 @@ export const isPrimOp = (x: any): x is PrimOp => x.tag === "PrimOp";
 export const isVarRef = (x: any): x is VarRef => x.tag === "VarRef";
 export const isVarDecl = (x: any): x is VarDecl => x.tag === "VarDecl";
 export const isAppExp = (x: any): x is AppExp => x.tag === "AppExp";
-export const isError = (x: any): x is Error => x instanceof Error;
-export const hasError = (x: any[]): boolean => filter(isError, x).length > 0;
 
 // Type predicates for type unions
 export const isExp = (x: any): x is Exp => isDefineExp(x) || isCExp(x);
-export const isCExp = (x: any): x is CExp => isNumExp(x) || isBoolExp(x) || isPrimOp(x) ||
-    isVarRef(x) || isAppExp(x) || isError(x);
+export const isCExp = (x: any): x is CExp => 
+    isNumExp(x) || isBoolExp(x) || isPrimOp(x) || isVarRef(x) || isAppExp(x);
 
 // ========================================================
 // Parsing
 
 // Make sure to run "npm install ramda s-expression --save"
-import parseSexp, { StringTree } from "s-expression";
+import parseSexp, { Sexp, Token } from "s-expression";
 
-export const parseL1 = (x: string): Program | DefineExp | CExp | Error => {
-    const result = parseL1Sexp(parseSexp(x));
-    if (isOk(result)) {
-        return result.value;
-    } else {
-        return Error(result.message);
-    }
-}
+// combine Sexp parsing with the L1 parsing
+export const parseL1 = (x: string): Result<Program> => parseL1Program(parseSexp(x));
 
-export const parseL1Sexp = (sexp: StringTree): Result<Program | DefineExp | CExp> =>
-    isEmpty(sexp) ? makeFailure("Unexpected empty") :
-    isArray(sexp) ? parseL1Compound(sexp) :
-    isString(sexp) ? makeOk(parseL1Atomic(sexp)) :
-    makeFailure("Unexpected type" + sexp);
+// L1 concrete syntax
+// <Program> -> (L1 <Exp>* )
+// <Exp> -> <DefineExp> | <CExp>
+// <DefineExp> -> (define <varDecl> <CExp>)
+// <CExp> -> <AtomicExp> | <AppExp>
+// <AtomicExp> -> <number> | <boolean> | <primOp>
+// <AppExp> -> (<Cexp>+)
 
-const parseL1Compound = (sexps: StringTree[]): Result<Program | DefineExp | CExp> => {
-    if (first(sexps) === "L1") {
-        //@ts-ignore
-        return bind(mapResult(parseL1Sexp, rest(sexps)), exps => makeOk(makeProgram(exps)));
-    } else if (first(sexps) === "define") {
-        const v = sexps[1];
-        if (isString(v)) {
-            return bind(parseL1CExp(sexps[2]),
-                        val => makeOk(makeDefineExp(makeVarDecl(v), val)));
-        } else {
-            return makeFailure("define was given a compound expression as a variable");
-        }
-    } else {
-        return parseL1CExp(sexps);
-    }
-}
+// <Program> -> (L1 <Exp>*)
+export const parseL1Program = (sexp: Sexp): Result<Program> =>
+    isToken(sexp) ? makeFailure("Program cannot be a single token") :
+    isEmpty(sexp) ? makeFailure("Unexpected empty program") :
+    isArray(sexp) ? parseL1GoodProgram(first(sexp), rest(sexp)) :
+    makeFailure("Unexpected type " + sexp);
 
-const parseL1Atomic = (sexp: string): CExp =>
-    sexp === "#t" ? makeBoolExp(true) :
-    sexp === "#f" ? makeBoolExp(false) :
-    isNumericString(sexp) ? makeNumExp(+sexp) :
-    isPrimitiveOp(sexp) ? makePrimOp(sexp) :
-    makeVarRef(sexp);
+const parseL1GoodProgram = (keyword: Sexp, body: Sexp[]): Result<Program> =>
+    keyword === "L1" ? bind(mapResult(parseL1Exp, body),
+                            (exps: Exp[]) => makeOk(makeProgram(exps))) :
+    makeFailure("Program must be of the form (L1 <exp>*)");
 
-const isPrimitiveOp = (x: string): boolean =>
+// Exp -> <DefineExp> | <Cexp>
+export const parseL1Exp = (sexp: Sexp): Result<Exp> =>
+    isEmpty(sexp) ? makeFailure("Exp cannot be an empty list") :
+    isArray(sexp) ? parseL1Compound(first(sexp), rest(sexp)) :
+    isToken(sexp) ? parseL1Atomic(sexp) :
+    makeFailure("Unexpected type " + sexp);
+
+// Compound -> DefineExp | AppExp
+const parseL1Compound = (op: Sexp, params: Sexp[]): Result<Exp> => 
+    op === "define"? parseDefine(params) :
+    parseAppExp(op, params);
+
+// DefineExp -> (define <varDecl> <CExp>)
+export const parseDefine = (params: Sexp[]): Result<DefineExp> =>
+    isEmpty(params) ? makeFailure("define missing 2 arguments") :
+    isEmpty(rest(params)) ? makeFailure("define missing 1 arguments") :
+    ! isEmpty(rest(rest(params))) ? makeFailure("define has too many arguments") :
+    parseGoodDefine(first(params), second(params));
+
+const parseGoodDefine = (variable: Sexp, val: Sexp): Result<DefineExp> =>
+    ! isString(variable) ? makeFailure("First arg of define must be an identifier") :
+    bind(parseCExp(val),
+         (value: CExp) => makeOk(makeDefineExp(makeVarDecl(variable), value)));
+
+// CExp -> AtomicExp | AppExp
+export const parseCExp = (sexp: Sexp): Result<CExp> =>
+    isEmpty(sexp) ? makeFailure("CExp cannot be an empty list") :
+    isArray(sexp) ? parseAppExp(first(sexp), rest(sexp)) :
+    isToken(sexp) ? parseL1Atomic(sexp) :
+    makeFailure("Unexpected type " + sexp);
+
+// Atomic -> number | boolean | primitiveOp
+export const parseL1Atomic = (token: Token): Result<CExp> =>
+    token === "#t" ? makeOk(makeBoolExp(true)) :
+    token === "#f" ? makeOk(makeBoolExp(false)) :
+    isString(token) && isNumericString(token) ? makeOk(makeNumExp(+token)) :
+    isString(token) && isPrimitiveOp(token) ? makeOk(makePrimOp(token)) :
+    isString(token) ? makeOk(makeVarRef(token)) :
+    makeFailure("Invalid atomic token: " + token);
+
+export const isPrimitiveOp = (x: string): boolean =>
     ["+", "-", "*", "/", ">", "<", "=", "not"].includes(x)
 
-const parseL1CExp = (sexp: StringTree): Result<CExp> => {
-    if (isArray(sexp)) {
-        return bind(parseL1CExp(first(sexp)), 
-                    rator => bind(mapResult(parseL1CExp, rest(sexp)),
-                                  rands => makeOk(makeAppExp(rator, rands))));
-    } else if (isString(sexp)) {
-        return makeOk(parseL1Atomic(sexp));
-    } else {
-        return makeFailure("Unexpected type " + sexp);
-    }
-}
+// AppExp -> ( <cexp>+ )
+export const parseAppExp = (op: Sexp, params: Sexp[]): Result<CExp> =>
+    bind(parseCExp(op), 
+         (rator: CExp) => bind(mapResult(parseCExp, params),
+                               (rands: CExp[]) => makeOk(makeAppExp(rator, rands))));
