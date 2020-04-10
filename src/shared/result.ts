@@ -24,9 +24,6 @@ export const isOk = <T>(r: Result<T>): r is Ok<T> =>
 export const isFailure = <T>(r: Result<T>): r is Failure =>
     r.tag === "Failure";
 ​
-export const map = <T, U>(f: (x: T) => U, r: Result<T>): Result<U> =>
-    isOk(r) ? makeOk(f(r.value)) : r;
-​
 export const bind = <T, U>(r: Result<T>, f: (x: T) => Result<U>): Result<U> =>
     isOk(r) ? f(r.value) : r;
 ​
@@ -41,3 +38,11 @@ export const mapResult = <T, U>(f: (x: T) => Result<U>, list: T[]): Result<U[]> 
     bind(f(first(list)), 
          (fa: U) => bind(mapResult(f, rest(list)), 
                          (fas: U[]) => makeOk([fa].concat(fas))));
+
+export const safe2 = <T1, T2, T3>(f: (x: T1, y: T2) => Result<T3>): (xr: Result<T1>, yr: Result<T2>) => Result<T3> =>
+    (xr: Result<T1>, yr: Result<T2>) =>
+        bind(xr, (x: T1) => bind(yr, (y: T2) => f(x, y)));
+
+export const safe3 = <T1, T2, T3, T4>(f: (x: T1, y: T2, z: T3) => Result<T4>): (xr: Result<T1>, yr: Result<T2>, zr: Result<T3>) => Result<T4> =>
+    (xr: Result<T1>, yr: Result<T2>, zr: Result<T3>) =>
+        bind(xr, (x: T1) => bind(yr, (y: T2) => bind(zr, (z: T3) => f(x, y, z))));

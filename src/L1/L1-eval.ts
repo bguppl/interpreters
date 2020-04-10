@@ -41,8 +41,8 @@ const L1applicativeEval = (exp: CExp, env: Env): Result<Value> =>
     isBoolExp(exp) ? makeOk(exp.val) :
     isPrimOp(exp) ? makeOk(exp) :
     isVarRef(exp) ? applyEnv(env, exp.var) :
-    isAppExp(exp) ? bind(mapResult(rand =>  L1applicativeEval(rand, env), exp.rands),
-                         rands => L1applyProcedure(exp.rator, rands)) :
+    isAppExp(exp) ? bind(mapResult((rand: CExp) =>  L1applicativeEval(rand, env), exp.rands),
+                         (rands: Value[]) => L1applyProcedure(exp.rator, rands)) :
     makeFailure("Bad L1 AST " + exp);
 
 const L1applyProcedure = (proc: CExp, args: Value[]): Result<Value> =>
@@ -83,20 +83,5 @@ const evalDefineExps = (def: DefineExp, exps: Exp[], env: Env): Result<Value> =>
     bind(L1applicativeEval(def.val, env), rhs => evalExps(exps, makeEnv(def.var.var, rhs, env)));
 
 // Main program
-export const evalL1program = (program: Program): Value | Error => {
-    const result = evalExps(program.exps, makeEmptyEnv());
-    if (isOk(result)) {
-        return result.value;
-    } else {
-        return Error(result.message);
-    }
-}
-
-export const evalL1Exps = (exps: Exp[], env: Env): Value | Error => {
-    const result = evalExps(exps, env);
-    if (isOk(result)) {
-        return result.value;
-    } else {
-        return Error(result.message);
-    }
-}
+export const evalL1program = (program: Program): Result<Value> =>
+    evalExps(program.exps, makeEmptyEnv());

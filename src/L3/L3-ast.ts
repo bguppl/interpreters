@@ -3,9 +3,10 @@
 // AST type models
 import { map, zipWith } from "ramda";
 import { makeEmptySExp, makeSymbolSExp, SExp, makeCompoundSExp, valueToString } from './L3-value'
-import { first, second, rest, allT, isArray, isString, isEmpty, isSexpString, isNumericString } from "../shared/list";
-import p, { StringTree, SexpString } from "s-expression";
-import {hasNoError, safeF, safeFL, safeF2, getErrorMessages} from '../shared/error'
+import { first, second, rest, allT, isEmpty } from "../shared/list";
+import { isArray, isString, isSexpString, isNumericString, isToken } from "../shared/type-predicates";
+import { Result, makeOk, makeFailure, bind, mapResult, safe2 } from "../shared/result";
+import p, { Sexp, Token } from "s-expression";
 
 /*
 ;; =============================================================================
@@ -43,9 +44,6 @@ import {hasNoError, safeF, safeFL, safeF2, getErrorMessages} from '../shared/err
 ;; <sexp>     ::= symbol | number | bool | string | 
 ;;                (<sexp>+ . <sexp>) | ( <sexp>* )       ##### L3
 */
-
-// A value returned by parseL3
-export type Parsed = Exp | Program;
 
 export type Exp = DefineExp | CExp;
 export type AtomicExp = NumExp | BoolExp | StrExp | PrimOp | VarRef;
@@ -126,49 +124,66 @@ export const isCExp = (x: any): x is CExp =>
 // ========================================================
 // Parsing
 
-export const parseL3 = (x: string): Parsed | Error =>
-    parseL3Sexp(p(x));
+export const parseL3 = (x: string): Result<Program> =>
+    parseL3Program(p(x));
 
-export const parseL3Sexp = (sexp: StringTree): Parsed | Error =>
-    isEmpty(sexp) ? Error("Parse: Unexpected empty") :
-    isArray(sexp) ? parseL3Compound(sexp) :
-    isString(sexp) ? parseL3Atomic(sexp) :
-    isSexpString(sexp) ? parseL3Atomic(sexp) :
-    Error(`Parse: Unexpected type ${sexp}`);
+export const parseL3Program = (sexp: Sexp): Result<Program> =>
+    isToken(sexp) ? makeFailure("Program cannot be a single token") :
+    isEmpty(sexp) ? makeFailure("Unexpected empty program") :
+    isArray(sexp) ? parseL3GoodProgram(first(sexp), rest(sexp)) :
+    makeFailure("Unexpected type " + sexp);
 
-const parseL3Compound = (sexps: StringTree[]): Program | DefineExp | CExp | Error => {
-    const form = first(sexps);
-    if (isString(form)) {
-        if (form === "L3") {
-            return parseProgram(map(parseL3Sexp, rest(sexps)));
-        } else if (form === "define") {
-            const v = sexps[1];
-            if (isString(v)) {
-                return safeF((val: CExp) => makeDefineExp(makeVarDecl(v), val))(parseL3CExp(sexps[2]));
-            } else {
-                return Error(`${v} is not a valid variable for "define" expression`);
-            }
-        } else {
-            return parseL3CExp(sexps);
-        }
-    } else {
-        return parseL3CExp(sexps);
-    }
-}
+const parseL3GoodProgram = (keyword: Sexp, body: Sexp[]): Result<Program> =>
+    keyword === "L3" ? bind(mapResult(parseL3Exp, body),
+                            (exps: Exp[]) => makeOk(makeProgram(exps))) :
+    makeFailure("Program must be of the form (L3 <exp>+)");
 
-const parseProgram = (es: Array<Parsed | Error>): Program | Error =>
-    isEmpty(es) ? Error("Empty program") :
-    allT(isExp, es) ? makeProgram(es) :
-    hasNoError(es) ? Error(`Program cannot be embedded in another program - ${es}`) :
-    Error(getErrorMessages(es));
+// Exp -> <DefineExp> | <Cexp>
+export const parseL3Exp = (sexp: Sexp): Result<Exp> =>
+    isEmpty(sexp) ? makeFailure("Exp cannot be an empty list") :
+    isArray(sexp) ? parseL3CompoundExp(first(sexp), rest(sexp)) :
+    isToken(sexp) ? parseL3Atomic(sexp) :
+    makeFailure("Unexpected type " + sexp);
 
-const parseL3Atomic = (sexp: string | SexpString): CExp =>
-    sexp === "#t" ? makeBoolExp(true) :
-    sexp === "#f" ? makeBoolExp(false) :
-    isString(sexp) && isNumericString(sexp) ? makeNumExp(+sexp) :
-    isSexpString(sexp) ? makeStrExp(sexp.toString()) :
-    isPrimitiveOp(sexp) ? makePrimOp(sexp) :
-    makeVarRef(sexp);
+// Compound -> DefineExp | CompoundCExp
+export const parseL3CompoundExp = (op: Sexp, params: Sexp[]): Result<Exp> => 
+    op === "define"? parseDefine(params) :
+    parseL3CompoundCExp(op, params);
+
+// CompoundCExp -> IfExp | ProcExp | LetExp | LitExp | AppExp
+export const parseL3CompoundCExp = (op: Sexp, params: Sexp[]): Result<CExp> =>
+    op === "if" ? parseIfExp(params) :
+    op === "lambda" ? parseProcExp(first(params), rest(params)) :
+    op === "let" ? parseLetExp(first(params), rest(params)) :
+    op === "quote" ? parseLitExp(first(params)) :
+    parseAppExp(op, params);
+
+// DefineExp -> (define <varDecl> <CExp>)
+export const parseDefine = (params: Sexp[]): Result<DefineExp> =>
+    isEmpty(params) ? makeFailure("define missing 2 arguments") :
+    isEmpty(rest(params)) ? makeFailure("define missing 1 arguments") :
+    ! isEmpty(rest(rest(params))) ? makeFailure("define has too many arguments") :
+    parseGoodDefine(first(params), second(params));
+
+const parseGoodDefine = (variable: Sexp, val: Sexp): Result<DefineExp> =>
+    ! isString(variable) ? makeFailure("First arg of define must be an identifier") :
+    bind(parseL3CExp(val),
+         (value: CExp) => makeOk(makeDefineExp(makeVarDecl(variable), value)));
+
+export const parseL3CExp = (sexp: Sexp): Result<CExp> =>
+    isEmpty(sexp) ? makeFailure("CExp cannot be an empty list") :
+    isArray(sexp) ? parseL3CompoundCExp(first(sexp), rest(sexp)) :
+    isToken(sexp) ? parseL3Atomic(sexp) :
+    makeFailure("Unexpected type " + sexp);
+
+// Atomic -> number | boolean | primitiveOp | string
+export const parseL3Atomic = (token: Token): Result<CExp> =>
+    token === "#t" ? makeOk(makeBoolExp(true)) :
+    token === "#f" ? makeOk(makeBoolExp(false)) :
+    isString(token) && isNumericString(token) ? makeOk(makeNumExp(+token)) :
+    isString(token) && isPrimitiveOp(token) ? makeOk(makePrimOp(token)) :
+    isString(token) ? makeOk(makeVarRef(token)) :
+    makeOk(makeStrExp(token.toString()));
 
 /*
     ;; <prim-op>  ::= + | - | * | / | < | > | = | not | and | or | eq? | string=?
@@ -180,88 +195,73 @@ const isPrimitiveOp = (x: string): boolean =>
      "eq?", "string=?", "cons", "car", "cdr", "list", "pair?",
      "number?", "boolean?", "symbol?", "string?"].includes(x);
 
-export const parseL3CExp = (sexp: StringTree): CExp | Error =>
-    isArray(sexp) ? parseL3CompoundCExp(sexp) :
-    isString(sexp) ? parseL3Atomic(sexp) :
-    isSexpString(sexp) ? parseL3Atomic(sexp) :
-    Error("Unexpected type" + sexp);
+const parseAppExp = (op: Sexp, params: Sexp[]): Result<AppExp> =>
+    safe2((rator: CExp, rands: CExp[]) => makeOk(makeAppExp(rator, rands)))
+        (parseL3CExp(op), mapResult(parseL3CExp, params));
 
-const parseL3CompoundCExp = (sexps: StringTree[]): CExp | Error =>
-    first(sexps) === "if" ? parseIfExp(sexps) :
-    first(sexps) === "lambda" ? parseProcExp(sexps) :
-    first(sexps) === "let" ? parseLetExp(sexps) :
-    first(sexps) === "quote" ? parseLitExp(sexps) :
-    parseAppExp(sexps)
+const parseIfExp = (params: Sexp[]): Result<IfExp> =>
+    params.length !== 3 ? makeFailure("Expression not of the form (if <cexp> <cexp> <cexp>)") :
+    bind(mapResult(parseL3CExp, params),
+         (cexps: CExp[]) => makeOk(makeIfExp(cexps[0], cexps[1], cexps[2])));
 
-const parseAppExp = (sexps: StringTree[]): AppExp | Error =>
-    safeFL((cexps: CExp[]) => makeAppExp(first(cexps), rest(cexps)))(map(parseL3CExp, sexps));
+const parseProcExp = (vars: Sexp, body: Sexp[]): Result<ProcExp> =>
+    isArray(vars) && allT(isString, vars) ? bind(mapResult(parseL3CExp, body),
+                                                 (cexps: CExp[]) => makeOk(makeProcExp(map(makeVarDecl, vars), cexps))) :
+    makeFailure(`Invalid vars for ProcExp`);
 
-const parseIfExp = (sexps: StringTree[]): IfExp | Error =>
-    safeFL((cexps: CExp[]) => makeIfExp(cexps[0], cexps[1], cexps[2]))(map(parseL3CExp, rest(sexps)));
+const isGoodBindings = (bindings: Sexp): bindings is [string, Sexp][] =>
+    isArray(bindings) &&
+    allT(isArray, bindings) &&
+    allT(isString, map(first, bindings));
 
-const parseProcExp = (sexps: StringTree[]): ProcExp | Error => {
-    const vars = sexps[1];
-    if (isArray(vars) && allT(isString, vars)) {
-        return safeFL((body: CExp[]) => makeProcExp(map(makeVarDecl, vars), body))(map(parseL3CExp, rest(rest(sexps))));
-    } else {
-        return Error(`Invalid vars for ProcExp`);
+const parseLetExp = (bindings: Sexp, body: Sexp[]): Result<LetExp> => {
+    if (!isGoodBindings(bindings)) {
+        return makeFailure('Malformed bindings in "let" expression');
     }
-}
-
-const parseLetExp = (sexps: StringTree[]): LetExp | Error => {
-    let bdgs = sexps[1];
-    if (isString(bdgs) || isSexpString(bdgs) || !allT(isArray, bdgs)) {
-        return Error('Malformed bindings in "let" expression');
-    }
-    let vars = map(first, bdgs);
+    const vars = map(first, bindings);
     if (!allT(isString, vars)) {
-        return Error(`Bad bindings in let ${bdgs}`);
+        return makeFailure(`Bad bindings in let ${bindings}`);
     }
-    let vals = map((pair) => parseL3CExp(second(pair)), bdgs);
-    if (!hasNoError(vals)) {
-        return Error(`Bad value in let vars ${bdgs}`);
-    }
-    let bindings = zipWith(makeBinding, vars, vals);
-    let body: Array<CExp | Error> = map(parseL3CExp, rest(rest(sexps)));
-    if (!hasNoError(body)) {
-        return Error(`Parse: Bad let: ${getErrorMessages(body)}`);
-    } else {
-        return makeLetExp(bindings, body);
-    }
+    const valsResult = mapResult(binding => parseL3CExp(second(binding)), bindings);
+    const bindingsResult = bind(valsResult, vals => makeOk(zipWith(makeBinding, vars, vals)));
+    return safe2((bindings: Binding[], body: CExp[]) => makeOk(makeLetExp(bindings, body)))
+        (bindingsResult, mapResult(parseL3CExp, body));
 }
 
 // sexps has the shape (quote <sexp>)
-export const parseLitExp = (sexps: StringTree[]): LitExp | Error =>
-    safeF(makeLitExp)(parseSExp(second(sexps)));
+export const parseLitExp = (param: Sexp): Result<LitExp> =>
+    bind(parseSExp(param), (sexp: SExp) => makeOk(makeLitExp(sexp)));
 
-export const isDottedPair = (sexps: StringTree[]): boolean =>
+export const isDottedPair = (sexps: Sexp[]): boolean =>
     sexps.length === 3 && 
     sexps[1] === "."
 
-export const makeDottedPair = (sexps : StringTree[]): SExp | Error =>
-    safeF2(makeCompoundSExp)(parseSExp(sexps[0]), parseSExp(sexps[2]))
+export const makeDottedPair = (sexps : Sexp[]): Result<SExp> =>
+    safe2((val1: SExp, val2: SExp) => makeOk(makeCompoundSExp(val1, val2)))
+        (parseSExp(sexps[0]), parseSExp(sexps[2]));
 
 // x is the output of p (sexp parser)
-export const parseSExp = (x: StringTree): SExp | Error =>
-    x === "#t" ? true :
-    x === "#f" ? false :
-    isString(x) && isNumericString(x) ? +x :
-    isSexpString(x) ? x.toString() :
-    isString(x) ? makeSymbolSExp(x) :
-    x.length === 0 ? makeEmptySExp() :
-    isDottedPair(x) ? makeDottedPair(x) :
-    isArray(x) ? (
+export const parseSExp = (sexp: Sexp): Result<SExp> =>
+    sexp === "#t" ? makeOk(true) :
+    sexp === "#f" ? makeOk(false) :
+    isString(sexp) && isNumericString(sexp) ? makeOk(+sexp) :
+    isSexpString(sexp) ? makeOk(sexp.toString()) :
+    isString(sexp) ? makeOk(makeSymbolSExp(sexp)) :
+    sexp.length === 0 ? makeOk(makeEmptySExp()) :
+    isDottedPair(sexp) ? makeDottedPair(sexp) :
+    isArray(sexp) ? (
         // fail on (x . y z)
-        x[0] === '.' ? Error("Bad dotted sexp: " + x) : 
-        safeF2(makeCompoundSExp)(parseSExp(first(x)), parseSExp(rest(x)))) :
-    Error(`Bad literal expression: ${x}`);
+        sexp[0] === '.' ? makeFailure("Bad dotted sexp: " + sexp) : 
+        safe2((val1: SExp, val2: SExp) => makeOk(makeCompoundSExp(val1, val2)))
+            (parseSExp(first(sexp)), parseSExp(rest(sexp)))) :
+    makeFailure(`Bad literal expression: ${sexp}`);
 
 
 // ==========================================================================
 // Unparse: Map an AST to a concrete syntax string.
 
 import { isSymbolSExp, isEmptySExp, isCompoundSExp } from './L3-value';
-import { isError } from '../shared/error';
+
 
 // Add a quote for symbols, empty and compound sexp - strings and numbers are not quoted.
 const unparseLitExp = (le: LitExp): string =>
@@ -279,8 +279,7 @@ const unparseProcExp = (pe: ProcExp): string =>
 const unparseLetExp = (le: LetExp) : string => 
     `(let (${map((b: Binding) => `(${b.var.var} ${unparseL3(b.val)})`, le.bindings).join(" ")}) ${unparseLExps(le.body)})`
 
-export const unparseL3 = (exp: Parsed | Error): string =>
-    isError(exp) ? exp.message :
+export const unparseL3 = (exp: Program | Exp): string =>
     isBoolExp(exp) ? valueToString(exp.val) :
     isNumExp(exp) ? valueToString(exp.val) :
     isStrExp(exp) ? valueToString(exp.val) :

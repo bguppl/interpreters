@@ -2,22 +2,26 @@ import { expect } from 'chai';
 import { map } from 'ramda';
 import { makeNumExp, makeVarDecl, makeVarRef } from "../../src/L3/L3-ast";
 import * as LA from "../../src/L3/lexicalAddress";
+import { Result, makeOk, isOk, bind } from "../../src/shared/result";
+
+const isOkT = <T>(pred: (x: T) => boolean): (r: Result<T>) => boolean =>
+    (r: Result<T>) => isOk(r) && pred(r.value);
 
 describe('parseLA', () => {
     it('parses lexical addresses', () => {
-        expect(LA.parseLA("1")).to.deep.equal(makeNumExp(1));
-        expect(LA.isIfExpLA(LA.parseLA("(if #t (+ 1 2) 'ok)"))).to.be.true;
-        expect(LA.isProcExpLA(LA.parseLA("(lambda (x) x)"))).to.be.true;
+        expect(LA.parseLA("1")).to.deep.equal(makeOk(makeNumExp(1)));
+        expect(LA.parseLA("(if #t (+ 1 2) 'ok)")).to.satisfy(isOkT(LA.isIfExpLA));
+        expect(LA.parseLA("(lambda (x) x)")).to.satisfy(isOkT(LA.isProcExpLA));
     });
 });
 
 describe('unparseLA', () => {
     it('unparses lexical addresses', () => {
-        expect(LA.unparseLA(LA.parseLA("1"))).to.equal(1);
-        expect(LA.unparseLA(LA.parseLA("#t"))).to.be.true;
-        expect(LA.unparseLA(LA.parseLA("(if #t (+ 1 2) 'ok)"))).to.deep.equal(["if", true, ["+", 1, 2], ["quote", "ok"]]);
-        expect(LA.unparseLA(LA.parseLA("(lambda (x) x)"))).to.deep.equal(["lambda", ["x"], "x"]);
-        expect(LA.unparseLA(LA.parseLA("(lambda (x) (* x x))"))).to.deep.equal(["lambda", ["x"], ["*", "x", "x"]]);
+        expect(bind(LA.parseLA("1"), cexpla => makeOk(LA.unparseLA(cexpla)))).to.deep.equal(makeOk(1));
+        expect(bind(LA.parseLA("#t"), cexpla => makeOk(LA.unparseLA(cexpla)))).to.deep.equal(makeOk(true));
+        expect(bind(LA.parseLA("(if #t (+ 1 2) 'ok)"), cexpla => makeOk(LA.unparseLA(cexpla)))).to.deep.equal(makeOk(["if", true, ["+", 1, 2], ["quote", "ok"]]));
+        expect(bind(LA.parseLA("(lambda (x) x)"), cexpla => makeOk(LA.unparseLA(cexpla)))).to.deep.equal(makeOk(["lambda", ["x"], "x"]));
+        expect(bind(LA.parseLA("(lambda (x) (* x x))"), cexpla => makeOk(LA.unparseLA(cexpla)))).to.deep.equal(makeOk(["lambda", ["x"], ["*", "x", "x"]]));
     });
 });
 
@@ -61,9 +65,10 @@ describe('crossContour', () => {
 
 describe('addLexicalAddress', () => {
     it('works...', () => {
-        const f = (s: string) => LA.unparseLA(LA.addLexicalAddresses(LA.parseLA(s)));
-        expect(f("(lambda (x) x)")).to.deep.equal(["lambda", ["x"], ["x", ":", 0, 0]]);
-        expect(f("(lambda (x) (lambda (y) (+ x y)))")).to.deep.equal(["lambda", ["x"], ["lambda", ["y"], [["+", "free"], ["x", ":", 1, 0], ["y", ":", 0, 0]]]]);
-        expect(f("((lambda (x) (* x x)) ((lambda (x) (+ x x)) 2))")).to.deep.equal([["lambda", ["x"], [["*", "free"], ["x", ":", 0, 0], ["x", ":", 0, 0]]], [["lambda", ["x"], [["+", "free"], ["x", ":", 0, 0], ["x", ":", 0, 0]]], 2]]);
+        const f = (s: string): Result<any> =>
+            bind(LA.parseLA(s), cexpla => bind(LA.addLexicalAddresses(cexpla), cexpla => makeOk(LA.unparseLA(cexpla))));
+        expect(f("(lambda (x) x)")).to.deep.equal(makeOk(["lambda", ["x"], ["x", ":", 0, 0]]));
+        expect(f("(lambda (x) (lambda (y) (+ x y)))")).to.deep.equal(makeOk(["lambda", ["x"], ["lambda", ["y"], [["+", "free"], ["x", ":", 1, 0], ["y", ":", 0, 0]]]]));
+        expect(f("((lambda (x) (* x x)) ((lambda (x) (+ x x)) 2))")).to.deep.equal(makeOk([["lambda", ["x"], [["*", "free"], ["x", ":", 0, 0], ["x", ":", 0, 0]]], [["lambda", ["x"], [["+", "free"], ["x", ":", 0, 0], ["x", ":", 0, 0]]], 2]]));
     });
 });

@@ -8,7 +8,7 @@
 
 import { isString, isArray, isNumericString, isToken } from '../shared/type-predicates';
 import { first, rest, second, isEmpty } from '../shared/list';
-import { Result, makeOk, makeFailure, bind, mapResult } from "../shared/result";
+import { Result, makeOk, makeFailure, bind, mapResult, safe2 } from "../shared/result";
 
 // ===============
 // AST type models
@@ -65,14 +65,14 @@ import parseSexp, { Sexp, Token } from "s-expression";
 export const parseL1 = (x: string): Result<Program> => parseL1Program(parseSexp(x));
 
 // L1 concrete syntax
-// <Program> -> (L1 <Exp>* )
+// <Program> -> (L1 <Exp>+)
 // <Exp> -> <DefineExp> | <CExp>
 // <DefineExp> -> (define <varDecl> <CExp>)
 // <CExp> -> <AtomicExp> | <AppExp>
 // <AtomicExp> -> <number> | <boolean> | <primOp>
-// <AppExp> -> (<Cexp>+)
+// <AppExp> -> (<CExp>+)
 
-// <Program> -> (L1 <Exp>*)
+// <Program> -> (L1 <Exp>+)
 export const parseL1Program = (sexp: Sexp): Result<Program> =>
     isToken(sexp) ? makeFailure("Program cannot be a single token") :
     isEmpty(sexp) ? makeFailure("Unexpected empty program") :
@@ -82,18 +82,22 @@ export const parseL1Program = (sexp: Sexp): Result<Program> =>
 const parseL1GoodProgram = (keyword: Sexp, body: Sexp[]): Result<Program> =>
     keyword === "L1" ? bind(mapResult(parseL1Exp, body),
                             (exps: Exp[]) => makeOk(makeProgram(exps))) :
-    makeFailure("Program must be of the form (L1 <exp>*)");
+    makeFailure("Program must be of the form (L1 <exp>+)");
 
 // Exp -> <DefineExp> | <Cexp>
 export const parseL1Exp = (sexp: Sexp): Result<Exp> =>
     isEmpty(sexp) ? makeFailure("Exp cannot be an empty list") :
-    isArray(sexp) ? parseL1Compound(first(sexp), rest(sexp)) :
+    isArray(sexp) ? parseL1CompoundExp(first(sexp), rest(sexp)) :
     isToken(sexp) ? parseL1Atomic(sexp) :
     makeFailure("Unexpected type " + sexp);
 
-// Compound -> DefineExp | AppExp
-const parseL1Compound = (op: Sexp, params: Sexp[]): Result<Exp> => 
+// Compound -> DefineExp | CompoundCExp
+export const parseL1CompoundExp = (op: Sexp, params: Sexp[]): Result<Exp> => 
     op === "define"? parseDefine(params) :
+    parseL1CompoundCExp(op, params);
+
+// CompoundCExp -> AppExp
+export const parseL1CompoundCExp = (op: Sexp, params: Sexp[]): Result<CExp> =>
     parseAppExp(op, params);
 
 // DefineExp -> (define <varDecl> <CExp>)
@@ -105,13 +109,13 @@ export const parseDefine = (params: Sexp[]): Result<DefineExp> =>
 
 const parseGoodDefine = (variable: Sexp, val: Sexp): Result<DefineExp> =>
     ! isString(variable) ? makeFailure("First arg of define must be an identifier") :
-    bind(parseCExp(val),
+    bind(parseL1CExp(val),
          (value: CExp) => makeOk(makeDefineExp(makeVarDecl(variable), value)));
 
-// CExp -> AtomicExp | AppExp
-export const parseCExp = (sexp: Sexp): Result<CExp> =>
+// CExp -> AtomicExp | CompondCExp
+export const parseL1CExp = (sexp: Sexp): Result<CExp> =>
     isEmpty(sexp) ? makeFailure("CExp cannot be an empty list") :
-    isArray(sexp) ? parseAppExp(first(sexp), rest(sexp)) :
+    isArray(sexp) ? parseL1CompoundCExp(first(sexp), rest(sexp)) :
     isToken(sexp) ? parseL1Atomic(sexp) :
     makeFailure("Unexpected type " + sexp);
 
@@ -129,6 +133,5 @@ export const isPrimitiveOp = (x: string): boolean =>
 
 // AppExp -> ( <cexp>+ )
 export const parseAppExp = (op: Sexp, params: Sexp[]): Result<CExp> =>
-    bind(parseCExp(op), 
-         (rator: CExp) => bind(mapResult(parseCExp, params),
-                               (rands: CExp[]) => makeOk(makeAppExp(rator, rands))));
+    safe2((rator: CExp, rands: CExp[]) => makeOk(makeAppExp(rator, rands)))
+        (parseL1CExp(op), mapResult(parseL1CExp, params))

@@ -22,10 +22,10 @@ import { concat, map } from 'ramda';
 import { BoolExp, LitExp, NumExp, StrExp, VarDecl, VarRef } from './L3-ast';
 import { isBoolExp, isLitExp, isNumExp, isStrExp, isVarRef } from './L3-ast';
 import { makeBoolExp, makeNumExp, makeStrExp, makeVarDecl, makeVarRef } from './L3-ast';
-import { isArray, isEmpty, isNumericString, isSexpString, isString, allT } from '../shared/list';
+import { first, rest, isEmpty, allT, second } from '../shared/list';
+import { isArray, isNumericString, isSexpString, isString, isToken } from "../shared/type-predicates";
 import { parseLitExp } from './L3-ast';
-import { isError, safeFL } from '../shared/error';
-import { first, rest} from '../shared/list';
+import { Result, makeFailure, makeOk, bind, mapResult, safe3, safe2 } from '../shared/result';
 
 export type CExpLA = NumExp | BoolExp | StrExp | LitExp | VarRef | LexAddress | ProcExpLA | IfExpLA | AppExpLA;
 export const isCExpLA = (x: any): x is CExpLA =>
@@ -56,11 +56,11 @@ export const makeIfExpLA = (test: CExpLA, then: CExpLA, alt: CExpLA): IfExpLA =>
 export interface AppExpLA {
     tag: "AppExpLA";
     rator: CExpLA;
-    rands: ReadonlyArray<CExpLA>;
+    rands: CExpLA[];
 };
 export const isAppExpLA = (x: any): x is AppExpLA =>
     (typeof(x) === 'object') && (x.tag === 'AppExpLA');
-export const makeAppExpLA = (rator: CExpLA, rands: ReadonlyArray<CExpLA>): AppExpLA =>
+export const makeAppExpLA = (rator: CExpLA, rands: CExpLA[]): AppExpLA =>
     ({tag: "AppExpLA", rator: rator, rands: rands});
 
 /*
@@ -100,43 +100,45 @@ Examples:
 parseLA("1") -> '(num-exp 1)
 parseLA("(if #t (+ 1 2) 'ok)") -> '(IfExpLA (BoolExp true) (AppExpLA (VarRef +) ((num-exp 1) (num-exp 2))) (literal-exp ok))
 */
-import parseSexp, { StringTree, SexpString } from "s-expression";
+import parseSexp, { Sexp, Token } from "s-expression";
 
-export const parseLA = (x: string): CExpLA | Error =>
+export const parseLA = (x: string): Result<CExpLA> =>
     parseLASExp(parseSexp(x));
 
-export const parseLASExp = (sexp: StringTree): CExpLA | Error =>
-    isEmpty(sexp) ? Error("Parse: Unexpected empty") :
+export const parseLASExp = (sexp: Sexp): Result<CExpLA> =>
+    isEmpty(sexp) ? makeFailure("Parse: Unexpected empty") :
     isArray(sexp) ? parseLACompound(sexp) :
-    isString(sexp) ? parseLAAtomic(sexp) :
-    isSexpString(sexp) ? parseLAAtomic(sexp) :
-    Error(`Parse: Unexpected type ${sexp}`);
+    isToken(sexp) ? makeOk(parseLAAtomic(sexp)) :
+    makeFailure(`Parse: Unexpected type ${sexp}`);
 
-const parseLAAtomic = (sexp: string | SexpString): CExpLA =>
+const parseLAAtomic = (sexp: Token): CExpLA =>
     sexp === "#t" ? makeBoolExp(true) :
     sexp === "#f" ? makeBoolExp(false) :
     isString(sexp) && isNumericString(sexp) ? makeNumExp(+sexp) :
-    isSexpString(sexp) ? makeStrExp(sexp.toString()) :
-    makeVarRef(sexp);
+    isString(sexp) ? makeVarRef(sexp) :
+    makeStrExp(sexp.toString());
 
-const parseLACompound = (sexps: StringTree[]): CExpLA | Error =>
+const parseLACompound = (sexps: Sexp[]): Result<CExpLA> =>
     first(sexps) === "if" ? parseIfExpLA(sexps) :
     first(sexps) === "lambda" ? parseProcExpLA(sexps) :
-    first(sexps) === "quote" ? parseLitExp(sexps) :
+    first(sexps) === "quote" ? parseLitExp(second(sexps)) :
     parseAppExpLA(sexps);
 
-const parseAppExpLA = (sexps: StringTree[]): AppExpLA | Error =>
-    safeFL((cexps: CExpLA[]) => makeAppExpLA(first(cexps), rest(cexps)))(map(parseLASExp, sexps));
+const parseAppExpLA = (sexps: Sexp[]): Result<AppExpLA> =>
+    bind(mapResult(parseLASExp, sexps),
+         (cexps: CExpLA[]) => makeOk(makeAppExpLA(first(cexps), rest(cexps))));
 
-const parseIfExpLA = (sexps: StringTree[]): IfExpLA | Error =>
-    safeFL((cexps: CExpLA[]) => makeIfExpLA(cexps[0], cexps[1], cexps[2]))(map(parseLASExp, rest(sexps)));
+const parseIfExpLA = (sexps: Sexp[]): Result<IfExpLA> =>
+    bind(mapResult(parseLASExp, rest(sexps)),
+        (cexps: CExpLA[]) => makeOk(makeIfExpLA(cexps[0], cexps[1], cexps[2])));
 
-const parseProcExpLA = (sexps: StringTree[]): ProcExpLA | Error => {
+const parseProcExpLA = (sexps: Sexp[]): Result<ProcExpLA> => {
     const vars = sexps[1];
     if (isArray(vars) && allT(isString, vars)) {
-        return safeFL((body: CExpLA[]) => makeProcExpLA(map(makeVarDecl, vars), body))(map(parseLASExp, rest(rest(sexps))));
+        return bind(mapResult(parseLASExp, rest(rest(sexps))),
+                    (body: CExpLA[]) => makeOk(makeProcExpLA(map(makeVarDecl, vars), body)));
     } else {
-        return Error("Invalid vars for ProcExp");
+        return makeFailure("Invalid vars for ProcExp");
     }
 }
 
@@ -151,8 +153,7 @@ const unparseLitExp = (le: LitExp): any =>
     isCompoundSExp(le.val) ? ["quote", valueToString(le.val)] :
     le.val;
 
-export const unparseLA = (exp: CExpLA | Error): any =>
-    isError(exp) ? exp :
+export const unparseLA = (exp: CExpLA): any =>
     isBoolExp(exp) ? exp.val :
     isNumExp(exp) ? exp.val :
     isStrExp(exp) ? exp.val :
@@ -267,28 +268,25 @@ unparseLA(addLexicalAddresses(parseLA(`
 (lambda (a b c)
   (if ((eq? free) (b : 0 1) (c : 0 2))
 */
-export const addLexicalAddresses = (exp: CExpLA | Error): CExpLA | Error => {
-    const visitProc = (proc: ProcExpLA, addresses: LexicalAddress[]): ProcExpLA | Error => {
+export const addLexicalAddresses = (exp: CExpLA): Result<CExpLA> => {
+    const visitProc = (proc: ProcExpLA, addresses: LexicalAddress[]): Result<ProcExpLA> => {
         let newAddresses = crossContour(proc.params, addresses);
-        return safeFL((bs: CExpLA[]) => makeProcExpLA(proc.params, bs))(map((b) => visit(b, newAddresses), proc.body));
+        return bind(mapResult(b => visit(b, newAddresses), proc.body),
+                    (bs: CExpLA[]) => makeOk(makeProcExpLA(proc.params, bs)));
     };
-    const visit = (exp: CExpLA | Error, addresses: LexicalAddress[]): CExpLA | Error =>
-        isBoolExp(exp) ? exp :
-        isNumExp(exp) ? exp :
-        isStrExp(exp) ? exp :
-        isVarRef(exp) ? getLexicalAddress(exp, addresses) :
-        isFreeVar(exp) ? Error("unexpected LA ${exp}") :
-        isLexicalAddress(exp) ? Error("unexpected LA ${exp}") :
-        isLitExp(exp) ? exp :
-        isIfExpLA(exp) ? safeFL((tta: CExpLA[]) =>
-                                makeIfExpLA(tta[0], tta[1], tta[2]))([
-                                    visit(exp.test, addresses),
-                                    visit(exp.then, addresses),
-                                    visit(exp.alt, addresses)]) :
+    const visit = (exp: CExpLA, addresses: LexicalAddress[]): Result<CExpLA> =>
+        isBoolExp(exp) ? makeOk(exp) :
+        isNumExp(exp) ? makeOk(exp) :
+        isStrExp(exp) ? makeOk(exp) :
+        isVarRef(exp) ? makeOk(getLexicalAddress(exp, addresses)) :
+        isFreeVar(exp) ? makeFailure(`unexpected LA ${exp}`) :
+        isLexicalAddress(exp) ? makeFailure(`unexpected LA ${exp}`) :
+        isLitExp(exp) ? makeOk(exp) :
+        isIfExpLA(exp) ? safe3((test: CExpLA, then: CExpLA, alt: CExpLA) => makeOk(makeIfExpLA(test, then, alt)))
+                            (visit(exp.test, addresses), visit(exp.then, addresses), visit(exp.alt, addresses)) :
         isProcExpLA(exp) ? visitProc(exp, addresses) :
-        isAppExpLA(exp) ? safeFL((app: CExpLA[]) => makeAppExpLA(first(app), rest(app)))
-                            ([visit(exp.rator, addresses)].concat(
-                                map((r) => visit(r, addresses), exp.rands))) :
+        isAppExpLA(exp) ? safe2((rator: CExpLA, rands: CExpLA[]) => makeOk(makeAppExpLA(rator, rands)))
+                            (visit(exp.rator, addresses), mapResult(rand => visit(rand, addresses), exp.rands)) :
         exp;
-    return isError(exp) ? exp : visit(exp, []);
+    return visit(exp, []);
 };

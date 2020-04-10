@@ -2,7 +2,7 @@
 // Value type definition for L3
 
 import { isPrimOp, CExp, PrimOp, VarDecl } from './L3-ast';
-import { isNumber, isArray, isString } from '../shared/list';
+import { isNumber, isArray, isString } from '../shared/type-predicates';
 import { isError } from '../shared/error';
 import { append } from 'ramda';
 
