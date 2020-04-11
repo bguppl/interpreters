@@ -2,9 +2,9 @@
 // ===========================================================
 // AST type models
 import { map, zipWith } from "ramda";
-import p, { StringTree, SexpString } from "s-expression";
-import { allT, first, second, rest, isArray, isEmpty, isSexpString, isString, isNumericString } from "../shared/list";
-import {isError, hasNoError, safeF, safeFL, safeF2, getErrorMessages} from '../shared/error'
+import p, { Sexp, SexpString } from "s-expression";
+import { allT, first, second, rest, isEmpty } from "../shared/list";
+import { isArray, isSexpString, isString, isNumericString } from "../shared/type-predicates";
 import { isSymbolSExp, isEmptySExp, isCompoundSExp } from './L4-value';
 import { makeEmptySExp, makeSymbolSExp, SExp, makeCompoundSExp, valueToString } from './L4-value'
 
@@ -350,7 +350,6 @@ const unparseSetExp = (se: SetExp): string =>
     `(set! ${se.var.var} ${unparse(se.val)})`;
 
 export const unparse = (exp: Parsed | Error): string =>
-    isError(exp) ? exp.message :
     isBoolExp(exp) ? valueToString(exp.val) :
     isNumExp(exp) ? valueToString(exp.val) :
     isStrExp(exp) ? valueToString(exp.val) :

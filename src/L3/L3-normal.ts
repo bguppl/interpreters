@@ -6,7 +6,9 @@ import { CExp, Exp, IfExp, Program, parseL3Exp } from "./L3-ast";
 import { isAppExp, isBoolExp, isCExp, isDefineExp, isIfExp, isLitExp, isNumExp,
          isPrimOp, isProcExp, isStrExp, isVarRef } from "./L3-ast";
 import { applyEnv, makeEmptyEnv, makeEnv, Env } from './L3-env';
-import { applyPrimitive, isTrueValue, renameExps, substitute } from "./L3-eval";
+import { isTrueValue } from "./L3-eval";
+import { applyPrimitive } from "./evalPrimitive";
+import { renameExps, substitute } from "./substitute";
 import { isClosure, makeClosure, Value } from "./L3-value";
 import { first, rest, isEmpty } from '../shared/list';
 import { Result, makeOk, makeFailure, bind, mapResult } from "../shared/result";

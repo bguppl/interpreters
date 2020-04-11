@@ -6,7 +6,7 @@
 // - Type definitions for the AST of the language (with type predicates, constructors, getters)
 // - A parser function which constructs AST values from strings.
 
-import { isString, isArray, isNumericString, isToken } from '../shared/type-predicates';
+import { isString, isArray, isNumericString, isToken, isVar } from '../shared/type-predicates';
 import { first, rest, second, isEmpty } from '../shared/list';
 import { Result, makeOk, makeFailure, bind, mapResult, safe2 } from "../shared/result";
 
@@ -74,14 +74,14 @@ export const parseL1 = (x: string): Result<Program> => parseL1Program(parseSexp(
 
 // <Program> -> (L1 <Exp>+)
 export const parseL1Program = (sexp: Sexp): Result<Program> =>
+    isString(sexp) && sexp.length === 0 ? makeFailure("Unexpected empty program") :
     isToken(sexp) ? makeFailure("Program cannot be a single token") :
-    isEmpty(sexp) ? makeFailure("Unexpected empty program") :
     isArray(sexp) ? parseL1GoodProgram(first(sexp), rest(sexp)) :
     makeFailure("Unexpected type " + sexp);
 
 const parseL1GoodProgram = (keyword: Sexp, body: Sexp[]): Result<Program> =>
-    keyword === "L1" ? bind(mapResult(parseL1Exp, body),
-                            (exps: Exp[]) => makeOk(makeProgram(exps))) :
+    keyword === "L1" && !isEmpty(body) ? bind(mapResult(parseL1Exp, body),
+                                              (exps: Exp[]) => makeOk(makeProgram(exps))) :
     makeFailure("Program must be of the form (L1 <exp>+)");
 
 // Exp -> <DefineExp> | <Cexp>
@@ -108,7 +108,7 @@ export const parseDefine = (params: Sexp[]): Result<DefineExp> =>
     parseGoodDefine(first(params), second(params));
 
 const parseGoodDefine = (variable: Sexp, val: Sexp): Result<DefineExp> =>
-    ! isString(variable) ? makeFailure("First arg of define must be an identifier") :
+    ! isVar(variable) ? makeFailure("First arg of define must be an identifier") :
     bind(parseL1CExp(val),
          (value: CExp) => makeOk(makeDefineExp(makeVarDecl(variable), value)));
 

@@ -4,7 +4,7 @@
 import { map, zipWith } from "ramda";
 import { makeEmptySExp, makeSymbolSExp, SExp, makeCompoundSExp, valueToString } from './L3-value'
 import { first, second, rest, allT, isEmpty } from "../shared/list";
-import { isArray, isString, isSexpString, isNumericString, isToken } from "../shared/type-predicates";
+import { isArray, isString, isSexpString, isNumericString, isToken, isVar } from "../shared/type-predicates";
 import { Result, makeOk, makeFailure, bind, mapResult, safe2 } from "../shared/result";
 import p, { Sexp, Token } from "s-expression";
 
@@ -128,14 +128,14 @@ export const parseL3 = (x: string): Result<Program> =>
     parseL3Program(p(x));
 
 export const parseL3Program = (sexp: Sexp): Result<Program> =>
+    isString(sexp) && sexp.length === 0 ? makeFailure("Unexpected empty program") :
     isToken(sexp) ? makeFailure("Program cannot be a single token") :
-    isEmpty(sexp) ? makeFailure("Unexpected empty program") :
     isArray(sexp) ? parseL3GoodProgram(first(sexp), rest(sexp)) :
     makeFailure("Unexpected type " + sexp);
 
 const parseL3GoodProgram = (keyword: Sexp, body: Sexp[]): Result<Program> =>
-    keyword === "L3" ? bind(mapResult(parseL3Exp, body),
-                            (exps: Exp[]) => makeOk(makeProgram(exps))) :
+    keyword === "L3" && !isEmpty(body) ? bind(mapResult(parseL3Exp, body),
+                                              (exps: Exp[]) => makeOk(makeProgram(exps))) :
     makeFailure("Program must be of the form (L3 <exp>+)");
 
 // Exp -> <DefineExp> | <Cexp>
@@ -152,11 +152,16 @@ export const parseL3CompoundExp = (op: Sexp, params: Sexp[]): Result<Exp> =>
 
 // CompoundCExp -> IfExp | ProcExp | LetExp | LitExp | AppExp
 export const parseL3CompoundCExp = (op: Sexp, params: Sexp[]): Result<CExp> =>
+    isString(op) && isSpecialForm(op) ? parseL3SpecialForm(op, params) :
+    parseAppExp(op, params);
+
+export const parseL3SpecialForm = (op: Sexp, params: Sexp[]): Result<CExp> =>
+    isEmpty(params) ? makeFailure("Empty args for special form") :
     op === "if" ? parseIfExp(params) :
     op === "lambda" ? parseProcExp(first(params), rest(params)) :
     op === "let" ? parseLetExp(first(params), rest(params)) :
     op === "quote" ? parseLitExp(first(params)) :
-    parseAppExp(op, params);
+    makeFailure("Never");
 
 // DefineExp -> (define <varDecl> <CExp>)
 export const parseDefine = (params: Sexp[]): Result<DefineExp> =>
@@ -166,7 +171,7 @@ export const parseDefine = (params: Sexp[]): Result<DefineExp> =>
     parseGoodDefine(first(params), second(params));
 
 const parseGoodDefine = (variable: Sexp, val: Sexp): Result<DefineExp> =>
-    ! isString(variable) ? makeFailure("First arg of define must be an identifier") :
+    ! isVar(variable) ? makeFailure("First arg of define must be an identifier") :
     bind(parseL3CExp(val),
          (value: CExp) => makeOk(makeDefineExp(makeVarDecl(variable), value)));
 
@@ -195,6 +200,9 @@ const isPrimitiveOp = (x: string): boolean =>
      "eq?", "string=?", "cons", "car", "cdr", "list", "pair?",
      "number?", "boolean?", "symbol?", "string?"].includes(x);
 
+const isSpecialForm = (x: string): boolean =>
+    ["if", "lambda", "let", "quote"].includes(x);
+
 const parseAppExp = (op: Sexp, params: Sexp[]): Result<AppExp> =>
     safe2((rator: CExp, rands: CExp[]) => makeOk(makeAppExp(rator, rands)))
         (parseL3CExp(op), mapResult(parseL3CExp, params));
@@ -210,16 +218,14 @@ const parseProcExp = (vars: Sexp, body: Sexp[]): Result<ProcExp> =>
     makeFailure(`Invalid vars for ProcExp`);
 
 const isGoodBindings = (bindings: Sexp): bindings is [string, Sexp][] =>
-    isArray(bindings) &&
-    allT(isArray, bindings) &&
-    allT(isString, map(first, bindings));
+    isArray(bindings) && allT(isArray, bindings);
 
 const parseLetExp = (bindings: Sexp, body: Sexp[]): Result<LetExp> => {
     if (!isGoodBindings(bindings)) {
         return makeFailure('Malformed bindings in "let" expression');
     }
     const vars = map(first, bindings);
-    if (!allT(isString, vars)) {
+    if (!allT(isVar, vars)) {
         return makeFailure(`Bad bindings in let ${bindings}`);
     }
     const valsResult = mapResult(binding => parseL3CExp(second(binding)), bindings);

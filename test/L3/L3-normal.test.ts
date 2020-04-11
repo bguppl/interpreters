@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { parseL3, makePrimOp } from '../../src/L3/L3-ast';
-import { listPrim } from '../../src/L3/L3-eval';
+import { listPrim } from "../../src/L3/evalPrimitive";
 import { evalNormalParse, evalNormalProgram } from '../../src/L3/L3-normal';
 import { isClosure, Value } from '../../src/L3/L3-value';
 import { makeOk, isOk, Result, bind } from "../../src/shared/result";

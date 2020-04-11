@@ -22,3 +22,6 @@ export const isCompoundSexp = (x: any): x is CompoundSexp => isArray(x) && allT(
 
 // A weird method to check that a string is a string encoding of a number
 export const isNumericString = (x: string): boolean => JSON.stringify(+x) === x;
+
+// A predicate for a valid identifier
+export const isVar = (x: any): x is string => isString(x) && !isNumericString(x);

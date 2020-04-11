@@ -4,13 +4,12 @@ import { makeNumExp, parseL3Exp, unparseL3, parseL3, Exp } from '../../src/L3/L3
 import { makeVarDecl, makeVarRef } from '../../src/L3/L3-ast';
 import { isAppExp, isBoolExp, isCExp, isDefineExp, isIfExp, isLetExp, isLitExp, isNumExp, isPrimOp,
          isProcExp, isProgram, isStrExp, isVarDecl, isVarRef } from '../../src/L3/L3-ast';
-import { renameExps, substitute, listPrim, evalParse, evalL3program } from '../../src/L3/L3-eval';
+import { evalParse, evalL3program } from '../../src/L3/L3-eval';
+import { listPrim } from "../../src/L3/evalPrimitive";
+import { renameExps, substitute } from "../../src/L3/substitute";
 import { makeClosure, makeCompoundSExp, makeEmptySExp, makeSymbolSExp } from '../../src/L3/L3-value';
 import { isEnv, makeEnv, makeEmptyEnv, applyEnv } from '../../src/L3/L3-env';
-import { isOk, Result, isFailure, bind, makeOk } from "../../src/shared/result";
-
-const isOkT = <T>(pred: (x: T) => boolean): (r: Result<T>) => boolean =>
-    (r: Result<T>) => isOk(r) && pred(r.value);
+import { isOk, Result, isFailure, bind, makeOk, isOkT } from "../../src/shared/result";
 
 describe('L3 Environment', () => {
     it('applies the environment correctly', () => {
@@ -84,6 +83,49 @@ describe('L3 Parsing', () => {
 
     it('returns an error for an invalid literal', () => {
         expect(parseL3Exp(p("'(1 . 2 3)"))).to.satisfy(isFailure);
+    });
+
+    describe("Failures", () => {
+        it("returns a Failure when parsing a single-token program", () => {
+            expect(parseL3("x")).to.satisfy(isFailure);
+        });
+
+        it("returns a Failure when parsing an empty program", () => {
+            expect(parseL3("")).to.satisfy(isFailure);
+        });
+
+        it("returns a Failure if the program does not start with (L3 ...)", () => {
+            expect(parseL3("(+ 1 2)")).to.satisfy(isFailure);
+        });
+
+        it("returns a Failure for a program with no Exps", () => {
+            expect(parseL3("(L3)")).to.satisfy(isFailure);
+        });
+    
+        it("returns a Failure if a program has an empty Exp", () => {
+            expect(parseL3("(L3 ())")).to.satisfy(isFailure);
+        });
+
+        it('returns a Failure for an ill-formed "define"', () => {
+            expect(parseL3Exp(p("(define)"))).to.satisfy(isFailure);
+            expect(parseL3Exp(p("(define x)"))).to.satisfy(isFailure);
+            expect(parseL3Exp(p("(define x y z)"))).to.satisfy(isFailure);
+            expect(parseL3Exp(p('(define "1" y)'))).to.satisfy(isFailure);
+            expect(parseL3Exp(p('(define 1 y)'))).to.satisfy(isFailure);
+        });
+
+        it("returns a Failure for an empty CExp", () => {
+            expect(parseL3Exp(p("(+ ())"))).to.satisfy(isFailure);
+        });
+
+        it("returns a Failure for an ill-formed special form", () => {
+            expect(parseL3Exp(p("(if)"))).to.satisfy(isFailure);
+            expect(parseL3Exp(p("(if 1)"))).to.satisfy(isFailure);
+            expect(parseL3Exp(p("(lambda x x)"))).to.satisfy(isFailure);
+            expect(parseL3Exp(p("(let x x)"))).to.satisfy(isFailure);
+            expect(parseL3Exp(p("(let (x y) x)"))).to.satisfy(isFailure);
+            expect(parseL3Exp(p("(let ((1 y)) x)"))).to.satisfy(isFailure);
+        });
     });
 });
 

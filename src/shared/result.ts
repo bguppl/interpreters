@@ -26,6 +26,9 @@ export const isFailure = <T>(r: Result<T>): r is Failure =>
 ​
 export const bind = <T, U>(r: Result<T>, f: (x: T) => Result<U>): Result<U> =>
     isOk(r) ? f(r.value) : r;
+
+export const isOkT = <T>(pred: (x: T) => boolean): (r: Result<T>) => boolean =>
+    (r: Result<T>) => isOk(r) && pred(r.value);
 ​
 // Purpose: Like map on an array - but when the transformer function applied returns a Result<T>
 //          With f: T=>Result<U> and list: T[] return a Result<U[]> 

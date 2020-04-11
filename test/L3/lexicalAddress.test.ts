@@ -2,10 +2,7 @@ import { expect } from 'chai';
 import { map } from 'ramda';
 import { makeNumExp, makeVarDecl, makeVarRef } from "../../src/L3/L3-ast";
 import * as LA from "../../src/L3/lexicalAddress";
-import { Result, makeOk, isOk, bind } from "../../src/shared/result";
-
-const isOkT = <T>(pred: (x: T) => boolean): (r: Result<T>) => boolean =>
-    (r: Result<T>) => isOk(r) && pred(r.value);
+import { Result, makeOk, isOk, bind, isOkT } from "../../src/shared/result";
 
 describe('parseLA', () => {
     it('parses lexical addresses', () => {
