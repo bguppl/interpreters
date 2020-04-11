@@ -4,7 +4,8 @@
   "description": "Code for \"Principles of Programming Langauges\" course",
   "main": "index.js",
   "scripts": {
-    "test": "mocha --require ts-node/register test/**/*.ts"
+    "test": "mocha --require ts-node/register test/**/*.test.ts",
+    "coverage": "nyc --reporter=html npm test"
   },
   "keywords": [],
   "author": "Michael Elhadad",
@@ -16,6 +17,7 @@
     "@types/ramda": "^0.26.38",
     "chai": "^4.2.0",
     "mocha": "^6.2.2",
+    "nyc": "^15.0.1",
     "ramda": "^0.26.1",
     "s-expression": "^3.0.3",
     "ts-node": "^8.5.4",
