@@ -1,6 +1,6 @@
 // ========================================================
 // L3 normal eval
-import p from "s-expression";
+import { Sexp } from "s-expression";
 import { map } from "ramda";
 import { CExp, Exp, IfExp, Program, parseL3Exp } from "./L3-ast";
 import { isAppExp, isBoolExp, isCExp, isDefineExp, isIfExp, isLitExp, isNumExp,
@@ -12,6 +12,7 @@ import { renameExps, substitute } from "./substitute";
 import { isClosure, makeClosure, Value } from "./L3-value";
 import { first, rest, isEmpty } from '../shared/list';
 import { Result, makeOk, makeFailure, bind, mapResult } from "../shared/result";
+import p from "../shared/parser";
 
 /*
 Purpose: Evaluate an L3 expression with normal-eval algorithm
@@ -106,5 +107,6 @@ export const evalNormalProgram = (program: Program): Result<Value> =>
     evalExps(program.exps, makeEmptyEnv());
 
 export const evalNormalParse = (s: string): Result<Value> =>
-    bind(parseL3Exp(p(s)),
-         (exp: Exp) => evalExps([exp], makeEmptyEnv()));
+    bind(p(s),
+         (parsed: Sexp) => bind(parseL3Exp(parsed),
+                                (exp: Exp) => evalExps([exp], makeEmptyEnv())));

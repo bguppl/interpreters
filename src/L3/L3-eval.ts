@@ -1,5 +1,5 @@
 // L3-eval.ts
-import p from "s-expression";
+import { Sexp } from "s-expression";
 import { map } from "ramda";
 import { isCExp, isLetExp } from "./L3-ast";
 import { BoolExp, CExp, Exp, IfExp, LitExp, NumExp,
@@ -15,6 +15,7 @@ import { isBoolean, isNumber, isString } from "../shared/type-predicates";
 import { Result, makeOk, makeFailure, bind, safe2, mapResult } from "../shared/result";
 import { renameExps, substitute } from "./substitute";
 import { applyPrimitive } from "./evalPrimitive";
+import p from "../shared/parser";
 
 // ========================================================
 // Eval functions
@@ -91,5 +92,6 @@ export const evalL3program = (program: Program): Result<Value> =>
     evalSequence(program.exps, makeEmptyEnv());
 
 export const evalParse = (s: string): Result<Value> =>
-    bind(parseL3Exp(p(s)),
-         (exp: Exp) => evalSequence([exp], makeEmptyEnv()));
+    bind(p(s),
+         (parsed: Sexp) => bind(parseL3Exp(parsed),
+                                (exp: Exp) => evalSequence([exp], makeEmptyEnv())));

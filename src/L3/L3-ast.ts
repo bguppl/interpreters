@@ -6,7 +6,8 @@ import { makeEmptySExp, makeSymbolSExp, SExp, makeCompoundSExp, valueToString } 
 import { first, second, rest, allT, isEmpty } from "../shared/list";
 import { isArray, isString, isSexpString, isNumericString, isToken, isVar } from "../shared/type-predicates";
 import { Result, makeOk, makeFailure, bind, mapResult, safe2 } from "../shared/result";
-import p, { Sexp, Token } from "s-expression";
+import p from "../shared/parser";
+import { Sexp, Token } from "s-expression";
 
 /*
 ;; =============================================================================
@@ -125,7 +126,7 @@ export const isCExp = (x: any): x is CExp =>
 // Parsing
 
 export const parseL3 = (x: string): Result<Program> =>
-    parseL3Program(p(x));
+    bind(p(x), parseL3Program);
 
 export const parseL3Program = (sexp: Sexp): Result<Program> =>
     isString(sexp) && sexp.length === 0 ? makeFailure("Unexpected empty program") :

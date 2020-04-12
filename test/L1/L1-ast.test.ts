@@ -1,26 +1,26 @@
-import p from "s-expression";
 import { expect } from "chai";
 import { isNumExp, parseL1Exp, isBoolExp, isVarRef, isDefineExp, isVarDecl, isAppExp, isProgram, parseL1 } from "../../src/L1/L1-ast";
-import { isOk, isOkT, isFailure } from "../../src/shared/result";
+import { isOkT, isFailure, bind } from "../../src/shared/result";
+import p from "../../src/shared/parser";
 
 describe("L1 Parsing", () => {
     it("parses a number as NumExp", () => {
-        expect(parseL1Exp(p("1"))).to.satisfy(isOkT(isNumExp));
+        expect(bind(p("1"), parseL1Exp)).to.satisfy(isOkT(isNumExp));
     });
 
     it("parses a boolean as BoolExp", () => {
-        expect(parseL1Exp(p("#t"))).to.satisfy(isOkT(isBoolExp));
-        expect(parseL1Exp(p("#f"))).to.satisfy(isOkT(isBoolExp));
+        expect(bind(p("#t"), parseL1Exp)).to.satisfy(isOkT(isBoolExp));
+        expect(bind(p("#f"), parseL1Exp)).to.satisfy(isOkT(isBoolExp));
     });
 
     it("parses a variable as VarRef", () => {
-        expect(parseL1Exp(p("x"))).to.satisfy(isOkT(isVarRef));
+        expect(bind(p("x"), parseL1Exp)).to.satisfy(isOkT(isVarRef));
     });
 
     it('parses "define" expressions as DefineExp', () => {
-        let parsed = parseL1Exp(p("(define x 1)"));
+        let parsed = bind(p("(define x 1)"), parseL1Exp);
         expect(parsed).to.satisfy(isOkT(isDefineExp));
-        if (isOk(parsed) && isDefineExp(parsed.value)) {
+        if (isOkT(isDefineExp)(parsed)) {
             expect(parsed.value.var).to.satisfy(isVarDecl);
             expect(parsed.value.val).to.satisfy(isNumExp);
         } else {
@@ -29,8 +29,8 @@ describe("L1 Parsing", () => {
     });
 
     it("parses application expressions as AppExp", () => {
-        expect(parseL1Exp(p("(> x 1)"))).to.satisfy(isOkT(isAppExp));
-        expect(parseL1Exp(p("(> (+ x x) (* x x))"))).to.satisfy(isOkT(isAppExp));
+        expect(bind(p("(> x 1)"), parseL1Exp)).to.satisfy(isOkT(isAppExp));
+        expect(bind(p("(> (+ x x) (* x x))"), parseL1Exp)).to.satisfy(isOkT(isAppExp));
     });
     
     it("parses a program as Program", () => {
@@ -59,19 +59,19 @@ describe("L1 Parsing", () => {
         });
 
         it('returns a Failure for an ill-formed "define"', () => {
-            expect(parseL1Exp(p("(define)"))).to.satisfy(isFailure);
-            expect(parseL1Exp(p("(define x)"))).to.satisfy(isFailure);
-            expect(parseL1Exp(p("(define x y z)"))).to.satisfy(isFailure);
-            expect(parseL1Exp(p('(define "1" y)'))).to.satisfy(isFailure);
-            expect(parseL1Exp(p('(define 1 y)'))).to.satisfy(isFailure);
+            expect(bind(p("(define)"), parseL1Exp)).to.satisfy(isFailure);
+            expect(bind(p("(define x)"), parseL1Exp)).to.satisfy(isFailure);
+            expect(bind(p("(define x y z)"), parseL1Exp)).to.satisfy(isFailure);
+            expect(bind(p('(define "1" y)'), parseL1Exp)).to.satisfy(isFailure);
+            expect(bind(p('(define 1 y)'), parseL1Exp)).to.satisfy(isFailure);
         });
 
         it("returns a Failure for an empty CExp", () => {
-            expect(parseL1Exp(p("(+ ())"))).to.satisfy(isFailure);
+            expect(bind(p("(+ ())"), parseL1Exp)).to.satisfy(isFailure);
         });
 
         it("retruns a Failure when parsing SexpStrings", () => {
-            expect(parseL1Exp(p('"string"'))).to.satisfy(isFailure);
+            expect(bind(p('"string"'), parseL1Exp)).to.satisfy(isFailure);
         });
     })
 });

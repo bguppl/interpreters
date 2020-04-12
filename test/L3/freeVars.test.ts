@@ -1,11 +1,10 @@
-import parseSexp from "s-expression";
-import { compose } from "ramda";
 import { expect } from 'chai';
 import { makeVarRef, parseL3Exp, Exp } from '../../src/L3/L3-ast';
 import { height, occursFree, referencedVars } from '../../src/L3/freeVars';
 import { Result, makeOk, bind } from "../../src/shared/result";
+import parseSexp from "../../src/shared/parser";
 
-const p = (x: string): Result<Exp> => parseL3Exp(parseSexp(x))
+const p = (x: string): Result<Exp> => bind(parseSexp(x), parseL3Exp);
 
 describe('height', () => {
     it('calculates the height of the AST', () => {

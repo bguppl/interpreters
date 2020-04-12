@@ -1,4 +1,3 @@
-import p from "s-expression";
 import { expect } from 'chai';
 import { makeNumExp, parseL3Exp, unparseL3, parseL3, Exp } from '../../src/L3/L3-ast';
 import { makeVarDecl, makeVarRef } from '../../src/L3/L3-ast';
@@ -10,6 +9,7 @@ import { renameExps, substitute } from "../../src/L3/substitute";
 import { makeClosure, makeCompoundSExp, makeEmptySExp, makeSymbolSExp } from '../../src/L3/L3-value';
 import { isEnv, makeEnv, makeEmptyEnv, applyEnv } from '../../src/L3/L3-env';
 import { isOk, Result, isFailure, bind, makeOk, isOkT } from "../../src/shared/result";
+import p from "../../src/shared/parser";
 
 describe('L3 Environment', () => {
     it('applies the environment correctly', () => {
@@ -30,15 +30,15 @@ describe('L3 Environment', () => {
 
 describe('L3 Parsing', () => {
     it('parses atomic expressions', () => {
-        expect(parseL3Exp(p("1"))).to.satisfy(isOkT(isNumExp));
-        expect(parseL3Exp(p("#t"))).to.satisfy(isOkT(isBoolExp));
-        expect(parseL3Exp(p("x"))).to.satisfy(isOkT(isVarRef));
-        expect(parseL3Exp(p('"a"'))).to.satisfy(isOkT(isStrExp));
-        expect(parseL3Exp(p(">"))).to.satisfy(isOkT(isPrimOp));
-        expect(parseL3Exp(p("="))).to.satisfy(isOkT(isPrimOp));
-        expect(parseL3Exp(p("string=?"))).to.satisfy(isOkT(isPrimOp));
-        expect(parseL3Exp(p("eq?"))).to.satisfy(isOkT(isPrimOp));
-        expect(parseL3Exp(p("cons"))).to.satisfy(isOkT(isPrimOp));
+        expect(bind(p("1"), parseL3Exp)).to.satisfy(isOkT(isNumExp));
+        expect(bind(p("#t"), parseL3Exp)).to.satisfy(isOkT(isBoolExp));
+        expect(bind(p("x"), parseL3Exp)).to.satisfy(isOkT(isVarRef));
+        expect(bind(p('"a"'), parseL3Exp)).to.satisfy(isOkT(isStrExp));
+        expect(bind(p(">"), parseL3Exp)).to.satisfy(isOkT(isPrimOp));
+        expect(bind(p("="), parseL3Exp)).to.satisfy(isOkT(isPrimOp));
+        expect(bind(p("string=?"), parseL3Exp)).to.satisfy(isOkT(isPrimOp));
+        expect(bind(p("eq?"), parseL3Exp)).to.satisfy(isOkT(isPrimOp));
+        expect(bind(p("cons"), parseL3Exp)).to.satisfy(isOkT(isPrimOp));
     });
 
     it('parses programs', () => {
@@ -46,43 +46,43 @@ describe('L3 Parsing', () => {
     });
 
     it('parses define expressions', () => {
-        const parsed = parseL3Exp(p("(define x 1)"));
+        const parsed = bind(p("(define x 1)"), parseL3Exp);
         expect(parsed).to.satisfy(isOkT(isDefineExp));
-        if (isOk(parsed) && isDefineExp(parsed.value)) {
+        if (isOkT(isDefineExp)(parsed)) {
             expect(parsed.value.var).to.satisfy(isVarDecl);
             expect(parsed.value.val).to.satisfy(isNumExp);
         }
     });
 
     it('parses applications', () => {
-        expect(parseL3Exp(p("(> x 1)"))).to.satisfy(isOkT(isAppExp));
-        expect(parseL3Exp(p("(> (+ x x) (* x x))"))).to.satisfy(isOkT(isAppExp));
+        expect(bind(p("(> x 1)"), parseL3Exp)).to.satisfy(isOkT(isAppExp));
+        expect(bind(p("(> (+ x x) (* x x))"), parseL3Exp)).to.satisfy(isOkT(isAppExp));
     });
 
     it('parses "if" expressions', () => {
-        expect(parseL3Exp(p("(if #t 1 2)"))).to.satisfy(isOkT(isIfExp));
-        expect(parseL3Exp(p("(if (< x 2) x 2)"))).to.satisfy(isOkT(isIfExp));
+        expect(bind(p("(if #t 1 2)"), parseL3Exp)).to.satisfy(isOkT(isIfExp));
+        expect(bind(p("(if (< x 2) x 2)"), parseL3Exp)).to.satisfy(isOkT(isIfExp));
     });
 
     it('parses procedures', () => {
-        expect(parseL3Exp(p("(lambda () 1)"))).to.satisfy(isOkT(isProcExp));
-        expect(parseL3Exp(p("(lambda (x) x x)"))).to.satisfy(isOkT(isProcExp));
+        expect(bind(p("(lambda () 1)"), parseL3Exp)).to.satisfy(isOkT(isProcExp));
+        expect(bind(p("(lambda (x) x x)"), parseL3Exp)).to.satisfy(isOkT(isProcExp));
     });
 
     it('parses "let" expressions', () => {
-        expect(parseL3Exp(p("(let ((a 1) (b #t)) (if b a (+ a 1)))"))).to.satisfy(isOkT(isLetExp));
+        expect(bind(p("(let ((a 1) (b #t)) (if b a (+ a 1)))"), parseL3Exp)).to.satisfy(isOkT(isLetExp));
     });
 
     it('parses literal expressions', () => {
-        expect(parseL3Exp(p("'a"))).to.satisfy(isOkT(isLitExp));
-        expect(parseL3Exp(p("'()"))).to.satisfy(isOkT(isLitExp));
-        expect(parseL3Exp(p("'(1)"))).to.satisfy(isOkT(isLitExp));
-        expect(parseL3Exp(p("'(1 . 2)"))).to.satisfy(isOkT(isLitExp));
-        expect(parseL3Exp(p("'(1 . (2 . 3))"))).to.satisfy(isOkT(isLitExp));
+        expect(bind(p("'a"), parseL3Exp)).to.satisfy(isOkT(isLitExp));
+        expect(bind(p("'()"), parseL3Exp)).to.satisfy(isOkT(isLitExp));
+        expect(bind(p("'(1)"), parseL3Exp)).to.satisfy(isOkT(isLitExp));
+        expect(bind(p("'(1 . 2)"), parseL3Exp)).to.satisfy(isOkT(isLitExp));
+        expect(bind(p("'(1 . (2 . 3))"), parseL3Exp)).to.satisfy(isOkT(isLitExp));
     });
 
     it('returns an error for an invalid literal', () => {
-        expect(parseL3Exp(p("'(1 . 2 3)"))).to.satisfy(isFailure);
+        expect(bind(p("'(1 . 2 3)"), parseL3Exp)).to.satisfy(isFailure);
     });
 
     describe("Failures", () => {
@@ -107,31 +107,31 @@ describe('L3 Parsing', () => {
         });
 
         it('returns a Failure for an ill-formed "define"', () => {
-            expect(parseL3Exp(p("(define)"))).to.satisfy(isFailure);
-            expect(parseL3Exp(p("(define x)"))).to.satisfy(isFailure);
-            expect(parseL3Exp(p("(define x y z)"))).to.satisfy(isFailure);
-            expect(parseL3Exp(p('(define "1" y)'))).to.satisfy(isFailure);
-            expect(parseL3Exp(p('(define 1 y)'))).to.satisfy(isFailure);
+            expect(bind(p("(define)"), parseL3Exp)).to.satisfy(isFailure);
+            expect(bind(p("(define x)"), parseL3Exp)).to.satisfy(isFailure);
+            expect(bind(p("(define x y z)"), parseL3Exp)).to.satisfy(isFailure);
+            expect(bind(p('(define "1" y)'), parseL3Exp)).to.satisfy(isFailure);
+            expect(bind(p('(define 1 y)'), parseL3Exp)).to.satisfy(isFailure);
         });
 
         it("returns a Failure for an empty CExp", () => {
-            expect(parseL3Exp(p("(+ ())"))).to.satisfy(isFailure);
+            expect(bind(p("(+ ())"), parseL3Exp)).to.satisfy(isFailure);
         });
 
         it("returns a Failure for an ill-formed special form", () => {
-            expect(parseL3Exp(p("(if)"))).to.satisfy(isFailure);
-            expect(parseL3Exp(p("(if 1)"))).to.satisfy(isFailure);
-            expect(parseL3Exp(p("(lambda x x)"))).to.satisfy(isFailure);
-            expect(parseL3Exp(p("(let x x)"))).to.satisfy(isFailure);
-            expect(parseL3Exp(p("(let (x y) x)"))).to.satisfy(isFailure);
-            expect(parseL3Exp(p("(let ((1 y)) x)"))).to.satisfy(isFailure);
+            expect(bind(p("(if)"), parseL3Exp)).to.satisfy(isFailure);
+            expect(bind(p("(if 1)"), parseL3Exp)).to.satisfy(isFailure);
+            expect(bind(p("(lambda x x)"), parseL3Exp)).to.satisfy(isFailure);
+            expect(bind(p("(let x x)"), parseL3Exp)).to.satisfy(isFailure);
+            expect(bind(p("(let (x y) x)"), parseL3Exp)).to.satisfy(isFailure);
+            expect(bind(p("(let ((1 y)) x)"), parseL3Exp)).to.satisfy(isFailure);
         });
     });
 });
 
 describe('L3 Unparse', () => {
     const roundTrip: (x: string) => Result<string> =
-        x => bind(parseL3Exp(p(x)), (exp: Exp) => makeOk(unparseL3(exp)));
+        x => bind(bind(p(x), parseL3Exp), (exp: Exp) => makeOk(unparseL3(exp)));
 
     it("doesn't change concrete values", () => {
         const concretes = ["1", "#t", "x", '"a"', ">", "=", "string=?", "eq?", "cons"];
@@ -317,9 +317,9 @@ describe('L3 Eval', () => {
     });
 
     it('substitutes', () => {
-        const cexp1 = parseL3Exp(p("((lambda (x) (* x x)) x)"));
-        const expected1 = parseL3Exp(p("((lambda (x) (* x x)) 3)"));
-        if (isOk(cexp1) && isCExp(cexp1.value) && isOk(expected1)) {
+        const cexp1 = bind(p("((lambda (x) (* x x)) x)"), parseL3Exp);
+        const expected1 = bind(p("((lambda (x) (* x x)) 3)"), parseL3Exp);
+        if (isOkT(isCExp)(cexp1) && isOk(expected1)) {
             expect(substitute([cexp1.value], ["x"], [makeNumExp(3)])).to.deep.equal([expected1.value]);
         }
 
@@ -330,8 +330,8 @@ describe('L3 Eval', () => {
                      f
                      (lambda (x) (f ((nf f (- n 1)) x)))))
              '(f n))`;
-        const vn = parseL3Exp(p("2"));
-        const vf = parseL3Exp(p("(lambda (x) (* x x))"));
+        const vn = bind(p("2"), parseL3Exp);
+        const vf = bind(p("(lambda (x) (* x x))"), parseL3Exp);
         const e2 = `
             ((if (= 2 0)
                  (lambda (x) x)
@@ -339,36 +339,32 @@ describe('L3 Eval', () => {
                      (lambda (x) (* x x))
                      (lambda (x) ((lambda (x) (* x x)) ((nf (lambda (x) (* x x)) (- 2 1)) x)))))
              '(f n))`;
-        const parsed1 = parseL3Exp(p(e1));
-        const parsed2 = parseL3Exp(p(e2));
-        if (isOk(parsed1) && isCExp(parsed1.value) &&
-            isOk(parsed2) && isCExp(parsed2.value) &&
-            isOk(vn) && isCExp(vn.value) &&
-            isOk(vf) && isCExp(vf.value)) {
+        const parsed1 = bind(p(e1), parseL3Exp);
+        const parsed2 = bind(p(e2), parseL3Exp);
+        if (isOkT(isCExp)(parsed1) &&
+            isOkT(isCExp)(parsed2) &&
+            isOkT(isCExp)(vn) &&
+            isOkT(isCExp)(vf)) {
             expect(substitute([parsed1.value], ["n", "f"], [vn.value, vf.value])).to.deep.equal([parsed2.value]);
         }
 
-        const lzxz = parseL3Exp(p("(lambda (z) (x z))"));
-        const lwzw = parseL3Exp(p("(lambda (w) (z w))"));
-        const lzlwzwz = parseL3Exp(p("(lambda (z) ((lambda (w) (z w)) z))"));
-        if (isOk(lzxz) && isCExp(lzxz.value) &&
-            isOk(lwzw) && isCExp(lwzw.value) &&
-            isOk(lzlwzwz)) {
+        const lzxz = bind(p("(lambda (z) (x z))"), parseL3Exp);
+        const lwzw = bind(p("(lambda (w) (z w))"), parseL3Exp);
+        const lzlwzwz = bind(p("(lambda (z) ((lambda (w) (z w)) z))"), parseL3Exp);
+        if (isOkT(isCExp)(lzxz) && isOkT(isCExp)(lwzw) && isOk(lzlwzwz)) {
             expect(substitute([lzxz.value], ["x"], [lwzw.value])).to.deep.equal([lzlwzwz.value]);
         }
     });
 
     it('renames', () => {
-        const lxx = parseL3Exp(p("(lambda (x) x)"));
-        const lx1x1 = parseL3Exp(p("(lambda (x__1) x__1)"));
-        if (isOk(lxx) && isCExp(lxx.value) &&
-            isOk(lx1x1) && isCExp(lx1x1.value)) {
+        const lxx = bind(p("(lambda (x) x)"), parseL3Exp);
+        const lx1x1 = bind(p("(lambda (x__1) x__1)"), parseL3Exp);
+        if (isOkT(isCExp)(lxx) && isOkT(isCExp)(lx1x1)) {
             expect(renameExps([lxx.value])).to.deep.equal([lx1x1.value]);
         }
-        const l1 = parseL3Exp(p(`(((lambda (x) (lambda (z) (x z))) (lambda (w) (z w))) 2)`));
-        const rl1 = parseL3Exp(p(`(((lambda (x__1) (lambda (z__2) (x__1 z__2))) (lambda (w__3) (z w__3))) 2)`));
-        if (isOk(l1) && isCExp(l1.value) &&
-            isOk(rl1) && isCExp(rl1.value)) {
+        const l1 = bind(p(`(((lambda (x) (lambda (z) (x z))) (lambda (w) (z w))) 2)`), parseL3Exp);
+        const rl1 = bind(p(`(((lambda (x__1) (lambda (z__2) (x__1 z__2))) (lambda (w__3) (z w__3))) 2)`), parseL3Exp);
+        if (isOkT(isCExp)(l1) && isOkT(isCExp)(rl1)) {
             expect(renameExps([l1.value])).to.deep.equal([rl1.value]);
         }
     });

@@ -100,10 +100,11 @@ Examples:
 parseLA("1") -> '(num-exp 1)
 parseLA("(if #t (+ 1 2) 'ok)") -> '(IfExpLA (BoolExp true) (AppExpLA (VarRef +) ((num-exp 1) (num-exp 2))) (literal-exp ok))
 */
-import parseSexp, { Sexp, Token } from "s-expression";
+import { Sexp, Token } from "s-expression";
+import p from "../shared/parser";
 
 export const parseLA = (x: string): Result<CExpLA> =>
-    parseLASExp(parseSexp(x));
+    bind(p(x), parseLASExp);
 
 export const parseLASExp = (sexp: Sexp): Result<CExpLA> =>
     isEmpty(sexp) ? makeFailure("Parse: Unexpected empty") :
