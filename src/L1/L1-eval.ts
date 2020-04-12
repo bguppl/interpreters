@@ -53,10 +53,14 @@ const L1applyProcedure = (proc: CExp, args: Value[]): Result<Value> =>
 const applyPrimitive = (proc: PrimOp, args: Value[]): Result<Value> =>
     // @ts-ignore: the rhs of an arithmetic operation must be a number
     proc.op === "+" ? makeOk(reduce((x, y) => x + y, 0, args)) :
+    // This implementation is wrong - no type checking and no verification
+    // of associativity: what should be (- 1 2 3): (- 1 (- 2 3)) i.e. 2 or (- (- 1 2) 3) i.e. -4
     // @ts-ignore: the rhs of an arithmetic operation must be a number
     proc.op === "-" ? makeOk(reduce((x, y) => x - y, 0, args)) :
     // @ts-ignore: the rhs of an arithmetic operation must be a number
     proc.op === "*" ? makeOk(reduce((x, y) => x * y, 1, args)) :
+    // This implementation is wrong - no type checking and no verification
+    // of associativity: what should be (/ 1 2 3): (/ 1 (/ 2 3)) i.e. 1.5 or (/ (/ 1 2) 3) i.e. 1/6
     // @ts-ignore: the rhs of an arithmetic operation must be a number
     proc.op === "/" ? makeOk(reduce((x, y) => x / y, 1, args)) :
     proc.op === ">" ? makeOk(args[0] > args[1]) :

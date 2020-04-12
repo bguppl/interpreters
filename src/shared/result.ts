@@ -27,6 +27,11 @@ export const isFailure = <T>(r: Result<T>): r is Failure =>
 export const bind = <T, U>(r: Result<T>, f: (x: T) => Result<U>): Result<U> =>
     isOk(r) ? f(r.value) : r;
 
+// Purpose: Test whether a result is Ok and of a
+//          specified type (using a given type predicate)
+// Example:
+//     const r: Result<Exp> = bind(p("(+ x 1)"), parseL3Exp);
+//     isOkT(isAppExp)(r) ? [here "r" is Ok<AppExp>]
 export const isOkT = <T>(pred: (x: any) => x is T) => (r: any): r is Ok<T> =>
     isOk(r) && pred(r.value);
 ​

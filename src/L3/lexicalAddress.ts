@@ -23,9 +23,10 @@ import { BoolExp, LitExp, NumExp, StrExp, VarDecl, VarRef } from './L3-ast';
 import { isBoolExp, isLitExp, isNumExp, isStrExp, isVarRef } from './L3-ast';
 import { makeBoolExp, makeNumExp, makeStrExp, makeVarDecl, makeVarRef } from './L3-ast';
 import { first, rest, isEmpty, allT, second } from '../shared/list';
-import { isArray, isNumericString, isSexpString, isString, isToken } from "../shared/type-predicates";
+import { isArray, isNumericString, isString } from "../shared/type-predicates";
 import { parseLitExp } from './L3-ast';
 import { Result, makeFailure, makeOk, bind, mapResult, safe3, safe2 } from '../shared/result';
+import { isToken } from "../shared/parser";
 
 export type CExpLA = NumExp | BoolExp | StrExp | LitExp | VarRef | LexAddress | ProcExpLA | IfExpLA | AppExpLA;
 export const isCExpLA = (x: any): x is CExpLA =>

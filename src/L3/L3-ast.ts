@@ -2,11 +2,11 @@
 // ===========================================================
 // AST type models
 import { map, zipWith } from "ramda";
-import { makeEmptySExp, makeSymbolSExp, SExp, makeCompoundSExp, valueToString } from './L3-value'
+import { makeEmptySExp, makeSymbolSExp, SExpValue, makeCompoundSExp, valueToString } from './L3-value'
 import { first, second, rest, allT, isEmpty } from "../shared/list";
-import { isArray, isString, isSexpString, isNumericString, isToken, isVar } from "../shared/type-predicates";
+import { isArray, isString, isNumericString, isIdentifier } from "../shared/type-predicates";
 import { Result, makeOk, makeFailure, bind, mapResult, safe2 } from "../shared/result";
-import p from "../shared/parser";
+import p, { isSexpString, isToken } from "../shared/parser";
 import { Sexp, Token } from "s-expression";
 
 /*
@@ -66,7 +66,7 @@ export interface ProcExp {tag: "ProcExp"; args: VarDecl[], body: CExp[]; };
 export interface Binding {tag: "Binding"; var: VarDecl; val: CExp; };
 export interface LetExp {tag: "LetExp"; bindings: Binding[]; body: CExp[]; };
 // L3
-export interface LitExp {tag: "LitExp"; val: SExp; };
+export interface LitExp {tag: "LitExp"; val: SExpValue; };
 
 // Type value constructors for disjoint types
 export const makeProgram = (exps: Exp[]): Program => ({tag: "Program", exps: exps});
@@ -90,7 +90,7 @@ export const makeBinding = (v: string, val: CExp): Binding =>
 export const makeLetExp = (bindings: Binding[], body: CExp[]): LetExp =>
     ({tag: "LetExp", bindings: bindings, body: body});
 // L3
-export const makeLitExp = (val: SExp): LitExp =>
+export const makeLitExp = (val: SExpValue): LitExp =>
     ({tag: "LitExp", val: val});
 
 // Type predicates for disjoint types
@@ -172,7 +172,7 @@ export const parseDefine = (params: Sexp[]): Result<DefineExp> =>
     parseGoodDefine(first(params), second(params));
 
 const parseGoodDefine = (variable: Sexp, val: Sexp): Result<DefineExp> =>
-    ! isVar(variable) ? makeFailure("First arg of define must be an identifier") :
+    ! isIdentifier(variable) ? makeFailure("First arg of define must be an identifier") :
     bind(parseL3CExp(val),
          (value: CExp) => makeOk(makeDefineExp(makeVarDecl(variable), value)));
 
@@ -226,7 +226,7 @@ const parseLetExp = (bindings: Sexp, body: Sexp[]): Result<LetExp> => {
         return makeFailure('Malformed bindings in "let" expression');
     }
     const vars = map(first, bindings);
-    if (!allT(isVar, vars)) {
+    if (!allT(isIdentifier, vars)) {
         return makeFailure(`Bad bindings in let ${bindings}`);
     }
     const valsResult = mapResult(binding => parseL3CExp(second(binding)), bindings);
@@ -237,18 +237,18 @@ const parseLetExp = (bindings: Sexp, body: Sexp[]): Result<LetExp> => {
 
 // sexps has the shape (quote <sexp>)
 export const parseLitExp = (param: Sexp): Result<LitExp> =>
-    bind(parseSExp(param), (sexp: SExp) => makeOk(makeLitExp(sexp)));
+    bind(parseSExp(param), (sexp: SExpValue) => makeOk(makeLitExp(sexp)));
 
 export const isDottedPair = (sexps: Sexp[]): boolean =>
     sexps.length === 3 && 
     sexps[1] === "."
 
-export const makeDottedPair = (sexps : Sexp[]): Result<SExp> =>
-    safe2((val1: SExp, val2: SExp) => makeOk(makeCompoundSExp(val1, val2)))
+export const makeDottedPair = (sexps : Sexp[]): Result<SExpValue> =>
+    safe2((val1: SExpValue, val2: SExpValue) => makeOk(makeCompoundSExp(val1, val2)))
         (parseSExp(sexps[0]), parseSExp(sexps[2]));
 
 // x is the output of p (sexp parser)
-export const parseSExp = (sexp: Sexp): Result<SExp> =>
+export const parseSExp = (sexp: Sexp): Result<SExpValue> =>
     sexp === "#t" ? makeOk(true) :
     sexp === "#f" ? makeOk(false) :
     isString(sexp) && isNumericString(sexp) ? makeOk(+sexp) :
@@ -259,7 +259,7 @@ export const parseSExp = (sexp: Sexp): Result<SExp> =>
     isArray(sexp) ? (
         // fail on (x . y z)
         sexp[0] === '.' ? makeFailure("Bad dotted sexp: " + sexp) : 
-        safe2((val1: SExp, val2: SExp) => makeOk(makeCompoundSExp(val1, val2)))
+        safe2((val1: SExpValue, val2: SExpValue) => makeOk(makeCompoundSExp(val1, val2)))
             (parseSExp(first(sexp)), parseSExp(rest(sexp)))) :
     makeFailure(`Bad literal expression: ${sexp}`);
 

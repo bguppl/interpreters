@@ -6,7 +6,7 @@
 // - Type definitions for the AST of the language (with type predicates, constructors, getters)
 // - A parser function which constructs AST values from strings.
 
-import { isString, isArray, isNumericString, isToken, isVar } from '../shared/type-predicates';
+import { isString, isArray, isNumericString, isIdentifier } from '../shared/type-predicates';
 import { first, rest, second, isEmpty } from '../shared/list';
 import { Result, makeOk, makeFailure, bind, mapResult, safe2 } from "../shared/result";
 
@@ -60,7 +60,7 @@ export const isCExp = (x: any): x is CExp =>
 
 // Make sure to run "npm install ramda s-expression --save"
 import { Sexp, Token } from "s-expression";
-import parseSexp from "../shared/parser"
+import parseSexp, { isToken } from "../shared/parser"
 
 // combine Sexp parsing with the L1 parsing
 export const parseL1 = (x: string): Result<Program> =>
@@ -110,7 +110,7 @@ export const parseDefine = (params: Sexp[]): Result<DefineExp> =>
     parseGoodDefine(first(params), second(params));
 
 const parseGoodDefine = (variable: Sexp, val: Sexp): Result<DefineExp> =>
-    ! isVar(variable) ? makeFailure("First arg of define must be an identifier") :
+    ! isIdentifier(variable) ? makeFailure("First arg of define must be an identifier") :
     bind(parseL1CExp(val),
          (value: CExp) => makeOk(makeDefineExp(makeVarDecl(variable), value)));
 

@@ -6,7 +6,7 @@ import { isNumber, isArray, isString } from '../shared/type-predicates';
 import { isError } from '../shared/error';
 import { append } from 'ramda';
 
-export type Value = SExp;
+export type Value = SExpValue;
 
 export type Functional = PrimOp | Closure;
 export const isFunctional = (x: any): x is Functional => isPrimOp(x) || isClosure(x);
@@ -26,8 +26,8 @@ export const isClosure = (x: any): x is Closure => x.tag === "Closure";
 // SExp
 export interface CompoundSExp {
     tag: "CompoundSexp";
-    val1: SExp;
-    val2: SExp;
+    val1: SExpValue;
+    val2: SExpValue;
 };
 export interface EmptySExp {
     tag: "EmptySExp";
@@ -37,12 +37,12 @@ export interface SymbolSExp {
     val: string;
 };
 
-export type SExp = number | boolean | string | PrimOp | Closure | SymbolSExp | EmptySExp | CompoundSExp;
-export const isSExp = (x: any): x is SExp =>
+export type SExpValue = number | boolean | string | PrimOp | Closure | SymbolSExp | EmptySExp | CompoundSExp;
+export const isSExp = (x: any): x is SExpValue =>
     typeof(x) === 'string' || typeof(x) === 'boolean' || typeof(x) === 'number' ||
     isSymbolSExp(x) || isCompoundSExp(x) || isEmptySExp(x) || isPrimOp(x) || isClosure(x);
 
-export const makeCompoundSExp = (val1: SExp, val2: SExp): CompoundSExp =>
+export const makeCompoundSExp = (val1: SExpValue, val2: SExpValue): CompoundSExp =>
     ({tag: "CompoundSexp", val1: val1, val2 : val2});
 export const isCompoundSExp = (x: any): x is CompoundSExp => x.tag === "CompoundSexp";
 
