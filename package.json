@@ -1,7 +1,7 @@
 {
   "name": "ppl",
   "version": "1.0.0",
-  "description": "Code for \"Principles of Programming Langauges\" course",
+  "description": "Code for \"Principles of Programming Languages\" course",
   "main": "index.js",
   "scripts": {
     "test": "mocha --require ts-node/register test/**/*.test.ts",
@@ -11,6 +11,10 @@
   "author": "Michael Elhadad",
   "license": "ISC",
   "dependencies": {
+    "ramda": "^0.26.1",
+    "s-expression": "^3.0.3"
+  },
+  "devDependencies": {
     "@types/chai": "^4.2.7",
     "@types/mocha": "^5.2.7",
     "@types/node": "^12.12.21",
@@ -18,8 +22,6 @@
     "chai": "^4.2.0",
     "mocha": "^6.2.2",
     "nyc": "^15.0.1",
-    "ramda": "^0.26.1",
-    "s-expression": "^3.0.3",
     "ts-node": "^8.5.4",
     "typescript": "^3.7.3"
   }
