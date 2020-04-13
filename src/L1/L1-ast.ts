@@ -60,7 +60,7 @@ export const isCExp = (x: any): x is CExp =>
 
 // Make sure to run "npm install ramda s-expression --save"
 import { Sexp, Token } from "s-expression";
-import parseSexp, { isToken } from "../shared/parser"
+import { parse as parseSexp, isToken } from "../shared/parser"
 
 // combine Sexp parsing with the L1 parsing
 export const parseL1 = (x: string): Result<Program> =>
@@ -76,7 +76,7 @@ export const parseL1 = (x: string): Result<Program> =>
 
 // <Program> -> (L1 <Exp>+)
 export const parseL1Program = (sexp: Sexp): Result<Program> =>
-    isString(sexp) && sexp.length === 0 ? makeFailure("Unexpected empty program") :
+    sexp === "" || isEmpty(sexp) ? makeFailure("Unexpected empty program") :
     isToken(sexp) ? makeFailure("Program cannot be a single token") :
     isArray(sexp) ? parseL1GoodProgram(first(sexp), rest(sexp)) :
     makeFailure("Unexpected type " + sexp);

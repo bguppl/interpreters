@@ -15,7 +15,7 @@ import { isBoolean, isNumber, isString } from "../shared/type-predicates";
 import { Result, makeOk, makeFailure, bind, safe2, mapResult } from "../shared/result";
 import { renameExps, substitute } from "./substitute";
 import { applyPrimitive } from "./evalPrimitive";
-import p from "../shared/parser";
+import { parse as p } from "../shared/parser";
 
 // ========================================================
 // Eval functions
@@ -92,6 +92,4 @@ export const evalL3program = (program: Program): Result<Value> =>
     evalSequence(program.exps, makeEmptyEnv());
 
 export const evalParse = (s: string): Result<Value> =>
-    bind(p(s),
-         (parsed: Sexp) => bind(parseL3Exp(parsed),
-                                (exp: Exp) => evalSequence([exp], makeEmptyEnv())));
+    bind(bind(p(s), parseL3Exp), (exp: Exp) => evalSequence([exp], makeEmptyEnv()));

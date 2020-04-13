@@ -14,7 +14,7 @@ export const isSexp = (x: any): x is Sexp => isToken(x) || isCompoundSexp(x);
 export const isToken = (x: any): x is Token => isString(x) || isSexpString(x);
 export const isCompoundSexp = (x: any): x is CompoundSexp => isArray(x) && allT(isSexp, x);
 
-export default function parse(x: string): Result<Sexp> {
+export const parse = (x: string): Result<Sexp> => {
     const parsed = p(x);
     return isError(parsed) ? makeFailure(parsed.message) : makeOk(parsed);
 }

@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import { parseL1, parseL1Exp, Exp } from "../../src/L1/L1-ast";
 import { evalL1program, makeEnv, makeEmptyEnv, evalSequence } from '../../src/L1/L1-eval';
 import { bind, makeOk, isFailure } from '../../src/shared/result';
-import p from "../../src/shared/parser";
+import { parse as p } from "../../src/shared/parser";
 
 describe('L1 Eval', () => {
     it('Evaluates a program without an explicit environment', () => {

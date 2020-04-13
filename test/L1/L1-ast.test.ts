@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { isNumExp, parseL1Exp, isBoolExp, isVarRef, isDefineExp, isVarDecl, isAppExp, isProgram, parseL1 } from "../../src/L1/L1-ast";
 import { isOkT, isFailure, bind } from "../../src/shared/result";
-import p from "../../src/shared/parser";
+import { parse as p } from "../../src/shared/parser";
 
 describe("L1 Parsing", () => {
     it("parses a number as NumExp", () => {

@@ -6,7 +6,7 @@ import { makeEmptySExp, makeSymbolSExp, SExpValue, makeCompoundSExp, valueToStri
 import { first, second, rest, allT, isEmpty } from "../shared/list";
 import { isArray, isString, isNumericString, isIdentifier } from "../shared/type-predicates";
 import { Result, makeOk, makeFailure, bind, mapResult, safe2 } from "../shared/result";
-import p, { isSexpString, isToken } from "../shared/parser";
+import { parse as p, isSexpString, isToken } from "../shared/parser";
 import { Sexp, Token } from "s-expression";
 
 /*
@@ -129,7 +129,7 @@ export const parseL3 = (x: string): Result<Program> =>
     bind(p(x), parseL3Program);
 
 export const parseL3Program = (sexp: Sexp): Result<Program> =>
-    isString(sexp) && sexp.length === 0 ? makeFailure("Unexpected empty program") :
+    sexp === "" || isEmpty(sexp) ? makeFailure("Unexpected empty program") :
     isToken(sexp) ? makeFailure("Program cannot be a single token") :
     isArray(sexp) ? parseL3GoodProgram(first(sexp), rest(sexp)) :
     makeFailure("Unexpected type " + sexp);
@@ -219,18 +219,17 @@ const parseProcExp = (vars: Sexp, body: Sexp[]): Result<ProcExp> =>
     makeFailure(`Invalid vars for ProcExp`);
 
 const isGoodBindings = (bindings: Sexp): bindings is [string, Sexp][] =>
-    isArray(bindings) && allT(isArray, bindings);
+    isArray(bindings) &&
+    allT(isArray, bindings) &&
+    allT(isIdentifier, map(first, bindings));
 
 const parseLetExp = (bindings: Sexp, body: Sexp[]): Result<LetExp> => {
     if (!isGoodBindings(bindings)) {
         return makeFailure('Malformed bindings in "let" expression');
     }
-    const vars = map(first, bindings);
-    if (!allT(isIdentifier, vars)) {
-        return makeFailure(`Bad bindings in let ${bindings}`);
-    }
+    const vars = map(b => b[0], bindings);
     const valsResult = mapResult(binding => parseL3CExp(second(binding)), bindings);
-    const bindingsResult = bind(valsResult, vals => makeOk(zipWith(makeBinding, vars, vals)));
+    const bindingsResult = bind(valsResult, (vals: CExp[]) => makeOk(zipWith(makeBinding, vars, vals)));
     return safe2((bindings: Binding[], body: CExp[]) => makeOk(makeLetExp(bindings, body)))
         (bindingsResult, mapResult(parseL3CExp, body));
 }

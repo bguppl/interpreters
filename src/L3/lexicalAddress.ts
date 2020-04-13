@@ -102,7 +102,7 @@ parseLA("1") -> '(num-exp 1)
 parseLA("(if #t (+ 1 2) 'ok)") -> '(IfExpLA (BoolExp true) (AppExpLA (VarRef +) ((num-exp 1) (num-exp 2))) (literal-exp ok))
 */
 import { Sexp, Token } from "s-expression";
-import p from "../shared/parser";
+import { parse as p } from "../shared/parser";
 
 export const parseLA = (x: string): Result<CExpLA> =>
     bind(p(x), parseLASExp);

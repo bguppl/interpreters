@@ -27,6 +27,9 @@ export const isFailure = <T>(r: Result<T>): r is Failure =>
 export const bind = <T, U>(r: Result<T>, f: (x: T) => Result<U>): Result<U> =>
     isOk(r) ? f(r.value) : r;
 
+export const either = <T, U>(ifOk: (value: T) => U, ifFailure: (message: string) => U, r: Result<T>): U =>
+    isOk(r) ? ifOk(r.value) : ifFailure(r.message);
+
 // Purpose: Test whether a result is Ok and of a
 //          specified type (using a given type predicate)
 // Example:

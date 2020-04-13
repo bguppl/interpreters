@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import { makeVarRef, parseL3Exp, Exp } from '../../src/L3/L3-ast';
 import { height, occursFree, referencedVars } from '../../src/L3/freeVars';
 import { Result, makeOk, bind } from "../../src/shared/result";
-import parseSexp from "../../src/shared/parser";
+import { parse as parseSexp } from "../../src/shared/parser";
 
 const p = (x: string): Result<Exp> => bind(parseSexp(x), parseL3Exp);
 

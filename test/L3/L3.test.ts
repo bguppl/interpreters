@@ -9,7 +9,7 @@ import { renameExps, substitute } from "../../src/L3/substitute";
 import { makeClosure, makeCompoundSExp, makeEmptySExp, makeSymbolSExp } from '../../src/L3/L3-value';
 import { isEnv, makeEnv, makeEmptyEnv, applyEnv } from '../../src/L3/L3-env';
 import { isOk, Result, isFailure, bind, makeOk, isOkT } from "../../src/shared/result";
-import p from "../../src/shared/parser";
+import { parse as p } from "../../src/shared/parser";
 
 describe('L3 Environment', () => {
     it('applies the environment correctly', () => {

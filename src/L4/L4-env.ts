@@ -16,6 +16,7 @@
 
 import { VarDecl, CExp } from './L4-ast';
 import { makeClosure, Value } from './L4-value';
+import { Result, makeOk, makeFailure } from '../shared/result';
 
 // ========================================================
 // Environment data type
@@ -48,17 +49,17 @@ const isRecEnv = (x: any): x is RecEnv => x.tag === "RecEnv";
 export const isEnv = (x: any): x is Env => isEmptyEnv(x) || isExtEnv(x) || isRecEnv(x);
 
 // Apply-env
-export const applyEnv = (env: Env, v: string): Value | Error =>
-    isEmptyEnv(env) ? Error(`var not found ${v}`) :
+export const applyEnv = (env: Env, v: string): Result<Value> =>
+    isEmptyEnv(env) ? makeFailure(`var not found ${v}`) :
     isExtEnv(env) ? applyExtEnv(env, v) :
     applyRecEnv(env, v);
 
-const applyExtEnv = (env: ExtEnv, v: string): Value | Error =>
-    env.vars.includes(v) ? env.vals[env.vars.indexOf(v)] :
+const applyExtEnv = (env: ExtEnv, v: string): Result<Value> =>
+    env.vars.includes(v) ? makeOk(env.vals[env.vars.indexOf(v)]) :
     applyEnv(env.nextEnv, v);
 
-const applyRecEnv = (env: RecEnv, v: string): Value | Error =>
-    env.vars.includes(v) ? makeClosure(env.paramss[env.vars.indexOf(v)],
-                                       env.bodiess[env.vars.indexOf(v)],
-                                       env) :
+const applyRecEnv = (env: RecEnv, v: string): Result<Value> =>
+    env.vars.includes(v) ? makeOk(makeClosure(env.paramss[env.vars.indexOf(v)],
+                                              env.bodiess[env.vars.indexOf(v)],
+                                              env)) :
     applyEnv(env.nextEnv, v);

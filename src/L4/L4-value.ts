@@ -4,11 +4,10 @@
 import { isPrimOp, CExp, PrimOp, VarDecl } from './L4-ast';
 import { Env } from './L4-env';
 import { append } from 'ramda';
-import { isArray, isNumber, isString } from '../shared/list';
-import { isError } from '../shared/error';
+import { isArray, isNumber, isString } from '../shared/type-predicates';
 
 
-export type Value = SExp | Closure;
+export type Value = SExpValue | Closure;
 
 export type Functional = PrimOp | Closure;
 export const isFunctional = (x: any): x is Functional => isPrimOp(x) || isClosure(x);
@@ -30,8 +29,8 @@ export const isClosure = (x: any): x is Closure => x.tag === "Closure";
 // SExp
 export interface CompoundSExp {
     tag: "CompoundSexp";
-    val1: SExp;
-    val2: SExp;
+    val1: SExpValue;
+    val2: SExpValue;
 };
 export interface EmptySExp {
     tag: "EmptySExp";
@@ -41,12 +40,12 @@ export interface SymbolSExp {
     val: string;
 };
 
-export type SExp = number | boolean | string | PrimOp | Closure | SymbolSExp | EmptySExp | CompoundSExp;
-export const isSExp = (x: any): x is SExp =>
+export type SExpValue = number | boolean | string | PrimOp | Closure | SymbolSExp | EmptySExp | CompoundSExp;
+export const isSExp = (x: any): x is SExpValue =>
     typeof(x) === 'string' || typeof(x) === 'boolean' || typeof(x) === 'number' ||
     isSymbolSExp(x) || isCompoundSExp(x) || isEmptySExp(x) || isPrimOp(x) || isClosure(x);
 
-export const makeCompoundSExp = (val1: SExp, val2: SExp): CompoundSExp =>
+export const makeCompoundSExp = (val1: SExpValue, val2: SExpValue): CompoundSExp =>
     ({tag: "CompoundSexp", val1: val1, val2 : val2});
 export const isCompoundSExp = (x: any): x is CompoundSExp => x.tag === "CompoundSexp";
 
@@ -86,7 +85,3 @@ export const valueToString = (val: Value): string =>
     isEmptySExp(val) ? "'()" :
     isCompoundSExp(val) ? compoundSExpToString(val) :
     "Error: unknown value type "+val 
-
-export const parsedToString = (val: Value | Error): string =>
-    isError(val) ? `Error: ${val.message}` :
-    valueToString(val)

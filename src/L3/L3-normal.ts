@@ -12,7 +12,7 @@ import { renameExps, substitute } from "./substitute";
 import { isClosure, makeClosure, Value } from "./L3-value";
 import { first, rest, isEmpty } from '../shared/list';
 import { Result, makeOk, makeFailure, bind, mapResult } from "../shared/result";
-import p from "../shared/parser";
+import { parse as p } from "../shared/parser";
 
 /*
 Purpose: Evaluate an L3 expression with normal-eval algorithm

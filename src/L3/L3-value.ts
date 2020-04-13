@@ -3,7 +3,6 @@
 
 import { isPrimOp, CExp, PrimOp, VarDecl } from './L3-ast';
 import { isNumber, isArray, isString } from '../shared/type-predicates';
-import { isError } from '../shared/error';
 import { append } from 'ramda';
 
 export type Value = SExpValue;
@@ -82,7 +81,3 @@ export const valueToString = (val: Value): string =>
     isEmptySExp(val) ? "'()" :
     isCompoundSExp(val) ? compoundSExpToString(val) :
     "Error: unknown value type "+val 
-
-export const parsedToString = (val: Value | Error): string =>
-    isError(val) ? `Error: ${val.message}` :
-    valueToString(val)
