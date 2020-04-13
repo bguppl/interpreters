@@ -6,11 +6,13 @@
 // optional type annotations
 
 import { join, map, zipWith } from "ramda";
-import p, { StringTree, SexpString } from 's-expression';
-import { isCompoundSExp, isEmptySExp, isSymbolSExp, makeCompoundSExp, makeEmptySExp, makeSymbolSExp, SExp, valueToString } from './L5-value';
+import { Sexp, Token } from 's-expression';
+import { isCompoundSExp, isEmptySExp, isSymbolSExp, makeCompoundSExp, makeEmptySExp, makeSymbolSExp, SExpValue, valueToString } from './L5-value';
 import { isTVar, makeFreshTVar, parseTExp, unparseTExp, TExp } from './TExp';
-import { getErrorMessages, hasNoError, isError, safeF, safeFL, safeF2 } from '../shared/error';
-import { allT, first, rest, second } from '../shared/list';
+import { allT, first, rest, second, isEmpty } from '../shared/list';
+import { parse as p, isToken, isSexpString } from "../shared/parser";
+import { Result, bind, makeFailure, mapResult, makeOk, safe2, safe3 } from "../shared/result";
+import { isArray, isString, isNumericString, isIdentifier, Identifier } from "../shared/type-predicates";
 
 /*
 // =============================================================================
@@ -139,8 +141,8 @@ export const makeLetExp = (bindings: Binding[], body: CExp[]): LetExp =>
     ({tag: "LetExp", bindings: bindings, body: body});
 export const isLetExp = (x: any): x is LetExp => x.tag === "LetExp";
 
-export interface LitExp {tag: "LitExp"; val: SExp; };
-export const makeLitExp = (val: SExp): LitExp => ({tag: "LitExp", val: val});
+export interface LitExp {tag: "LitExp"; val: SExpValue; };
+export const makeLitExp = (val: SExpValue): LitExp => ({tag: "LitExp", val: val});
 export const isLitExp = (x: any): x is LitExp => x.tag === "LitExp";
 
 export interface LetrecExp {tag: "LetrecExp"; bindings: Binding[]; body: CExp[]; };
@@ -153,45 +155,71 @@ export const makeSetExp = (v: VarRef, val: CExp): SetExp =>
     ({tag: "SetExp", var: v, val: val});
 export const isSetExp = (x: any): x is SetExp => x.tag === "SetExp";
 
-
-// ========================================================
-// Parsing utilities
-
-export const isEmpty = <T>(x: T[]): boolean => x.length === 0;
-export const isArray = Array.isArray;
-export const isString = (x: any): x is string => typeof x === "string";
-export const isNumber = (x: any): x is number => typeof x === "number";
-export const isBoolean = (x: any): x is boolean => typeof x === "boolean";
-
-// s-expression returns strings quoted as "a" as [String: 'a'] objects
-// to distinguish them from symbols - which are encoded as 'a'
-// These are constructed using the new String("a") constructor
-// and can be distinguished from regular strings based on the constructor.
-export const isSexpString = (x: any): boolean =>
-    ! isString(x) && x.constructor && x.constructor.name === "String";
-// A weird method to check that a string is a string encoding of a number
-export const isNumericString = (x: string): boolean => JSON.stringify(+x) === x;
-
 // ========================================================
 // Parsing
 
-export const parse = (x: string): Parsed | Error =>
-    parseSexp(p(x));
+export const parseL5 = (x: string): Result<Program> =>
+    bind(p(x), parseL5Program);
 
-export const parseSexp = (sexp: StringTree): Parsed | Error =>
-    isArray(sexp) && isEmpty(sexp) ? Error("Parse: Unexpected empty") :
-    isArray(sexp) ? parseCompound(sexp) :
-    isString(sexp) ? parseAtomic(sexp) :
-    isSexpString(sexp) ? parseAtomic(sexp) :
-    Error(`Parse: Unexpected type ${sexp}`);
+export const parseL5Program = (sexp: Sexp): Result<Program> =>
+    sexp === "" || isEmpty(sexp) ? makeFailure("Unexpected empty program") :
+    isToken(sexp) ? makeFailure("Program cannot be a single token") :
+    isArray(sexp) ? parseL5GoodProgram(first(sexp), rest(sexp)) :
+    makeFailure("Unexpected type " + sexp);
 
-export const parseAtomic = (sexp: string | SexpString): AtomicExp =>
-    sexp === "#t" ? makeBoolExp(true) :
-    sexp === "#f" ? makeBoolExp(false) :
-    isString(sexp) && isNumericString(sexp) ? makeNumExp(+sexp) :
-    isSexpString(sexp) ? makeStrExp(sexp.toString()) :
-    isString(sexp) && isPrimitiveOp(sexp) ? makePrimOp(sexp) :
-    makeVarRef(sexp.toString());
+const parseL5GoodProgram = (keyword: Sexp, body: Sexp[]): Result<Program> =>
+    keyword === "L5" && !isEmpty(body) ? bind(mapResult(parseL5Exp, body),
+                                              (exps: Exp[]) => makeOk(makeProgram(exps))) :
+    makeFailure("Program must be of the form (L5 <exp>+)");
+
+export const parseL5Exp = (sexp: Sexp): Result<Exp> =>
+    isEmpty(sexp) ? makeFailure("Exp cannot be an empty list") :
+    isArray(sexp) ? parseL5CompoundExp(first(sexp), rest(sexp)) :
+    isToken(sexp) ? parseL5Atomic(sexp) :
+    makeFailure("Unexpected type " + sexp);
+
+export const parseL5CompoundExp = (op: Sexp, params: Sexp[]): Result<Exp> =>
+    op === "define" ? parseDefine(params) :
+    parseL5CompoundCExp(op, params);
+
+export const parseL5CompoundCExp = (op: Sexp, params: Sexp[]): Result<CExp> =>
+    isString(op) && isSpecialForm(op) ? parseL5SpecialForm(op, params) :
+    parseAppExp(op, params);
+
+export const parseL5SpecialForm = (op: Sexp, params: Sexp[]): Result<CExp> =>
+    isEmpty(params) ? makeFailure("Empty args for special form") :
+    op === "if" ? parseIfExp(params) :
+    op === "lambda" ? parseProcExp(first(params), rest(params)) :
+    op === "let" ? parseLetExp(first(params), rest(params)) :
+    op === "quote" ? parseLitExp(first(params)) :
+    op === "letrec" ? parseLetrecExp(first(params), rest(params)) :
+    op === "set!" ? parseSetExp(params) :
+    makeFailure("Never");
+
+export const parseDefine = (params: Sexp[]): Result<DefineExp> =>
+    isEmpty(params) ? makeFailure("define missing 2 arguments") :
+    isEmpty(rest(params)) ? makeFailure("define missing 1 arguments") :
+    ! isEmpty(rest(rest(params))) ? makeFailure("define has too many arguments") :
+    parseGoodDefine(first(params), second(params));
+
+const parseGoodDefine = (variable: Sexp, val: Sexp): Result<DefineExp> =>
+    ! isConcreteVarDecl(variable) ? makeFailure("First arg of define must be an identifier") :
+    safe2((varDecl: VarDecl, val: CExp) => makeOk(makeDefineExp(varDecl, val)))
+        (parseVarDecl(variable), parseL5CExp(val));
+
+export const parseL5Atomic = (token: Token): Result<AtomicExp> =>
+    token === "#t" ? makeOk(makeBoolExp(true)) :
+    token === "#f" ? makeOk(makeBoolExp(false)) :
+    isString(token) && isNumericString(token) ? makeOk(makeNumExp(+token)) :
+    isString(token) && isPrimitiveOp(token) ? makeOk(makePrimOp(token)) :
+    isString(token) ? makeOk(makeVarRef(token)) :
+    makeOk(makeStrExp(token.toString()));
+
+export const parseL5CExp = (sexp: Sexp): Result<CExp> =>
+    isEmpty(sexp) ? makeFailure("CExp cannot be an empty list") :
+    isArray(sexp) ? parseL5CompoundCExp(first(sexp), rest(sexp)) :
+    isToken(sexp) ? parseL5Atomic(sexp) :
+    makeFailure("Unexpected type " + sexp);
 
 /*
     // <prim-op>  ::= + | - | * | / | < | > | = | not |  eq? | string=?
@@ -203,204 +231,143 @@ const isPrimitiveOp = (x: string): boolean =>
      "string=?", "cons", "car", "cdr", "pair?", "list?",
      "number?", "boolean?", "symbol?", "string?", "display", "newline"].includes(x);
 
-const parseCompound = (sexps: StringTree[]): Parsed | Error =>
-    isEmpty(sexps) ? Error("Unexpected empty sexp") :
-    (first(sexps) === "L5") ? parseProgram(map(parseSexp, rest(sexps))) :
-    (first(sexps) === "define") ? parseDefine(rest(sexps)) :
-    parseCExp(sexps);
+const isSpecialForm = (x: string): boolean =>
+    ["if", "lambda", "let", "quote", "letrec", "set!"].includes(x);
 
-const parseProgram = (es: Array<Parsed | Error>): Program | Error =>
-    isEmpty(es) ? Error("Empty program") :
-    allT(isExp, es) ? makeProgram(es) :
-    hasNoError(es) ? Error(`Program cannot be embedded in another program - ${es}`) :
-    Error(getErrorMessages(es));
+const parseAppExp = (op: Sexp, params: Sexp[]): Result<AppExp> =>
+    safe2((rator: CExp, rands: CExp[]) => makeOk(makeAppExp(rator, rands)))
+        (parseL5CExp(op), mapResult(parseL5CExp, params));
 
-const safeMakeDefineExp = (vd: VarDecl | Error, val: CExp | Error): DefineExp | Error =>
-    isError(vd) ? vd :
-    isError(val) ? val :
-    makeDefineExp(vd, val);
-
-const parseDefine = (es: StringTree[]): DefineExp | Error =>
-    (es.length !== 2) ? Error(`define should be (define var val) - ${es}`) :
-    !isConcreteVarDecl(es[0]) ? Error(`Expected (define <VarDecl> <CExp>) - ${es[0]}`) :
-    safeMakeDefineExp(parseVarDecl(es[0]), parseCExp(es[1]));
-
-export const parseCExp = (sexp: StringTree): CExp | Error =>
-    isArray(sexp) ? parseCompoundCExp(sexp) :
-    isString(sexp) ? parseAtomic(sexp) :
-    isSexpString(sexp) ? parseAtomic(sexp) :
-    Error("Unexpected type" + sexp);
-
-const parseCompoundCExp = (sexps: StringTree[]): CExp | Error =>
-    isEmpty(sexps) ? Error("Unexpected empty") :
-    first(sexps) === "if" ? parseIfExp(sexps) :
-    first(sexps) === "lambda" ? parseProcExp(sexps) :
-    first(sexps) === "let" ? parseLetExp(sexps) :
-    first(sexps) === "letrec" ? parseLetrecExp(sexps) :
-    first(sexps) === "set!" ? parseSetExp(sexps) :
-    first(sexps) === "quote" ? parseLitExp(sexps) :
-    parseAppExp(sexps)
-
-const parseAppExp = (sexps: StringTree[]): AppExp | Error =>
-    safeFL((cexps: CExp[]) => makeAppExp(first(cexps), rest(cexps)))(map(parseCExp, sexps));
-
-const parseIfExp = (sexps: StringTree[]): IfExp | Error =>
-    safeFL((cexps: CExp[]) => makeIfExp(cexps[0], cexps[1], cexps[2]))(map(parseCExp, rest(sexps)));
+const parseIfExp = (params: Sexp[]): Result<IfExp> =>
+    params.length !== 3 ? makeFailure("Expression not of the form (if <cexp> <cexp> <cexp>)") :
+    bind(mapResult(parseL5CExp, params),
+         (cexps: CExp[]) => makeOk(makeIfExp(cexps[0], cexps[1], cexps[2])));
 
 // (lambda (<vardecl>*) [: returnTE]? <CExp>+)
-const parseProcExp = (sexps: StringTree[]): ProcExp | Error => {
-    if (isArray(sexps[1])){
-        const args: Array<VarDecl | Error> = map(parseVarDecl, sexps[1]);
-        const returnTE = (sexps[2] === ":") ? parseTExp(sexps[3]) : makeFreshTVar();
-        const body : (CExp | Error)[] = map(parseCExp, (sexps[2] === ":") ? sexps.slice(4) : sexps.slice(2));
-        if (! hasNoError(args))
-            return Error(getErrorMessages(args));
-        else if (! hasNoError(body))
-            return Error(getErrorMessages(body));
-        else if (isError(returnTE))
-            return Error(`Bad return type: ${returnTE}`);
-        else
-            return makeProcExp(args, body, returnTE);
+const parseProcExp = (vars: Sexp, rest: Sexp[]): Result<ProcExp> => {
+    if (isArray(vars)) {
+        const args = mapResult(parseVarDecl, vars);
+        const body = mapResult(parseL5CExp, rest[0] === ":" ? rest.slice(2) : rest);
+        const returnTE = rest[0] === ":" ? parseTExp(rest[1]) : makeOk(makeFreshTVar());
+        return safe3((args: VarDecl[], body: CExp[], returnTE: TExp) => makeOk(makeProcExp(args, body, returnTE)))
+                (args, body, returnTE);
     } else {
-        return Error(`Invalid args ${JSON.stringify(sexps[1])}`);
+        return makeFailure(`Invalid args ${JSON.stringify(vars)}`)
     }
 }
 
-// LetExp ::= (let (<binding>*) <cexp>+)
-const parseLetExp = (sexps: StringTree[]): LetExp | Error => {
-    if (sexps.length < 3) {
-        return Error(`Expected (let (<binding>*) <cexp>+) - ${sexps}`);
+const isGoodBindings = (bindings: Sexp): bindings is [Sexp, Sexp][] =>
+    isArray(bindings) && allT(isArray, bindings);
+
+const parseLetExp = (bindings: Sexp, body: Sexp[]): Result<LetExp> =>
+    isEmpty(body) ? makeFailure('Body of "let" cannot be empty') :
+    ! isGoodBindings(bindings) ? makeFailure(`Invalid bindings: ${JSON.stringify(bindings)}`) :
+    safe2((bdgs: Binding[], body: CExp[]) => makeOk(makeLetExp(bdgs, body)))
+        (parseBindings(bindings), mapResult(parseL5CExp, body));
+
+const isConcreteVarDecl = (sexp: Sexp): boolean =>
+    isIdentifier(sexp) ||
+    (isArray(sexp) && sexp.length > 2 && isIdentifier(sexp[0]) && (sexp[1] === ':'));
+
+export const parseVarDecl = (sexp: Sexp): Result<VarDecl> => {
+    if (isString(sexp)) {
+        return makeOk(makeVarDecl(sexp, makeFreshTVar()));
+    } else if (isArray(sexp)) {
+        const v = sexp[0];
+        if (isString(v)) {
+            return bind(parseTExp(sexp[2]), (te: TExp) => makeOk(makeVarDecl(v, te)));
+        } else {
+            return makeFailure(`Invalid var ${sexp[0]}`);
+        }
     } else {
-        const bdgs = sexps[1];
-        return isArray(bdgs) ? safeMakeLetExp(parseBindings(bdgs), map(parseCExp, sexps.slice(2)))
-                             : Error(`Invalid bindings ${bdgs}`);
+        return makeFailure("Var cannot be a SexpString");
     }
 }
 
-const safeMakeLetExp = (bindings: Binding[] | Error, body: Array<CExp | Error>): LetExp | Error =>
-    isError(bindings) ? bindings :
-    hasNoError(body) ? makeLetExp(bindings, body) :
-    Error(getErrorMessages(body));
+const parseBindings = (bindings: [Sexp, Sexp][]): Result<Binding[]> =>
+    safe2((vds: VarDecl[], vals: CExp[]) => makeOk(zipWith(makeBinding, vds, vals)))
+        (mapResult(parseVarDecl, map(b => b[0], bindings)), mapResult(parseL5CExp, map(b => b[1], bindings)));
 
-const isConcreteVarDecl = (sexp:  StringTree): boolean =>
-    isString(sexp) ||
-    (isArray(sexp) && sexp.length > 2 && isString(sexp[0]) && (sexp[1] === ':'));
+const parseLetrecExp = (bindings: Sexp, body: Sexp[]): Result<LetrecExp> =>
+    isEmpty(body) ? makeFailure('Body of "letrec" cannot be empty') :
+    ! isGoodBindings(bindings) ? makeFailure(`Invalid bindings: ${JSON.stringify(bindings)}`) :
+    safe2((bdgs: Binding[], body: CExp[]) => makeOk(makeLetrecExp(bdgs, body)))
+        (parseBindings(bindings), mapResult(parseL5CExp, body));
 
-const safeMakeVarDecl = (v: string, te: TExp | Error): VarDecl | Error =>
-    isError(te) ? te :
-    makeVarDecl(v, te);
-
-export const parseVarDecl = (x: StringTree): VarDecl | Error => {
-    if (isString(x)) {
-        return makeVarDecl(x, makeFreshTVar())
-    } else {
-        const v = x[0];
-        return isString(v) ? safeMakeVarDecl(v, parseTExp(x[2])) : Error(`Invalid var ${v}`);
-    }
-}
-
-export const parseDecls = (sexps: StringTree[]): Array<VarDecl | Error> =>
-    map(parseVarDecl, sexps);
-
-const parseBindings = (pairs: StringTree[]): Binding[] | Error => {
-    if (allT(isArray, pairs)) {
-        return safeMakeBindings(parseDecls(map(first, pairs)), map(parseCExp, map(second, pairs)));
-    } else {
-        return Error(`Invalid bindings ${JSON.stringify(pairs)}`);
-    }
-}
-
-const safeMakeBindings = (decls: Array<VarDecl | Error>, vals: Array<CExp | Error>): Binding[] | Error =>
-    (hasNoError(vals) && hasNoError(decls)) ? zipWith(makeBinding, decls, vals) :
-    ! hasNoError(vals) ? Error(getErrorMessages(vals)) :
-    Error(getErrorMessages(decls));
-
-// LetrecExp ::= (letrec (<binding>*) <cexp>+)
-const parseLetrecExp = (sexps: StringTree[]): LetrecExp | Error => {
-    if (sexps.length < 3) {
-        return Error(`Expected (letrec (<binding>*) <cexp>+) - ${sexps}`);
-    } else {
-        const bdgs = sexps[1];
-        return isArray(bdgs) ? safeMakeLetrecExp(parseBindings(bdgs), map(parseCExp, sexps.slice(2)))
-                             : Error(`Invalid bindings ${bdgs}`);
-    }
-}
-
-const safeMakeLetrecExp = (bindings: Binding[] | Error, body: Array<CExp | Error>): LetrecExp | Error =>
-    isError(bindings) ? bindings :
-    hasNoError(body) ? makeLetrecExp(bindings, body) :
-    Error(getErrorMessages(body));
-
-const parseSetExp = (es: StringTree[]): SetExp | Error => {
-    if (es.length !== 3) {
-        return Error(`set! should be (set! var val) - ${es}`);
-    } else if (!isString(es[1])) {
-        return Error(`Expected (set! <var> <CExp>) - ${es[1]}`);
-    } else {
-        const v = es[1];
-        return safeF((val: CExp) => makeSetExp(makeVarRef(v), val))(parseCExp(es[2]));
-    }
-}
+const parseSetExp = (params: Sexp[]): Result<SetExp> =>
+    isEmpty(params) ? makeFailure("set! missing 2 arguments") :
+    isEmpty(rest(params)) ? makeFailure("set! missing 1 argument") :
+    ! isEmpty(rest(rest(params))) ? makeFailure("set! has too many arguments") :
+    parseGoodSetExp(first(params), second(params));
+    
+const parseGoodSetExp = (variable: Sexp, val: Sexp): Result<SetExp> =>
+    ! isIdentifier(variable) ? makeFailure("First arg of set! must be an identifier") :
+    bind(parseL5CExp(val), (val: CExp) => makeOk(makeSetExp(makeVarRef(variable), val)));
 
 // sexps has the shape (quote <sexp>)
-export const parseLitExp = (sexps: StringTree[]): LitExp | Error =>
-    safeF(makeLitExp)(parseSExp(second(sexps)));
+export const parseLitExp = (param: Sexp): Result<LitExp> =>
+    bind(parseSExp(param), (sexp: SExpValue) => makeOk(makeLitExp(sexp)));
 
-export const isDottedPair = (sexps: StringTree[]): boolean =>
+export const isDottedPair = (sexps: Sexp[]): boolean =>
     sexps.length === 3 && 
     sexps[1] === "."
 
-export const makeDottedPair = (sexps : StringTree[]): SExp | Error =>
-    safeF2(makeCompoundSExp)(parseSExp(sexps[0]), parseSExp(sexps[2]))
+export const makeDottedPair = (sexps : Sexp[]): Result<SExpValue> =>
+    safe2((val1: SExpValue, val2: SExpValue) => makeOk(makeCompoundSExp(val1, val2)))
+        (parseSExp(sexps[0]), parseSExp(sexps[2]));
 
-// x is the output of p (sexp parser)
-export const parseSExp = (x: StringTree): SExp | Error =>
-    x === "#t" ? true :
-    x === "#f" ? false :
-    isString(x) && isNumericString(x) ? +x :
-    isSexpString(x) ? x.toString() :
-    isString(x) ? makeSymbolSExp(x) :
-    x.length === 0 ? makeEmptySExp() :
-    isArray(x) && isDottedPair(x) ? makeDottedPair(x) :
-    isArray(x) ? (
+// sexp is the output of p (sexp parser)
+export const parseSExp = (sexp: Sexp): Result<SExpValue> =>
+    sexp === "#t" ? makeOk(true) :
+    sexp === "#f" ? makeOk(false) :
+    isString(sexp) && isNumericString(sexp) ? makeOk(+sexp) :
+    isSexpString(sexp) ? makeOk(sexp.toString()) :
+    isString(sexp) ? makeOk(makeSymbolSExp(sexp)) :
+    sexp.length === 0 ? makeOk(makeEmptySExp()) :
+    isArray(sexp) && isDottedPair(sexp) ? makeDottedPair(sexp) :
+    isArray(sexp) ? (
         // fail on (x . y z)
-        x[0] === '.' ? Error("Bad dotted sexp: " + x) : 
-        safeF2(makeCompoundSExp)(parseSExp(first(x)), parseSExp(rest(x)))) :
-    Error(`Bad literal expression: ${x}`);
+        sexp[0] === '.' ? makeFailure("Bad dotted sexp: " + sexp) : 
+        safe2((val1: SExpValue, val2: SExpValue) => makeOk(makeCompoundSExp(val1, val2)))
+            (parseSExp(first(sexp)), parseSExp(rest(sexp)))) :
+    makeFailure(`Bad literal expression: ${sexp}`);
 
 // ==========================================================================
 // Unparse: Map an AST to a concrete syntax string.
 
-export const unparse = (e: Parsed | Error): string | Error =>
-    isError(e) ? e :
+export const unparse = (e: Parsed): Result<string> =>
     // NumExp | StrExp | BoolExp | PrimOp | VarRef
-    isNumExp(e) ? `${e.val}` :
-    isStrExp(e) ? `"${e.val}"` :
-    isBoolExp(e) ? (e.val ? "#t" : "#f") :
-    isPrimOp(e) ? e.op :
-    isVarRef(e) ? e.var :
+    isNumExp(e) ? makeOk(`${e.val}`) :
+    isStrExp(e) ? makeOk(`"${e.val}"`) :
+    isBoolExp(e) ? makeOk(e.val ? "#t" : "#f") :
+    isPrimOp(e) ? makeOk(e.op) :
+    isVarRef(e) ? makeOk(e.var) :
     // AppExp | IfExp | ProcExp | LetExp | LitExp | LetrecExp | SetExp
-    isAppExp(e) ? `(${unparse(e.rator)} ${join(" ", map(unparse, e.rands))})` :
-    isIfExp(e) ? `(if ${unparse(e.test)} ${unparse(e.then)} ${unparse(e.alt)})` :
+    isAppExp(e) ? safe2((rator: string, rands: string[]) => makeOk(`(${rator} ${join(" ", rands)})`))
+                    (unparse(e.rator), mapResult(unparse, e.rands)) :
+    isIfExp(e) ? safe3((test: string, then: string, alt: string) => makeOk(`(if ${test} ${then} ${alt})`))
+                    (unparse(e.test), unparse(e.then), unparse(e.alt)) :
     isLetExp(e) ? unparseLetExp(e) :
     isLetrecExp(e) ? unparseLetrecExp(e) :
     isProcExp(e) ? unparseProcExp(e) :
-    isLitExp(e) ? unparseLitExp(e) :
+    isLitExp(e) ? makeOk(unparseLitExp(e)) :
     isSetExp(e) ? unparseSetExp(e) :
     // DefineExp | Program
-    isDefineExp(e) ? `(define ${unparseVarDecl(e.var)} ${unparse(e.val)})` :
-    `(L5 ${map(unparse, e.exps)})`
+    isDefineExp(e) ? safe2((vd: string, val: string) => makeOk(`(define ${vd} ${val})`))
+                        (unparseVarDecl(e.var), unparse(e.val)) :
+    bind(mapResult(unparse, e.exps), (exps: string[]) => makeOk(`(L5 ${exps})`));
 
-const unparseReturn = (te: TExp): string =>
-    isTVar(te) ? "" :
-    ` : ${unparseTExp(te)}`;
+const unparseReturn = (te: TExp): Result<string> =>
+    isTVar(te) ? makeOk("") :
+    bind(unparseTExp(te), (te: string) => makeOk(` : ${te}`));
 
-const unparseBindings = (bindings: Binding[]): string =>
-    join(" ", map((b) => `(${unparseVarDecl(b.var)} ${unparse(b.val)})`, bindings));
+const unparseBindings = (bindings: Binding[]): Result<string> =>
+    bind(mapResult(bdg => safe2((vd: string, val: string) => makeOk(`(${vd} ${val})`))(unparseVarDecl(bdg.var), unparse(bdg.val)), bindings),
+         (bdgs: string[]) => makeOk(join(" ", bdgs)));
 
-const unparseVarDecl = (vd: VarDecl): string =>
-    isTVar(vd.texp) ? vd.var :
-    `(${vd.var} : ${unparseTExp(vd.texp)})`;
+const unparseVarDecl = (vd: VarDecl): Result<string> =>
+    isTVar(vd.texp) ? makeOk(vd.var) :
+    bind(unparseTExp(vd.texp), te => makeOk(`(${vd.var} : ${te})`));
 
 // Add a quote for symbols, empty and compound sexp - strings and numbers are not quoted.
 const unparseLitExp = (le: LitExp): string =>
@@ -409,18 +376,20 @@ const unparseLitExp = (le: LitExp): string =>
     isCompoundSExp(le.val) ? `'${valueToString(le.val)}` :
     `${le.val}`;
 
-const unparseLExps = (les: Exp[]): string =>
-    join(" ", map(unparse, les));
+const unparseLExps = (les: Exp[]): Result<string> =>
+    bind(mapResult(unparse, les), (les: string[]) => makeOk(join(" ", les)));
 
-const unparseProcExp = (pe: ProcExp): string => 
-    `(lambda (${join(" ", map(unparseVarDecl, pe.args))})${unparseReturn(pe.returnTE)} ${unparseLExps(pe.body)})`
+const unparseProcExp = (pe: ProcExp): Result<string> =>
+    safe3((vds: string[], ret: string, body: string) => makeOk(`(lambda (${join(" ", vds)})${ret} ${body})`))
+        (mapResult(unparseVarDecl, pe.args), unparseReturn(pe.returnTE), unparseLExps(pe.body));
 
-const unparseLetExp = (le: LetExp) : string => 
-    `(let (${unparseBindings(le.bindings)}) ${unparseLExps(le.body)})`
+const unparseLetExp = (le: LetExp) : Result<string> => 
+    safe2((bdgs: string, body: string) => makeOk(`(let (${bdgs}) ${body})`))
+        (unparseBindings(le.bindings), unparseLExps(le.body));
 
-const unparseLetrecExp = (le: LetrecExp): string => 
-    `(letrec (${unparseBindings(le.bindings)}) ${unparseLExps(le.body)})`
+const unparseLetrecExp = (le: LetrecExp): Result<string> =>
+    safe2((bdgs: string, body: string) => makeOk(`(letrec (${bdgs}) ${body})`))
+        (unparseBindings(le.bindings), unparseLExps(le.body));
 
-const unparseSetExp = (se: SetExp): string =>
-    `(set! ${se.var.var} ${unparse(se.val)})`;
-
+const unparseSetExp = (se: SetExp): Result<string> =>
+    bind(unparse(se.val), (val: string) => makeOk(`(set! ${se.var.var} ${val})`));

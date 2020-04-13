@@ -167,7 +167,7 @@ export const parseL4Exp = (sexp: Sexp): Result<Exp> =>
     makeFailure("Unexpected type " + sexp);
 
 export const parseL4CompoundExp = (op: Sexp, params: Sexp[]): Result<Exp> => 
-    op === "define"? parseDefine(params) :
+    op === "define" ? parseDefine(params) :
     parseL4CompoundCExp(op, params);
 
 export const parseL4CompoundCExp = (op: Sexp, params: Sexp[]): Result<CExp> =>
