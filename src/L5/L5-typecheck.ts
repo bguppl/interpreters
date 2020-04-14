@@ -11,6 +11,7 @@ import { isProcTExp, makeBoolTExp, makeNumTExp, makeProcTExp, makeStrTExp, makeV
          BoolTExp, NumTExp, StrTExp, TExp } from "./TExp";
 import { isEmpty, allT, first, rest } from '../shared/list';
 import { Result, makeFailure, bind, makeOk, safe3, safe2, mapResult, zipWithResult } from '../shared/result';
+import { parse as p } from "../shared/parser";
 
 // Purpose: Check that type expressions are equivalent
 // as part of a fully-annotated type check process of exp.
@@ -28,7 +29,7 @@ const checkEqualType = (te1: TExp, te2: TExp, exp: Exp): Result<true> =>
 
 // Purpose: Compute the type of a concrete fully-typed expression
 export const L5typeof = (concreteExp: string): Result<string> =>
-    bind(parseL5Exp(concreteExp),
+    bind(bind(p(concreteExp), parseL5Exp),
          (e: Exp) => bind(typeofExp(e, makeEmptyTEnv()), unparseTExp));
 
 // Purpose: Compute the type of an expression
