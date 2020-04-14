@@ -1,7 +1,7 @@
 import { curry, map, prop } from 'ramda';
 import { eqTVar, isAtomicTExp, isProcTExp, isTVar, makeProcTExp, unparseTExp, TExp, TVar } from "./TExp";
 import { isEmpty, first, rest } from "../shared/list";
-import { Result, makeOk, makeFailure, mapResult, bind } from '../shared/result';
+import { Result, makeOk, makeFailure, mapResult, bind, zipWithResult } from '../shared/result';
 
 // Implementation of the Substitution ADT
 // ========================================================
@@ -26,7 +26,7 @@ export const isSub = (x: any): x is Sub => x.tag === "Sub";
 // Pre-condition: (length variables) = (length tes)
 //                variables has no repetitions (set)
 export const makeSub = (vars: TVar[], tes: TExp[]): Result<Sub> =>
-    bind(checkNoOccurrences(vars, tes), _ => makeOk({ tag: "Sub", vars: vars, tes: tes }));
+    bind(zipWithResult(checkNoOccurrence, vars, tes), _ => makeOk({ tag: "Sub", vars: vars, tes: tes }));
 
 export const makeEmptySub = (): Sub => ({tag: "Sub", vars: [], tes: []});
 
@@ -40,12 +40,6 @@ export const checkNoOccurrence = (tvar: TVar, te: TExp): Result<true> => {
         makeFailure(`Bad type expression ${e} in ${te}`);
     return check(te);
 };
-
-// Purpose: Perform a sequence of "checkNoOccurrence", return Ok<true> if successful,
-//          or the first Failure in case of an error.
-const checkNoOccurrences = (vars: TVar[], tes: TExp[]): Result<true> =>
-    vars.length === 0 ? makeOk(true) :
-    bind(checkNoOccurrence(vars[0], tes[0]), _ => checkNoOccurrences(vars.slice(1), tes.slice(1)));
 
 export const isEmptySub = (sub: any): boolean => isSub(sub) && isEmpty(sub.vars) && isEmpty(sub.tes);
 

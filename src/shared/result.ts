@@ -1,4 +1,5 @@
 import { isEmpty, first, rest } from "./list";
+import { Optional, makeSome, makeNone } from "./optional";
 
 export type Result<T> = Ok<T> | Failure
 ​
@@ -50,6 +51,12 @@ export const mapResult = <T, U>(f: (x: T) => Result<U>, list: T[]): Result<U[]> 
          (fa: U) => bind(mapResult(f, rest(list)), 
                          (fas: U[]) => makeOk([fa].concat(fas))));
 
+export const zipWithResult = <T1, T2, T3>(f: (x: T1, y: T2) => Result<T3>, xs: T1[], ys: T2[]): Result<T3[]> =>
+    xs.length === 0 || ys.length === 0 ? makeOk([]) :
+    bind(f(first(xs), first(ys)),
+         (fxy: T3) => bind(zipWithResult(f, xs.slice(1), ys.slice(1)),
+                           (fxys: T3[]) => makeOk([fxy].concat(fxys))));
+
 export const safe2 = <T1, T2, T3>(f: (x: T1, y: T2) => Result<T3>): (xr: Result<T1>, yr: Result<T2>) => Result<T3> =>
     (xr: Result<T1>, yr: Result<T2>) =>
         bind(xr, (x: T1) => bind(yr, (y: T2) => f(x, y)));
@@ -57,3 +64,6 @@ export const safe2 = <T1, T2, T3>(f: (x: T1, y: T2) => Result<T3>): (xr: Result<
 export const safe3 = <T1, T2, T3, T4>(f: (x: T1, y: T2, z: T3) => Result<T4>): (xr: Result<T1>, yr: Result<T2>, zr: Result<T3>) => Result<T4> =>
     (xr: Result<T1>, yr: Result<T2>, zr: Result<T3>) =>
         bind(xr, (x: T1) => bind(yr, (y: T2) => bind(zr, (z: T3) => f(x, y, z))));
+
+export const resultToOptional = <T>(r: Result<T>): Optional<T> =>
+    either(makeSome, _ => makeNone(), r);

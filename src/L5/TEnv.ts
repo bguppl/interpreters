@@ -13,6 +13,7 @@
 */
 
 import { TExp } from './TExp';
+import { Result, makeOk, makeFailure } from '../shared/result';
 
 export type TEnv = EmptyTEnv | ExtendTEnv;
 
@@ -25,10 +26,10 @@ export const makeExtendTEnv = (vars: string[], texps: TExp[], tenv: TEnv): Exten
     ({tag: "ExtendTEnv", vars: vars, texps: texps, tenv: tenv});
 export const isExtendTEnv = (x: any): x is ExtendTEnv => x.tag === "ExtendTEnv";
 
-export const applyTEnv = (tenv: TEnv, v: string): TExp | Error =>
-    isEmptyTEnv(tenv) ? Error(`Type Variable not found ${v}`) :
+export const applyTEnv = (tenv: TEnv, v: string): Result<TExp> =>
+    isEmptyTEnv(tenv) ? makeFailure(`Type Variable not found ${v}`) :
     applyExtendTEnv(tenv.texps, tenv.tenv, v, tenv.vars.indexOf(v));
 
-export const applyExtendTEnv = (texps: TExp[], tenv: TEnv, v: string, pos: number): TExp | Error =>
+export const applyExtendTEnv = (texps: TExp[], tenv: TEnv, v: string, pos: number): Result<TExp> =>
     (pos === -1) ? applyTEnv(tenv, v) :
-    texps[pos];
+    makeOk(texps[pos]);
