@@ -5,7 +5,7 @@ import * as S from "./L5-substitution-adt";
 import * as TC from "./L5-typecheck";
 import * as T from "./TExp";
 import { allDefined, isError, safeF, safeU, safeU2, trust, isDefined } from '../shared/error';
-import {first, rest} from "../shared/list";
+import { isEmpty, first, rest } from "../shared/list";
 
 // ============================================================n
 // Pool ADT
@@ -33,7 +33,8 @@ export const extendPool = (exp: A.Exp, pool: Pool): Pool =>
 const extendPoolVarDecl = (vd: A.VarDecl, pool: Pool): Pool =>
     R.prepend({e: A.makeVarRef(vd.var), te: vd.texp}, pool);
 
-export const inPool = (pool: Pool, e: A.Exp | undefined): T.TExp | undefined => safeU(R.prop('te'))(R.find(R.propEq('e', e), pool));
+export const inPool = (pool: Pool, e: A.Exp | undefined): T.TExp | undefined =>
+    safeU(R.prop('te'))(R.find(R.propEq('e', e), pool));
 
 // Purpose: verify that a set of expressions are found in a pool
 //          useful to verify preconditions if allInPool(pool, [e1, e2]) then 
@@ -46,12 +47,12 @@ export const allInPool = (pool: Pool, es: A.Exp[]): boolean =>
 // fun should construct a new pool given a new expression from exp-list
 // that has not yet been seen before.
 const mapPool = (fun: (e: A.Exp, pool: Pool) => Pool, exps: A.Exp[], result: Pool): Pool =>
-    A.isEmpty(exps) ? result :
+    isEmpty(exps) ? result :
     mapPool(fun, rest(exps),
             inPool(result, first(exps)) ? result : fun(first(exps), result));
 
 const mapPoolVarDecls = (fun: (e: A.VarDecl, pool: Pool) => Pool, vds: A.VarDecl[], result: Pool): Pool =>
-    A.isEmpty(vds) ? result :
+    isEmpty(vds) ? result :
     mapPoolVarDecls(fun, rest(vds),
                     inPool(result, A.makeVarRef(first(vds).var)) ? result : fun(first(vds), result));
 
@@ -151,8 +152,8 @@ export const inferType = (exp: A.Exp): T.TExp | undefined => {
 
 // Type: [Concrete-Exp -> Concrete-TExp]
 export const infer = (exp: string): string | Error => {
-    const p = A.parse(exp);
-    const t = A.isExp(p) ? safeF(inferType)(p) : Error('Unsupported exp: ${p}');
+    const p = A.parseL5Exp(exp);
+    const t = A.isExp(p) ? safeF(inferType)(p) : Error(`Unsupported exp: ${p}`);
     return isDefined(t) ? safeF(T.unparseTExp)(t) : Error('Infer type failed');
 };
 
@@ -185,7 +186,7 @@ const solve = (equations: Equation[], sub: S.Sub): S.Sub | Error => {
                 solve(rest(equations), sub) :
                 Error(`Equation with non-equal atomic type ${eq}`);
 
-    if (A.isEmpty(equations)) return sub;
+    if (isEmpty(equations)) return sub;
     const eq = makeEquation(S.applySub(sub, first(equations).left),
                             S.applySub(sub, first(equations).right));
     return T.isTVar(eq.left) ? solveVarEq(eq.left, eq.right) :

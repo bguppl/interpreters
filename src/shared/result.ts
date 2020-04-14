@@ -42,8 +42,8 @@ export const isOkT = <T>(pred: (x: any) => x is T) => (r: any): r is Ok<T> =>
 //          With f: T=>Result<U> and list: T[] return a Result<U[]> 
 //          If one of the items of the list fails on f - returns the Failure on the first item that fails.
 // Example: 
-// mapResult((x)=>x == 0 ? makeFailure("div by 0") : makeOk(1/x), [1,2]) ==> {tag:"Ok", value:[1, 0.5]}
-// mapResult((x)=>x == 0 ? makeFailure("div by 0") : makeOk(1/x), [1,0,2]) ==> {tag:"Failure", message:"div by 0"}
+// mapResult((x)=>x === 0 ? makeFailure("div by 0") : makeOk(1/x), [1,2]) ==> {tag:"Ok", value:[1, 0.5]}
+// mapResult((x)=>x === 0 ? makeFailure("div by 0") : makeOk(1/x), [1,0,2]) ==> {tag:"Failure", message:"div by 0"}
 export const mapResult = <T, U>(f: (x: T) => Result<U>, list: T[]): Result<U[]> =>
     isEmpty(list) ? makeOk([]) :
     bind(f(first(list)), 
