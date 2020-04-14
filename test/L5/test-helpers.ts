@@ -19,12 +19,12 @@ export const subToStr = (sub: Sub): Result<string> =>
     bindResult(zipWithResult((v, t) => bindResult(unparseTExp(t), up => makeOk(`${v.var}:${up}`)), sub.vars, sub.tes),
                (vts: string[]) => makeOk(vts.sort().join(", ")));
 
-export const verifyTeOfExprWithEquations: (exp: string, texp: string) => void = (exp, texp) => {
+export const verifyTeOfExprWithEquations = (exp: string, texp: string): Result<boolean> => {
     const e = bindResult(p(exp), parseL5Exp);
     const expectedType = parseTE(texp);
     const computedType = bindResult(e, (exp: Exp) => optionalToResult(inferType(exp), "Could not infer type"));
     const ok = safe2((ct: TExp, et: TExp) => makeOk(equivalentTEs(ct, et)))(computedType, expectedType);
-    expect(ok).to.deep.equal(makeOk(true));
+    return ok;
 };
 
 // export const verifyTeOfExprWithInference: (exp: string, texp: string) => void = (exp, texp) => {

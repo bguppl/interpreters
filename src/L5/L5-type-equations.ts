@@ -52,13 +52,15 @@ export const allInPool = (pool: Pool, es: A.Exp[]): boolean =>
 // that has not yet been seen before.
 const mapPool = (fun: (e: A.Exp, pool: Pool) => Pool, exps: A.Exp[], result: Pool): Pool =>
     isEmpty(exps) ? result :
-    mapPool(fun, rest(exps),
-            inPool(result, first(exps)) ? result : fun(first(exps), result));
+    mapPool(fun, rest(exps), maybe(_ => result,
+                                   () => fun(first(exps), result),
+                                   inPool(result, first(exps))));
 
 const mapPoolVarDecls = (fun: (e: A.VarDecl, pool: Pool) => Pool, vds: A.VarDecl[], result: Pool): Pool =>
     isEmpty(vds) ? result :
-    mapPoolVarDecls(fun, rest(vds),
-                    inPool(result, A.makeVarRef(first(vds).var)) ? result : fun(first(vds), result));
+    mapPoolVarDecls(fun, rest(vds), maybe(_ => result,
+                                          () => fun(first(vds), result),
+                                          inPool(result, A.makeVarRef(first(vds).var))));
 
 // Purpose: Traverse the abstract syntax tree L5-exp
 //          and collect all sub-expressions into a Pool of fresh type variables.
@@ -144,11 +146,11 @@ export const makeEquationFromExp = (exp: A.Exp, pool: Pool): Optional<Equation[]
 export const inferType = (exp: A.Exp): Optional<T.TExp> => {
     // console.log(`Infer ${A.unparse(exp)}`)
     const pool = expToPool(exp);
-    console.log(`Pool ${JSON.stringify(pool)}`);
+    // console.log(`Pool ${JSON.stringify(pool)}`);
     const equations = poolToEquations(pool);
-    console.log(`Equations ${JSON.stringify(equations)}`);
+    // console.log(`Equations ${JSON.stringify(equations)}`);
     const sub = bindOptional(equations, (eqns: Equation[]) => resultToOptional(solveEquations(eqns)))
-    console.log(`Sub ${JSON.stringify(sub)}`);
+    // console.log(`Sub ${JSON.stringify(sub)}`);
     const texp = inPool(pool, exp);
     // console.log(`TExp = ${JSON.stringify(bindResult(optionalToResult(texp, "TExp is None"), T.unparseTExp))}`);
     return safe2((sub: S.Sub, texp: T.TExp) => makeSome(T.isTVar(texp) ? S.subGet(sub, texp) : texp))(sub, texp);
@@ -189,8 +191,6 @@ const solve = (equations: Equation[], sub: S.Sub): Result<S.Sub> => {
         T.isAtomicTExp(eq.left) && T.isAtomicTExp(eq.right) && T.eqAtomicTExp(eq.left, eq.right)
         ? solve(rest(equations), sub)
         : makeFailure(`Equation with non-equal atomic type ${eq}`);
-
-    console.log(equations);
 
     if (isEmpty(equations)) {
         return makeOk(sub);
