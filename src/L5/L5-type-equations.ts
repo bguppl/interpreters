@@ -4,10 +4,9 @@ import * as A from "./L5-ast";
 import * as S from "./L5-substitution-adt";
 import * as TC from "./L5-typecheck";
 import * as T from "./TExp";
-import { allDefined, isError, safeF, safeU, safeU2, trust, isDefined } from '../shared/error';
 import { isEmpty, first, rest } from "../shared/list";
 import { Result, bind as bindResult, makeOk, makeFailure, resultToOptional } from "../shared/result";
-import { Optional, bind as bindOptional, maybe, makeSome, makeNone, isSome, mapOptional, safe3, safe2, optionalToResult } from "../shared/optional";
+import { Optional, bind as bindOptional, maybe, makeSome, makeNone, mapOptional, safe3, safe2 } from "../shared/optional";
 
 // ============================================================n
 // Pool ADT
@@ -19,7 +18,6 @@ export interface PoolItem {e: A.Exp, te: T.TExp};
 export type Pool = PoolItem[];
 
 export const makeEmptyPool = () => [];
-export const isEmptyPool = (x: any): boolean => x.length === 0;
 
 // Purpose: construct a pool with one additional pair
 //          (exp fresh-tvar)
@@ -39,12 +37,6 @@ export const inPool = (pool: Pool, e: A.Exp): Optional<T.TExp> => {
     const exp = R.find(R.propEq('e', e), pool);
     return exp ? makeSome(R.prop('te')(exp)) : makeNone();
 }
-
-// Purpose: verify that a set of expressions are found in a pool
-//          useful to verify preconditions if allInPool(pool, [e1, e2]) then 
-//          inPool(pool ei) will not be undefined and will be a TExp
-export const allInPool = (pool: Pool, es: A.Exp[]): boolean =>
-    R.all(isSome, R.map((e) => inPool(pool, e), es))
 
 // Map a function over a list of expressions to accumulate
 // matching sub-expressions into a pool.
@@ -84,12 +76,6 @@ export const expToPool = (exp: A.Exp): Pool => {
 export interface Equation {left: T.TExp, right: T.TExp};
 export const makeEquation = (l: T.TExp, r: T.TExp): Equation => ({left: l, right: r});
 
-// Safe makeEquation: make equation that absorbs undefined params into undefined
-export const safeMakeEquation = safeU2(makeEquation);
-export const safeEquations = (eqs: (Equation | undefined)[]): Equation[] => 
-    allDefined(eqs) ? eqs : [];
-export const safeList = <T1>(l: (T1 | undefined)[]): T1[] | undefined =>
-    allDefined(l) ? l : undefined;
 export const safeLast = <T extends any>(list: readonly T[]): Optional<T> => {
     const last = R.last(list);
     return last ? makeSome(last) : makeNone();
