@@ -21,20 +21,20 @@ import { Result, makeOk, makeFailure } from '../shared/result';
 // ========================================================
 // Environment data type
 export type Env = EmptyEnv | ExtEnv | RecEnv;
-export interface EmptyEnv {tag: "EmptyEnv" };
+export interface EmptyEnv {tag: "EmptyEnv" }
 export interface ExtEnv {
     tag: "ExtEnv";
     vars: string[];
     vals: Value[];
     nextEnv: Env;
-};
+}
 export interface RecEnv {
     tag: "RecEnv";
     vars: string[];
     paramss: VarDecl[][];
     bodiess: CExp[][];
     nextEnv: Env;
-};
+}
 
 export const makeEmptyEnv = (): EmptyEnv => ({tag: "EmptyEnv"});
 export const makeExtEnv = (vs: string[], vals: Value[], env: Env): ExtEnv =>

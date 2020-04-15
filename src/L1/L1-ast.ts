@@ -18,15 +18,15 @@ export type Exp = DefineExp | CExp;
 // An expression which can be embedded inside other expressions (constituent expression)
 export type CExp = NumExp | BoolExp | PrimOp | VarRef | AppExp;
 
-export interface Program {tag: "Program"; exps: Exp[]; };
+export interface Program {tag: "Program"; exps: Exp[]; }
 
-export interface DefineExp {tag: "DefineExp"; var: VarDecl; val: CExp; };
-export interface NumExp {tag: "NumExp"; val: number; };
-export interface BoolExp {tag: "BoolExp"; val: boolean; };
-export interface PrimOp {tag: "PrimOp", op: string; };
-export interface VarRef {tag: "VarRef", var: string; };
-export interface VarDecl {tag: "VarDecl", var: string; };
-export interface AppExp {tag: "AppExp", rator: CExp, rands: CExp[]; };
+export interface DefineExp {tag: "DefineExp"; var: VarDecl; val: CExp; }
+export interface NumExp {tag: "NumExp"; val: number; }
+export interface BoolExp {tag: "BoolExp"; val: boolean; }
+export interface PrimOp {tag: "PrimOp", op: string; }
+export interface VarRef {tag: "VarRef", var: string; }
+export interface VarDecl {tag: "VarDecl", var: string; }
+export interface AppExp {tag: "AppExp", rator: CExp, rands: CExp[]; }
 
 // Type value constructors for disjoint types
 export const makeProgram = (exps: Exp[]): Program => ({tag: "Program", exps: exps});
@@ -136,4 +136,4 @@ export const isPrimitiveOp = (x: string): boolean =>
 // AppExp -> ( <cexp>+ )
 export const parseAppExp = (op: Sexp, params: Sexp[]): Result<CExp> =>
     safe2((rator: CExp, rands: CExp[]) => makeOk(makeAppExp(rator, rands)))
-        (parseL1CExp(op), mapResult(parseL1CExp, params))
+        (parseL1CExp(op), mapResult(parseL1CExp, params));

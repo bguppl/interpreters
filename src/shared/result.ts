@@ -1,7 +1,7 @@
 import { isEmpty, first, rest } from "./list";
 import { Optional, makeSome, makeNone } from "./optional";
 
-export type Result<T> = Ok<T> | Failure
+export type Result<T> = Ok<T> | Failure;
 ​
 interface Ok<T> {
     tag: "Ok";

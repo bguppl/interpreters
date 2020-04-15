@@ -48,7 +48,7 @@ export interface FBinding {
     tag: "FBinding";
     var: string;
     val: Box<Value>;
-};
+}
 
 export const isFBinding = (x: any): x is FBinding => x.tag === "FBinding";
 export const makeFBinding = (v: string, val: Value): FBinding =>
@@ -62,7 +62,7 @@ export const setFBinding = (f: FBinding, val: Value): void => { setBox(f.val, va
 export interface Frame {
     tag: "Frame";
     fbindings: FBinding[];
-};
+}
 
 export const makeFrame = (vars: string[], vals: Value[]): Frame =>
     ({tag: "Frame", fbindings: zipWith(makeFBinding, vars, vals)});
@@ -109,7 +109,7 @@ export interface ExtEnv {
     tag: "ExtEnv";
     frame: Frame;
     env: Env;
-};
+}
 export const isExtEnv = (x: any): x is ExtEnv => x.tag === "ExtEnv";
 export const makeExtEnv = (vs: string[], vals: Value[], env: Env): ExtEnv =>
     ({tag: "ExtEnv", frame: makeFrame(vs, vals), env: env});
@@ -127,7 +127,7 @@ const applyExtEnvBdg = (env: ExtEnv, v: string): Result<FBinding> =>
 interface GlobalEnv {
     tag: "GlobalEnv";
     frame: Box<Frame>;
-};
+}
 export const isGlobalEnv = (x: any): x is GlobalEnv => x.tag === "GlobalEnv";
 const makeGlobalEnv = (): GlobalEnv => ({tag: "GlobalEnv", frame: makeBox(makeFrame([], []))});
 // There is a single mutable value in the type Global-env

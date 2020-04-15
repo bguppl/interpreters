@@ -13,13 +13,13 @@ export type Value = number | boolean | PrimOp;
 // ========================================================
 // Environment data type
 export type Env = EmptyEnv | NonEmptyEnv;
-export interface EmptyEnv {tag: "EmptyEnv" };
+export interface EmptyEnv {tag: "EmptyEnv" }
 export interface NonEmptyEnv {
     tag: "Env",
     var: string,
     val: Value,
     nextEnv: Env
-};
+}
 export const makeEmptyEnv = (): EmptyEnv => ({tag: "EmptyEnv"});
 export const makeEnv = (v: string, val: Value, env: Env): NonEmptyEnv =>
     ({tag: "Env", var: v, val: val, nextEnv: env});

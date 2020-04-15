@@ -10,7 +10,7 @@ import { isProcTExp, makeBoolTExp, makeNumTExp, makeProcTExp, makeStrTExp, makeV
          parseTE, unparseTExp,
          BoolTExp, NumTExp, StrTExp, TExp } from "./TExp";
 import { isEmpty, allT, first, rest } from '../shared/list';
-import { Result, makeFailure, bind, makeOk, safe3, safe2, mapResult, zipWithResult } from '../shared/result';
+import { Result, makeFailure, bind, makeOk, safe3, safe2, zipWithResult } from '../shared/result';
 import { parse as p } from "../shared/parser";
 
 // Purpose: Check that type expressions are equivalent

@@ -1,5 +1,4 @@
 // L3-eval.ts
-import { Sexp } from "s-expression";
 import { map } from "ramda";
 import { isCExp, isLetExp } from "./L3-ast";
 import { BoolExp, CExp, Exp, IfExp, LitExp, NumExp,

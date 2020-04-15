@@ -1,13 +1,12 @@
-import { expect } from 'chai';
-import { zipWith, map, bind } from 'ramda';
-import { parseL5Exp, isProgram, Exp } from '../../src/L5/L5-ast';
+import { map } from 'ramda';
+import { parseL5Exp, Exp } from '../../src/L5/L5-ast';
 import { inferType } from '../../src/L5/L5-type-equations';
-import { unparseTExp, TExp, parseTE, makeTVar, equivalentTEs, isTVar } from '../../src/L5/TExp';
+import { unparseTExp, TExp, parseTE, makeTVar, equivalentTEs } from '../../src/L5/TExp';
 import { typeofExp } from '../../src/L5/L5-typeinference';
 import { makeEmptyTEnv } from '../../src/L5/TEnv';
-import { makeSub, Sub, makeEmptySub } from '../../src/L5/L5-substitution-adt';
-import { Result, bind as bindResult, mapResult, zipWithResult, makeOk, resultToOptional, safe2 } from '../../src/shared/result';
-import { bind as bindOptional, optionalToResult } from "../../src/shared/optional";
+import { makeSub, Sub} from '../../src/L5/L5-substitution-adt';
+import { Result, bind as bindResult, mapResult, zipWithResult, makeOk, safe2 } from '../../src/shared/result';
+import { optionalToResult } from "../../src/shared/optional";
 import { parse as p } from "../../src/shared/parser";
 
 // Sub constructor from concrete syntax
@@ -23,8 +22,7 @@ export const verifyTeOfExprWithEquations = (exp: string, texp: string): Result<b
     const e = bindResult(p(exp), parseL5Exp);
     const expectedType = parseTE(texp);
     const computedType = bindResult(e, (exp: Exp) => optionalToResult(inferType(exp), "Could not infer type"));
-    const ok = safe2((ct: TExp, et: TExp) => makeOk(equivalentTEs(ct, et)))(computedType, expectedType);
-    return ok;
+    return safe2((ct: TExp, et: TExp) => makeOk(equivalentTEs(ct, et)))(computedType, expectedType);
 };
 
 export const verifyTeOfExprWithInference = (exp: string, texp: string): Result<boolean> => {

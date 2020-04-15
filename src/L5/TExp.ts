@@ -81,12 +81,12 @@ export type TupleTExp = NonEmptyTupleTExp | EmptyTupleTExp;
 export const isTupleTExp = (x: any): x is TupleTExp =>
     isNonEmptyTupleTExp(x) || isEmptyTupleTExp(x);
 
-export interface EmptyTupleTExp { tag: "EmptyTupleTExp" };
+export interface EmptyTupleTExp { tag: "EmptyTupleTExp" }
 export const makeEmptyTupleTExp = (): EmptyTupleTExp => ({tag: "EmptyTupleTExp"});
 export const isEmptyTupleTExp = (x: any): x is EmptyTupleTExp => x.tag === "EmptyTupleTExp";
 
 // NonEmptyTupleTExp(TEs: NonTupleTExp[])
-export interface NonEmptyTupleTExp { tag: "NonEmptyTupleTExp"; TEs: NonTupleTExp[]; };
+export interface NonEmptyTupleTExp { tag: "NonEmptyTupleTExp"; TEs: NonTupleTExp[]; }
 export const makeNonEmptyTupleTExp = (tes: NonTupleTExp[]): NonEmptyTupleTExp =>
     ({tag: "NonEmptyTupleTExp", TEs: tes});
 export const isNonEmptyTupleTExp = (x: any): x is NonEmptyTupleTExp => x.tag === "NonEmptyTupleTExp";
@@ -283,7 +283,6 @@ export const equivalentTEs = (te1: TExp, te2: TExp): boolean => {
     if (isBoolean(tvarsPairs))
         return false;
     else {
-        const uniquePairs = uniq(tvarsPairs);
         return (uniq(map((p) => p.left.var, tvarsPairs)).length === uniq(map((p) => p.right.var, tvarsPairs)).length);
     }
 };

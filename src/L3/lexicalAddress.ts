@@ -37,7 +37,7 @@ export interface ProcExpLA {
     tag: "ProcExpLA";
     params: VarDecl[];
     body: CExpLA[];
-};
+}
 export const isProcExpLA = (x: any): x is ProcExpLA =>
     (typeof(x) === 'object') && (x.tag === 'ProcExpLA');
 export const makeProcExpLA = (params: VarDecl[], body: CExpLA[]): ProcExpLA =>
@@ -48,7 +48,7 @@ export interface IfExpLA {
     test: CExpLA;
     then: CExpLA;
     alt: CExpLA;
-};
+}
 export const isIfExpLA = (x: any): x is IfExpLA =>
     (typeof(x) === 'object') && (x.tag === 'IfExpLA');
 export const makeIfExpLA = (test: CExpLA, then: CExpLA, alt: CExpLA): IfExpLA =>
@@ -58,7 +58,7 @@ export interface AppExpLA {
     tag: "AppExpLA";
     rator: CExpLA;
     rands: CExpLA[];
-};
+}
 export const isAppExpLA = (x: any): x is AppExpLA =>
     (typeof(x) === 'object') && (x.tag === 'AppExpLA');
 export const makeAppExpLA = (rator: CExpLA, rands: CExpLA[]): AppExpLA =>
@@ -76,7 +76,7 @@ export const isLexAddress = (x: any): x is LexAddress => isFreeVar(x) || isLexic
 export interface FreeVar {
     tag: "FreeVar";
     var: string;
-};
+}
 export const isFreeVar = (x: any): x is FreeVar => (typeof(x) === 'object') && (x.tag === "FreeVar");
 export const makeFreeVar = (v: string): FreeVar => ({tag: "FreeVar", var: v});
 
@@ -85,7 +85,7 @@ export interface LexicalAddress {
     var: string;
     depth: number;
     pos: number;
-};
+}
 export const isLexicalAddress = (x: any): x is LexicalAddress =>
     (typeof(x) === "object") && (x.tag === "LexicalAddress");
 export const makeLexicalAddress = (v: string, depth: number, pos: number): LexicalAddress =>

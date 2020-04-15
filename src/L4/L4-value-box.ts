@@ -22,7 +22,7 @@ export interface Closure {
     params: VarDecl[];
     body: CExp[];
     env: Env;
-};
+}
 export const makeClosure = (params: VarDecl[], body: CExp[], env: Env): Closure =>
     ({tag: "Closure", params, body, env});
 export const isClosure = (x: any): x is Closure => x.tag === "Closure";
@@ -34,14 +34,14 @@ export interface CompoundSExp {
     tag: "CompoundSexp";
     val1: SExpValue;
     val2: SExpValue;
-};
+}
 export interface EmptySExp {
     tag: "EmptySExp";
-};
+}
 export interface SymbolSExp {
     tag: "SymbolSExp";
     val: string;
-};
+}
 
 // @@L4-BOX-VALUE
 // Add void for value of side-effect expressions - set! and define

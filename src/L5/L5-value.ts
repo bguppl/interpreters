@@ -18,7 +18,7 @@ export interface Closure {
     params: VarDecl[];
     body: CExp[];
     env: Env;
-};
+}
 export const makeClosure = (params: VarDecl[], body: CExp[], env: Env): Closure =>
     ({tag: "Closure", params: params, body: body, env: env});
 export const isClosure = (x: any): x is Closure => x.tag === "Closure";
@@ -29,14 +29,14 @@ export interface CompoundSExp {
     tag: "CompoundSexp";
     val1: SExpValue;
     val2: SExpValue;
-};
+}
 export interface EmptySExp {
     tag: "EmptySExp";
-};
+}
 export interface SymbolSExp {
     tag: "SymbolSExp";
     val: string;
-};
+}
 
 export type SExpValue = number | boolean | string | PrimOp | Closure | SymbolSExp | EmptySExp | CompoundSExp | void;
 export const isSExp = (x: any): x is SExpValue =>
