@@ -1,9 +1,10 @@
 import { expect } from 'chai';
-import { parseL5Exp } from '../../src/L5/L5-ast';
+import { parseL5Exp, Exp } from '../../src/L5/L5-ast';
 import { typeofExp, L5typeof } from '../../src/L5/L5-typecheck';
 import { makeEmptyTEnv, makeExtendTEnv } from '../../src/L5/TEnv';
 import { makeBoolTExp, makeNumTExp, makeProcTExp, makeTVar, makeVoidTExp, parseTE, unparseTExp } from '../../src/L5/TExp';
-import { makeOk } from '../../src/shared/result';
+import { makeOk, bind } from '../../src/shared/result';
+import { parse as p } from "../../src/shared/parser";
 
 describe('L5 Type Checker', () => {
     describe('parseTE', () => {
@@ -60,9 +61,9 @@ describe('L5 Type Checker', () => {
             expect(L5typeof("not")).to.deep.equal(makeOk("(boolean -> boolean)"));
         });
 
-        // it('returns the type of a VarRef in a given TEnv', () => {
-        //     expect(typeofExp(parse("x"), makeExtendTEnv(["x"], [makeNumTExp()], makeEmptyTEnv()))).to.deep.equal(makeNumTExp());
-        // });
+        it('returns the type of a VarRef in a given TEnv', () => {
+            expect(bind(bind(p("x"), parseL5Exp), (exp: Exp) => typeofExp(exp, makeExtendTEnv(["x"], [makeNumTExp()], makeEmptyTEnv())))).to.deep.equal(makeOk(makeNumTExp()));
+        });
 
         it('returns the type of "if" expressions', () => {
             expect(L5typeof("(if (> 1 2) 1 2)")).to.deep.equal(makeOk("number"));

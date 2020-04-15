@@ -56,7 +56,7 @@ export const typeofExp = (exp: Parsed, tenv: TEnv): Result<TExp> =>
 // Pre-conditions: exps is not empty.
 export const typeofExps = (exps: Exp[], tenv: TEnv): Result<TExp> =>
     isEmpty(rest(exps)) ? typeofExp(first(exps), tenv) :
-    typeofExps(rest(exps), tenv);
+    bind(typeofExp(first(exps), tenv), _ => typeofExps(rest(exps), tenv));
 
 // a number literal has type num-te
 export const typeofNum = (n: NumExp): NumTExp => makeNumTExp();

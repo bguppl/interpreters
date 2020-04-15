@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { zipWith, map } from 'ramda';
+import { zipWith, map, bind } from 'ramda';
 import { parseL5Exp, isProgram, Exp } from '../../src/L5/L5-ast';
 import { inferType } from '../../src/L5/L5-type-equations';
 import { unparseTExp, TExp, parseTE, makeTVar, equivalentTEs, isTVar } from '../../src/L5/TExp';
@@ -27,29 +27,9 @@ export const verifyTeOfExprWithEquations = (exp: string, texp: string): Result<b
     return ok;
 };
 
-// export const verifyTeOfExprWithInference: (exp: string, texp: string) => void = (exp, texp) => {
-//     const e = parse(exp);
-//     if (isProgram(e)) {
-//         expect.fail("Program exps not yet supported");
-//         return;
-//     }
-//     if (isError(e)) {
-//         expect.fail(`Bad expression ${exp} - ${e}`)
-//         return;
-//     }
-//     const expectedType = parseTE(texp);
-//     if (isError(expectedType)) {
-//         expect.fail(`Bad expression ${texp} - ${expectedType}`)
-//         return;
-//     }
-//     const computedType = typeofExp(e, makeEmptyTEnv());
-//     if (isError(computedType)) {
-//         expect(expectedType).to.satisfy(isTVar);
-//         if (isTVar(expectedType)) {
-//             expect(computedType.name, `Type inference failed - expected ${texp} - ${computedType.message}`).to.equal(expectedType.var);
-//         }
-//         return;
-//     }
-//     const ok = equivalentTEs(computedType, expectedType);
-//     expect(ok, `Expected type ${unparseTExp(expectedType)}, Computed type: ${unparseTExp(computedType)}`).to.be.true;
-// };
+export const verifyTeOfExprWithInference = (exp: string, texp: string): Result<boolean> => {
+    const e = bindResult(p(exp), parseL5Exp);
+    const expectedType = parseTE(texp);
+    const computedType = bindResult(e, (exp: Exp) => typeofExp(exp, makeEmptyTEnv()));
+    return safe2((ct: TExp, et: TExp) => makeOk(equivalentTEs(ct, et)))(computedType, expectedType);
+};
