@@ -27,7 +27,7 @@ export const isNone = <T>(o: Optional<T>): o is None =>
 export const bind = <T, U>(o: Optional<T>, f: (x: T) => Optional<U>): Optional<U> =>
     isSome(o) ? f(o.value) : o;
 
-export const maybe = <T, U>(ifSome: (value: T) => U, ifNone: () => U, o: Optional<T>): U =>
+export const maybe = <T, U>(o: Optional<T>, ifSome: (value: T) => U, ifNone: () => U): U =>
     isSome(o) ? ifSome(o.value) : ifNone();
 
 export const mapOptional = <T, U>(f: (x: T) => Optional<U>, list: T[]): Optional<U[]> =>
@@ -45,4 +45,4 @@ export const safe3 = <T1, T2, T3, T4>(f: (x: T1, y: T2, z: T3) => Optional<T4>):
         bind(xr, (x: T1) => bind(yr, (y: T2) => bind(zr, (z: T3) => f(x, y, z))));
 
 export const optionalToResult = <T>(o: Optional<T>, message: string): Result<T> =>
-    maybe((value: T) => makeOk(value), () => makeFailure(message), o);
+    maybe(o, (value: T) => makeOk(value), () => makeFailure(message));

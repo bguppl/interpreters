@@ -1,4 +1,4 @@
-import { isEmpty, first, rest } from "./list";
+import { isEmpty, first, rest, cons } from "./list";
 import { Optional, makeSome, makeNone } from "./optional";
 
 export type Result<T> = Ok<T> | Failure;
@@ -28,7 +28,7 @@ export const isFailure = <T>(r: Result<T>): r is Failure =>
 export const bind = <T, U>(r: Result<T>, f: (x: T) => Result<U>): Result<U> =>
     isOk(r) ? f(r.value) : r;
 
-export const either = <T, U>(ifOk: (value: T) => U, ifFailure: (message: string) => U, r: Result<T>): U =>
+export const either = <T, U>(r: Result<T>, ifOk: (value: T) => U, ifFailure: (message: string) => U): U =>
     isOk(r) ? ifOk(r.value) : ifFailure(r.message);
 
 // Purpose: Test whether a result is Ok and of a
@@ -43,19 +43,19 @@ export const isOkT = <T>(pred: (x: any) => x is T) => (r: any): r is Ok<T> =>
 //          With f: T=>Result<U> and list: T[] return a Result<U[]> 
 //          If one of the items of the list fails on f - returns the Failure on the first item that fails.
 // Example: 
-// mapResult((x)=>x === 0 ? makeFailure("div by 0") : makeOk(1/x), [1,2]) ==> {tag:"Ok", value:[1, 0.5]}
-// mapResult((x)=>x === 0 ? makeFailure("div by 0") : makeOk(1/x), [1,0,2]) ==> {tag:"Failure", message:"div by 0"}
+// mapResult((x) => x === 0 ? makeFailure("div by 0") : makeOk(1/x), [1,2]) ==> {tag:"Ok", value:[1, 0.5]}
+// mapResult((x) => x === 0 ? makeFailure("div by 0") : makeOk(1/x), [1,0,2]) ==> {tag:"Failure", message:"div by 0"}
 export const mapResult = <T, U>(f: (x: T) => Result<U>, list: T[]): Result<U[]> =>
     isEmpty(list) ? makeOk([]) :
     bind(f(first(list)), 
          (fa: U) => bind(mapResult(f, rest(list)), 
-                         (fas: U[]) => makeOk([fa].concat(fas))));
+                         (fas: U[]) => makeOk(cons(fa, fas))));
 
 export const zipWithResult = <T1, T2, T3>(f: (x: T1, y: T2) => Result<T3>, xs: T1[], ys: T2[]): Result<T3[]> =>
     xs.length === 0 || ys.length === 0 ? makeOk([]) :
     bind(f(first(xs), first(ys)),
-         (fxy: T3) => bind(zipWithResult(f, xs.slice(1), ys.slice(1)),
-                           (fxys: T3[]) => makeOk([fxy].concat(fxys))));
+         (fxy: T3) => bind(zipWithResult(f, rest(xs), rest(ys)),
+                           (fxys: T3[]) => makeOk(cons(fxy, fxys))));
 
 export const safe2 = <T1, T2, T3>(f: (x: T1, y: T2) => Result<T3>): (xr: Result<T1>, yr: Result<T2>) => Result<T3> =>
     (xr: Result<T1>, yr: Result<T2>) =>
@@ -66,4 +66,4 @@ export const safe3 = <T1, T2, T3, T4>(f: (x: T1, y: T2, z: T3) => Result<T4>): (
         bind(xr, (x: T1) => bind(yr, (y: T2) => bind(zr, (z: T3) => f(x, y, z))));
 
 export const resultToOptional = <T>(r: Result<T>): Optional<T> =>
-    either(makeSome, _ => makeNone(), r);
+    either(r, makeSome, _ => makeNone());

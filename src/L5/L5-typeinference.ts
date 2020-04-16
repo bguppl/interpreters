@@ -83,7 +83,7 @@ export const typeofExp = (exp: A.Parsed, tenv: E.TEnv): Result<T.TExp> =>
     A.isAppExp(exp) ? typeofApp(exp, tenv) :
     A.isLetExp(exp) ? typeofLet(exp, tenv) :
     A.isLetrecExp(exp) ? typeofLetrec(exp, tenv) :
-    A.isDefineExp(exp) ? makeOk(typeofDefine(exp, tenv)) :
+    A.isDefineExp(exp) ? typeofDefine(exp, tenv) :
     A.isProgram(exp) ? typeofProgram(exp, tenv) :
     // Skip isSetExp(exp) isLitExp(exp)
     makeFailure("Unknown type");
@@ -192,9 +192,9 @@ export const typeofLetrec = (exp: A.LetrecExp, tenv: E.TEnv): Result<T.TExp> => 
 // Typing rule:
 //   (define (var : texp) val)
 // TODO - write the true definition
-export const typeofDefine = (exp: A.DefineExp, tenv: E.TEnv): T.TExp => {
+export const typeofDefine = (exp: A.DefineExp, tenv: E.TEnv): Result<T.VoidTExp> => {
     // return Error("TODO");
-    return T.makeVoidTExp();
+    return makeOk(T.makeVoidTExp());
 };
 
 // Purpose: compute the type of a program

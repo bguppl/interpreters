@@ -8,7 +8,7 @@ import { isAppExp, isBoolExp, isDefineExp, isIfExp, isLetrecExp, isLetExp, isNum
 import { applyTEnv, makeEmptyTEnv, makeExtendTEnv, TEnv } from "./TEnv";
 import { isProcTExp, makeBoolTExp, makeNumTExp, makeProcTExp, makeStrTExp, makeVoidTExp,
          parseTE, unparseTExp,
-         BoolTExp, NumTExp, StrTExp, TExp } from "./TExp";
+         BoolTExp, NumTExp, StrTExp, TExp, VoidTExp } from "./TExp";
 import { isEmpty, allT, first, rest } from '../shared/list';
 import { Result, makeFailure, bind, makeOk, safe3, safe2, zipWithResult } from '../shared/result';
 import { parse as p } from "../shared/parser";
@@ -46,7 +46,7 @@ export const typeofExp = (exp: Parsed, tenv: TEnv): Result<TExp> =>
     isAppExp(exp) ? typeofApp(exp, tenv) :
     isLetExp(exp) ? typeofLet(exp, tenv) :
     isLetrecExp(exp) ? typeofLetrec(exp, tenv) :
-    isDefineExp(exp) ? makeOk(typeofDefine(exp, tenv)) :
+    isDefineExp(exp) ? typeofDefine(exp, tenv) :
     isProgram(exp) ? typeofProgram(exp, tenv) :
     // Skip isSetExp(exp) isLitExp(exp)
     makeFailure("Unknown type");
@@ -189,9 +189,9 @@ export const typeofLetrec = (exp: LetrecExp, tenv: TEnv): Result<TExp> => {
 // Typing rule:
 //   (define (var : texp) val)
 // TODO - write the true definition
-export const typeofDefine = (exp: DefineExp, tenv: TEnv): TExp => {
+export const typeofDefine = (exp: DefineExp, tenv: TEnv): Result<VoidTExp> => {
     // return Error("TODO");
-    return makeVoidTExp();
+    return makeOk(makeVoidTExp());
 };
 
 // Purpose: compute the type of a program

@@ -30,9 +30,10 @@
 // The key operation on env is applyEnv(env, var) which returns the value associated to var in env
 // or returns an error if var is not defined in env.
 
-import { map, prepend, zipWith } from "ramda";
+import { map, zipWith } from "ramda";
 import { Value } from './L4-value-box';
 import { Result, makeFailure, makeOk, bind, either } from "../shared/result";
+import { cons } from "../shared/list";
 
 // ========================================================
 // Box datatype
@@ -67,7 +68,7 @@ export interface Frame {
 export const makeFrame = (vars: string[], vals: Value[]): Frame =>
     ({tag: "Frame", fbindings: zipWith(makeFBinding, vars, vals)});
 export const extendFrame = (frame: Frame, v: string, val: Value): Frame =>
-    ({tag: "Frame", fbindings: prepend(makeFBinding(v, val), frame.fbindings)});
+    ({tag: "Frame", fbindings: cons(makeFBinding(v, val), frame.fbindings)});
 export const isFrame = (x: any): x is Frame => x.tag === "Frame";
 export const frameVars = (frame: Frame): string[] => map(getFBindingVar, frame.fbindings);
 export const frameVals = (frame: Frame): Value[] => map(getFBindingVal, frame.fbindings);
@@ -119,7 +120,7 @@ export const ExtEnvVals = (env: ExtEnv): Value[] =>
     map(getFBindingVal, env.frame.fbindings);
 
 const applyExtEnvBdg = (env: ExtEnv, v: string): Result<FBinding> =>
-    either(makeOk, _ => applyEnvBdg(env.env, v), applyFrame(env.frame, v));
+    either(applyFrame(env.frame, v), makeOk, _ => applyEnvBdg(env.env, v));
 
 // ========================================================
 // GlobalEnv

@@ -4,9 +4,11 @@ import * as A from "./L5-ast";
 import * as S from "./L5-substitution-adt";
 import * as TC from "./L5-typecheck";
 import * as T from "./TExp";
-import { isEmpty, first, rest } from "../shared/list";
-import { Result, bind as bindResult, makeOk, makeFailure, resultToOptional } from "../shared/result";
-import { Optional, bind as bindOptional, maybe, makeSome, makeNone, mapOptional, safe3, safe2 } from "../shared/optional";
+import * as Res from "../shared/result";
+import * as Opt from "../shared/optional";
+import { isEmpty, first, rest, cons } from "../shared/list";
+// import { Result, bind as bindResult, makeOk, makeFailure, resultToOptional } from "../shared/result";
+// import { Optional, bind as bindOptional, maybe, makeSome, makeNone, mapOptional, safe3, safe2 } from "../shared/optional";
 
 // ============================================================n
 // Pool ADT
@@ -20,53 +22,53 @@ export type Pool = PoolItem[];
 export const makeEmptyPool = () => [];
 
 // Purpose: construct a pool with one additional pair
-//          (exp fresh-tvar)
+//          [exp, fresh-tvar]
 // @Pre: exp is not already in pool.
 export const extendPool = (exp: A.Exp, pool: Pool): Pool =>
-    R.prepend({e: exp, te: T.makeFreshTVar()}, pool);
+    cons({e: exp, te: T.makeFreshTVar()}, pool);
 
 // Purpose: construct a pool with one additional pair
-//          ((VarRef var) texp)
-//          from a (VarDecl var texp) declaration.
+//          [VarRef(var), texp]
+//          from a VarDecl(var, texp) declaration.
 // @Pre: var is not already in pool - which means
 // that all bound variables have been renamed with distinct names.
 const extendPoolVarDecl = (vd: A.VarDecl, pool: Pool): Pool =>
-    R.prepend({e: A.makeVarRef(vd.var), te: vd.texp}, pool);
+    cons({e: A.makeVarRef(vd.var), te: vd.texp}, pool);
 
-export const inPool = (pool: Pool, e: A.Exp): Optional<T.TExp> => {
+export const inPool = (pool: Pool, e: A.Exp): Opt.Optional<T.TExp> => {
     const exp = R.find(R.propEq('e', e), pool);
-    return exp ? makeSome(R.prop('te')(exp)) : makeNone();
+    return exp ? Opt.makeSome(R.prop('te')(exp)) : Opt.makeNone();
 }
 
 // Map a function over a list of expressions to accumulate
 // matching sub-expressions into a pool.
 // fun should construct a new pool given a new expression from exp-list
 // that has not yet been seen before.
-const mapPool = (fun: (e: A.Exp, pool: Pool) => Pool, exps: A.Exp[], result: Pool): Pool =>
+const reducePool = (fun: (e: A.Exp, pool: Pool) => Pool, exps: A.Exp[], result: Pool): Pool =>
     isEmpty(exps) ? result :
-    mapPool(fun, rest(exps), maybe(_ => result,
-                                   () => fun(first(exps), result),
-                                   inPool(result, first(exps))));
+    Opt.maybe(inPool(result, first(exps)),
+              _ => reducePool(fun, rest(exps), result),
+              () => reducePool(fun, rest(exps), fun(first(exps), result)));
 
 const mapPoolVarDecls = (fun: (e: A.VarDecl, pool: Pool) => Pool, vds: A.VarDecl[], result: Pool): Pool =>
     isEmpty(vds) ? result :
-    mapPoolVarDecls(fun, rest(vds), maybe(_ => result,
-                                          () => fun(first(vds), result),
-                                          inPool(result, A.makeVarRef(first(vds).var))));
+    Opt.maybe(inPool(result, A.makeVarRef(first(vds).var)),
+              _ => mapPoolVarDecls(fun, rest(vds), result),
+              () => mapPoolVarDecls(fun, rest(vds), fun(first(vds), result)));
 
 // Purpose: Traverse the abstract syntax tree L5-exp
 //          and collect all sub-expressions into a Pool of fresh type variables.
 // Example:
-// (ExpToPool parse('(+ x 1)')) =>
-// '(((AppExp PrimOp(+) [VarRef(x), NumExp(1)]) TVar(T252722))
-//   (NumExp(1) TVar(T252721))
-//   (VarRef(x) TVar(T252720))
-//   (PrimOp(+) TVar(T252719)))
+// bind(bind(p('(+ x 1)'), parseL5Exp), e => makeOk(TE.expToPool(e))) =>
+// Ok([[AppExp(PrimOp(+), [VarRef(x), NumExp(1)]), TVar(16)],
+//     [NumExp(1), TVar(15)],
+//     [VarRef(x), TVar(14)],
+//     [PrimOp(+), TVar(13)]])
 export const expToPool = (exp: A.Exp): Pool => {
     const findVars = (e: A.Exp, pool: Pool): Pool =>
         A.isAtomicExp(e) ? extendPool(e, pool) :
-        A.isProcExp(e) ? extendPool(e, mapPool(findVars, e.body, mapPoolVarDecls(extendPoolVarDecl, e.args, pool))) :
-        A.isCompoundExp(e) ? extendPool(e, mapPool(findVars, A.expComponents(e), pool)) :
+        A.isProcExp(e) ? extendPool(e, reducePool(findVars, e.body, mapPoolVarDecls(extendPoolVarDecl, e.args, pool))) :
+        A.isCompoundExp(e) ? extendPool(e, reducePool(findVars, A.expComponents(e), pool)) :
         makeEmptyPool();
     return findVars(exp, makeEmptyPool());
 };
@@ -76,9 +78,9 @@ export const expToPool = (exp: A.Exp): Pool => {
 export interface Equation {left: T.TExp, right: T.TExp}
 export const makeEquation = (l: T.TExp, r: T.TExp): Equation => ({left: l, right: r});
 
-export const safeLast = <T extends any>(list: readonly T[]): Optional<T> => {
+export const safeLast = <T extends any>(list: readonly T[]): Opt.Optional<T> => {
     const last = R.last(list);
-    return last ? makeSome(last) : makeNone();
+    return last ? Opt.makeSome(last) : Opt.makeNone();
 }
 
 // Constructor for equations for a Scheme expression:
@@ -87,41 +89,39 @@ export const safeLast = <T extends any>(list: readonly T[]): Optional<T> => {
 // given L5 expression. Its input is a pool of pairs (L5-exp Tvar).
 // A Scheme expression is mapped to a pool with L5-exp->pool
 
-// Signature: poolToEquations(pool)
 // Purpose: Return a set of equations for a given Exp encoded as a pool
-// Type: [Pool -> List(Equation)]
-// @Pre: pool is the result of expTopool(exp)
-export const poolToEquations = (pool: Pool): Optional<Equation[]> => {
+// @Pre: pool is the result of expToPool(exp)
+export const poolToEquations = (pool: Pool): Opt.Optional<Equation[]> => {
     // VarRef generate no equations beyond that of var-decl - remove them.
     const poolWithoutVars: Pool = R.filter(R.propSatisfies(R.complement(A.isVarRef), 'e'), pool);
-    return bindOptional(mapOptional((e: A.Exp) => makeEquationFromExp(e, pool), R.pluck('e', poolWithoutVars)),
-                        (eqns: Equation[][]) => makeSome(R.chain(R.identity, eqns)));
+    return Opt.bind(Opt.mapOptional((e: A.Exp) => makeEquationFromExp(e, pool), R.map(R.prop('e'), poolWithoutVars)),
+                    (eqns: Equation[][]) => Opt.makeSome(R.chain(R.identity, eqns)));
 };
 
 // Signature: make-equation-from-exp(exp, pool)
 // Purpose: Return a single equation
 // @Pre: exp is a member of pool
-export const makeEquationFromExp = (exp: A.Exp, pool: Pool): Optional<Equation[]> =>
+export const makeEquationFromExp = (exp: A.Exp, pool: Pool): Opt.Optional<Equation[]> =>
     // An application must respect the type of its operator
     // Type(Operator) = [T1 * .. * Tn -> Te]
     // Type(Application) = Te
-    A.isAppExp(exp) ? safe3((rator: T.TExp, rands: T.TExp[], e: T.TExp) => makeSome([makeEquation(rator, T.makeProcTExp(rands, e))]))
-                        (inPool(pool, exp.rator), mapOptional((e) => inPool(pool, e), exp.rands), inPool(pool, exp)) :
+    A.isAppExp(exp) ? Opt.safe3((rator: T.TExp, rands: T.TExp[], e: T.TExp) => Opt.makeSome([makeEquation(rator, T.makeProcTExp(rands, e))]))
+                        (inPool(pool, exp.rator), Opt.mapOptional((e) => inPool(pool, e), exp.rands), inPool(pool, exp)) :
     // The type of procedure is (T1 * ... * Tn -> Te)
     // where Te is the type of the last exp in the body of the proc.
     // and   Ti is the type of each of the parameters.
     // No need to traverse the other body expressions - they will be
     // traversed by the overall loop of pool->equations
-    A.isProcExp(exp) ? safe2((left: T.TExp, ret: T.TExp) => makeSome([makeEquation(left, T.makeProcTExp(R.map((vd) => vd. texp, exp.args), ret))]))
-                        (inPool(pool, exp), bindOptional(safeLast(exp.body), (last: A.CExp) => inPool(pool, last))) :
+    A.isProcExp(exp) ? Opt.safe2((left: T.TExp, ret: T.TExp) => Opt.makeSome([makeEquation(left, T.makeProcTExp(R.map((vd) => vd. texp, exp.args), ret))]))
+                        (inPool(pool, exp), Opt.bind(safeLast(exp.body), (last: A.CExp) => inPool(pool, last))) :
     // The type of a number is Number
-    A.isNumExp(exp) ? bindOptional(inPool(pool, exp), (left: T.TExp) => makeSome([makeEquation(left, T.makeNumTExp())])) :
+    A.isNumExp(exp) ? Opt.bind(inPool(pool, exp), (left: T.TExp) => Opt.makeSome([makeEquation(left, T.makeNumTExp())])) :
     // The type of a boolean is Boolean
-    A.isBoolExp(exp) ? bindOptional(inPool(pool, exp), (left: T.TExp) => makeSome([makeEquation(left, T.makeBoolTExp())])) :
+    A.isBoolExp(exp) ? Opt.bind(inPool(pool, exp), (left: T.TExp) => Opt.makeSome([makeEquation(left, T.makeBoolTExp())])) :
     // The type of a primitive procedure is given by the primitive.
-    A.isPrimOp(exp) ? safe2((left: T.TExp, right: T.TExp) => makeSome([makeEquation(left, right)]))
-                        (inPool(pool, exp), resultToOptional(TC.typeofPrim(exp))) :
-    makeSome([]); // Error(`makeEquationFromExp: Unsupported exp ${exp}`)
+    A.isPrimOp(exp) ? Opt.safe2((left: T.TExp, right: T.TExp) => Opt.makeSome([makeEquation(left, right)]))
+                        (inPool(pool, exp), Res.resultToOptional(TC.typeofPrim(exp))) :
+    Opt.makeSome([]); // Error(`makeEquationFromExp: Unsupported exp ${exp}`)
 
 
 // ========================================================
@@ -129,25 +129,25 @@ export const makeEquationFromExp = (exp: A.Exp, pool: Pool): Optional<Equation[]
 // Purpose: Infer the type of an expression using the equations method
 // Example: unparseTExp(inferType(parse('(lambda (f x) (f (f x)))')))
 //          ==> '((T_1 -> T_1) * T_1 -> T_1)'
-export const inferType = (exp: A.Exp): Optional<T.TExp> => {
+export const inferType = (exp: A.Exp): Opt.Optional<T.TExp> => {
     // console.log(`Infer ${A.unparse(exp)}`)
     const pool = expToPool(exp);
     // console.log(`Pool ${JSON.stringify(pool)}`);
     const equations = poolToEquations(pool);
     // console.log(`Equations ${JSON.stringify(equations)}`);
-    const sub = bindOptional(equations, (eqns: Equation[]) => resultToOptional(solveEquations(eqns)))
+    const sub = Opt.bind(equations, (eqns: Equation[]) => Res.resultToOptional(solveEquations(eqns)))
     // console.log(`Sub ${JSON.stringify(sub)}`);
     const texp = inPool(pool, exp);
     // console.log(`TExp = ${JSON.stringify(bindResult(optionalToResult(texp, "TExp is None"), T.unparseTExp))}`);
-    return safe2((sub: S.Sub, texp: T.TExp) => makeSome(T.isTVar(texp) ? S.subGet(sub, texp) : texp))(sub, texp);
+    return Opt.safe2((sub: S.Sub, texp: T.TExp) => Opt.makeSome(T.isTVar(texp) ? S.subGet(sub, texp) : texp))(sub, texp);
 };
 
 // Type: [Concrete-Exp -> Concrete-TExp]
-export const infer = (exp: string): Result<string> =>
-    bindResult(A.parseL5Exp(exp),
-               (exp: A.Exp) => maybe((te: T.TExp) => T.unparseTExp(te),
-                                     () => makeFailure("Infer type failed"),
-                                     inferType(exp)));
+export const infer = (exp: string): Res.Result<string> =>
+    Res.bind(A.parseL5Exp(exp),
+             (exp: A.Exp) => Opt.maybe(inferType(exp),
+                                       (te: T.TExp) => T.unparseTExp(te),
+                                       () => Res.makeFailure("Infer type failed")));
 
 // ========================================================
 // type equation solving
@@ -160,26 +160,26 @@ export const infer = (exp: string): Result<string> =>
 //            poolToEquations(
 //              expToPool(
 //                parse('((lambda (x) (x 11)) (lambda (y) y))')))) => sub
-export const solveEquations = (equations: Equation[]): Result<S.Sub> =>
+export const solveEquations = (equations: Equation[]): Res.Result<S.Sub> =>
     solve(equations, S.makeEmptySub());
 
 // Signature: solve(equations, substitution)
 // Purpose: Solve the equations, starting from a given substitution.
 //          Returns the resulting substitution, or error, if not solvable
-const solve = (equations: Equation[], sub: S.Sub): Result<S.Sub> => {
-    const solveVarEq = (tvar: T.TVar, texp: T.TExp): Result<S.Sub> =>
-        bindResult(S.extendSub(sub, tvar, texp), sub2 => solve(rest(equations), sub2));
+const solve = (equations: Equation[], sub: S.Sub): Res.Result<S.Sub> => {
+    const solveVarEq = (tvar: T.TVar, texp: T.TExp): Res.Result<S.Sub> =>
+        Res.bind(S.extendSub(sub, tvar, texp), sub2 => solve(rest(equations), sub2));
 
     const bothSidesAtomic = (eq: Equation): boolean =>
         T.isAtomicTExp(eq.left) && T.isAtomicTExp(eq.right);
 
-    const handleBothSidesAtomic = (eq: Equation): Result<S.Sub> =>
+    const handleBothSidesAtomic = (eq: Equation): Res.Result<S.Sub> =>
         T.isAtomicTExp(eq.left) && T.isAtomicTExp(eq.right) && T.eqAtomicTExp(eq.left, eq.right)
         ? solve(rest(equations), sub)
-        : makeFailure(`Equation with non-equal atomic type ${eq}`);
+        : Res.makeFailure(`Equation with non-equal atomic type ${eq}`);
 
     if (isEmpty(equations)) {
-        return makeOk(sub);
+        return Res.makeOk(sub);
     }
 
     const eq = makeEquation(S.applySub(sub, first(equations).left),
@@ -190,7 +190,7 @@ const solve = (equations: Equation[], sub: S.Sub): Result<S.Sub> => {
            bothSidesAtomic(eq) ? handleBothSidesAtomic(eq) :
            T.isCompoundTExp(eq.left) && T.isCompoundTExp(eq.right) && canUnify(eq) ?
                 solve(R.concat(rest(equations), splitEquation(eq)), sub) :
-           makeFailure(`Equation contains incompatible types ${eq}`);
+           Res.makeFailure(`Equation contains incompatible types ${eq}`);
 };
 
 // Signature: canUnify(equation)
@@ -212,6 +212,6 @@ const canUnify = (eq: Equation): boolean =>
 const splitEquation = (eq: Equation): Equation[] =>
     (T.isProcTExp(eq.left) && T.isProcTExp(eq.right)) ?
         R.zipWith(makeEquation,
-                  R.prepend(eq.left.returnTE, eq.left.paramTEs),
-                  R.prepend(eq.right.returnTE, eq.right.paramTEs)) :
+                  cons(eq.left.returnTE, eq.left.paramTEs),
+                  cons(eq.right.returnTE, eq.right.paramTEs)) :
     [];

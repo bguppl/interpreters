@@ -1,6 +1,7 @@
 // List operations similar to car/cdr/cadr in Scheme
 import { all } from 'ramda';
 
+export const cons = <T>(x: T, xs: T[]): T[] => [x].concat(xs);
 export const first = <T>(x: T[]): T => x[0];
 export const second = <T>(x: T[]): T => x[1];
 export const rest = <T>(x: T[]): T[] => x.slice(1);

@@ -27,7 +27,7 @@ const L3applicativeEval = (exp: CExp, env: Env): Result<Value> =>
     isVarRef(exp) ? applyEnv(env, exp.var) :
     isLitExp(exp) ? makeOk(exp.val) :
     isIfExp(exp) ? evalIf(exp, env) :
-    isProcExp(exp) ? makeOk(evalProc(exp, env)) :
+    isProcExp(exp) ? evalProc(exp, env) :
     isAppExp(exp) ? safe2((rator: Value, rands: Value[]) => L3applyProcedure(rator, rands, env))
         (L3applicativeEval(exp.rator, env), mapResult(rand => L3applicativeEval(rand, env), exp.rands)) :
     isLetExp(exp) ? makeFailure('"let" not supported (yet)') :
@@ -40,8 +40,8 @@ const evalIf = (exp: IfExp, env: Env): Result<Value> =>
     bind(L3applicativeEval(exp.test, env),
          (test: Value) => isTrueValue(test) ? L3applicativeEval(exp.then, env) : L3applicativeEval(exp.alt, env));
 
-const evalProc = (exp: ProcExp, env: Env): Value =>
-    makeClosure(exp.args, exp.body);
+const evalProc = (exp: ProcExp, env: Env): Result<Closure> =>
+    makeOk(makeClosure(exp.args, exp.body));
 
 const L3applyProcedure = (proc: Value, args: Value[], env: Env): Result<Value> =>
     isPrimOp(proc) ? applyPrimitive(proc, args) :

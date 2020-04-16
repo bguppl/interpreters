@@ -25,7 +25,7 @@ const applicativeEval = (exp: CExp, env: Env): Result<Value> =>
     isVarRef(exp) ? applyEnv(env, exp.var) :
     isLitExp(exp) ? makeOk(exp.val as Value) :
     isIfExp(exp) ? evalIf(exp, env) :
-    isProcExp(exp) ? makeOk(evalProc(exp, env)) :
+    isProcExp(exp) ? evalProc(exp, env) :
     isLetExp(exp) ? evalLet(exp, env) :
     isLetrecExp(exp) ? evalLetrec(exp, env) :
     isSetExp(exp) ? evalSet(exp, env) :
@@ -40,8 +40,8 @@ const evalIf = (exp: IfExp, env: Env): Result<Value> =>
     bind(applicativeEval(exp.test, env),
          (test: Value) => isTrueValue(test) ? applicativeEval(exp.then, env) : applicativeEval(exp.alt, env));
 
-const evalProc = (exp: ProcExp, env: Env): Closure =>
-    makeClosure(exp.args, exp.body, env);
+const evalProc = (exp: ProcExp, env: Env): Result<Closure> =>
+    makeOk(makeClosure(exp.args, exp.body, env));
 
 // KEY: This procedure does NOT have an env parameter.
 //      Instead we use the env of the closure.
