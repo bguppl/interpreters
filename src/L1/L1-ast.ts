@@ -1,4 +1,3 @@
-/// <reference path="../shared/s-expression.d.ts" />
 // L1 Parser
 // =========
 

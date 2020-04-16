@@ -1,3 +1,5 @@
+/// <reference path="s-expression.d.ts" />
+
 import p, { Sexp, SexpString, Token, CompoundSexp } from "s-expression";
 import { makeFailure, makeOk, Result } from "./result";
 import { isString, isArray, isError } from "./type-predicates";

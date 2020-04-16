@@ -1,5 +1,3 @@
-/// <reference path="../shared/s-expression.d.ts" />
-
 // ===========================================================
 // AST type models for L5
 // L5 extends L4 with:

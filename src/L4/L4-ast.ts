@@ -1,4 +1,3 @@
-/// <reference path="../shared/s-expression.d.ts" />
 // ===========================================================
 // AST type models
 import { map, zipWith } from "ramda";
