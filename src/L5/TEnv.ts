@@ -13,22 +13,23 @@
 */
 
 import { TExp } from './TExp';
+import { Result, makeOk, makeFailure } from '../shared/result';
 
 export type TEnv = EmptyTEnv | ExtendTEnv;
 
-export interface EmptyTEnv { tag: "EmptyTEnv" };
+export interface EmptyTEnv { tag: "EmptyTEnv" }
 export const makeEmptyTEnv = (): EmptyTEnv => ({tag: "EmptyTEnv"});
 export const isEmptyTEnv = (x: any): x is EmptyTEnv => x.tag === "EmptyTEnv";
 
-export interface ExtendTEnv { tag: "ExtendTEnv"; vars: string[]; texps: TExp[]; tenv: TEnv; };
+export interface ExtendTEnv { tag: "ExtendTEnv"; vars: string[]; texps: TExp[]; tenv: TEnv; }
 export const makeExtendTEnv = (vars: string[], texps: TExp[], tenv: TEnv): ExtendTEnv =>
     ({tag: "ExtendTEnv", vars: vars, texps: texps, tenv: tenv});
 export const isExtendTEnv = (x: any): x is ExtendTEnv => x.tag === "ExtendTEnv";
 
-export const applyTEnv = (tenv: TEnv, v: string): TExp | Error =>
-    isEmptyTEnv(tenv) ? Error(`Type Variable not found ${v}`) :
+export const applyTEnv = (tenv: TEnv, v: string): Result<TExp> =>
+    isEmptyTEnv(tenv) ? makeFailure(`Type Variable not found ${v}`) :
     applyExtendTEnv(tenv.texps, tenv.tenv, v, tenv.vars.indexOf(v));
 
-export const applyExtendTEnv = (texps: TExp[], tenv: TEnv, v: string, pos: number): TExp | Error =>
+export const applyExtendTEnv = (texps: TExp[], tenv: TEnv, v: string, pos: number): Result<TExp> =>
     (pos === -1) ? applyTEnv(tenv, v) :
-    texps[pos];
+    makeOk(texps[pos]);

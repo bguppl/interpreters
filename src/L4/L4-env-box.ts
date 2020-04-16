@@ -30,9 +30,10 @@
 // The key operation on env is applyEnv(env, var) which returns the value associated to var in env
 // or returns an error if var is not defined in env.
 
-import { map, prepend, zipWith } from "ramda";
-import { isError } from "../shared/error";
+import { map, zipWith } from "ramda";
 import { Value } from './L4-value-box';
+import { Result, makeFailure, makeOk, bind, either } from "../shared/result";
+import { cons } from "../shared/list";
 
 // ========================================================
 // Box datatype
@@ -44,11 +45,11 @@ const setBox = <T>(b: Box<T>, v: T): void => { b[0] = v; return; }
 
 // ========================================================
 // Frame binding
-interface FBinding {
+export interface FBinding {
     tag: "FBinding";
     var: string;
     val: Box<Value>;
-};
+}
 
 export const isFBinding = (x: any): x is FBinding => x.tag === "FBinding";
 export const makeFBinding = (v: string, val: Value): FBinding =>
@@ -62,24 +63,23 @@ export const setFBinding = (f: FBinding, val: Value): void => { setBox(f.val, va
 export interface Frame {
     tag: "Frame";
     fbindings: FBinding[];
-};
+}
 
 export const makeFrame = (vars: string[], vals: Value[]): Frame =>
     ({tag: "Frame", fbindings: zipWith(makeFBinding, vars, vals)});
 export const extendFrame = (frame: Frame, v: string, val: Value): Frame =>
-    ({tag: "Frame", fbindings: prepend(makeFBinding(v, val), frame.fbindings)});
+    ({tag: "Frame", fbindings: cons(makeFBinding(v, val), frame.fbindings)});
 export const isFrame = (x: any): x is Frame => x.tag === "Frame";
 export const frameVars = (frame: Frame): string[] => map(getFBindingVar, frame.fbindings);
 export const frameVals = (frame: Frame): Value[] => map(getFBindingVal, frame.fbindings);
 
-const applyFrame = (frame: Frame, v: string): FBinding | Error => {
+const applyFrame = (frame: Frame, v: string): Result<FBinding> => {
     const pos = frameVars(frame).indexOf(v);
-    return (pos > -1) ? frame.fbindings[pos] : Error(`Var not found: ${v}`);
+    return (pos > -1) ? makeOk(frame.fbindings[pos]) : makeFailure(`Var not found: ${v}`);
 };
-export const setVarFrame = (frame: Frame, v: string, val: Value): void | Error => {
-    const bdg = applyFrame(frame, v);
-    return isError(bdg) ? bdg : setFBinding(bdg, val);
-}
+export const setVarFrame = (frame: Frame, v: string, val: Value): Result<void> =>
+    bind(applyFrame(frame, v),
+         (bdg: FBinding) => makeOk(setFBinding(bdg, val)));
 
 // ========================================================
 // Environment data type
@@ -89,22 +89,20 @@ export const isEnv = (x: any): x is Env => isExtEnv(x) || isGlobalEnv(x);
 /*
 Purpose: lookup the value of var in env and return a mutable binding
 Signature: applyEnvBdg(env, var)
-Type: [Env * string -> FBinding | Error]
+Type: [Env * string -> Result<FBinding>]
 */
-export const applyEnvBdg = (env: Env, v: string): FBinding | Error =>
+export const applyEnvBdg = (env: Env, v: string): Result<FBinding> =>
     isGlobalEnv(env) ? applyGlobalEnvBdg(env, v) :
     isExtEnv(env) ? applyExtEnvBdg(env, v) :
-    Error(`Bad env type ${env}`);
+    makeFailure(`Bad env type ${env}`);
 
 /*
 Purpose: lookup the value of var in env.
 Signature: applyEnv(env, var)
-Type: [Env * string -> Value4 | Error]
+Type: [Env * string -> Result<Value>]
 */
-export const applyEnv = (env: Env, v: string): Value | Error => {
-    const bdg = applyEnvBdg(env, v);
-    return isError(bdg) ? bdg : getFBindingVal(bdg);
-}
+export const applyEnv = (env: Env, v: string): Result<Value> =>
+    bind(applyEnvBdg(env, v), (bdg: FBinding) => makeOk(getFBindingVal(bdg)));
 
 // ========================================================
 // ExtEnv
@@ -112,7 +110,7 @@ export interface ExtEnv {
     tag: "ExtEnv";
     frame: Frame;
     env: Env;
-};
+}
 export const isExtEnv = (x: any): x is ExtEnv => x.tag === "ExtEnv";
 export const makeExtEnv = (vs: string[], vals: Value[], env: Env): ExtEnv =>
     ({tag: "ExtEnv", frame: makeFrame(vs, vals), env: env});
@@ -121,13 +119,8 @@ export const ExtEnvVars = (env: ExtEnv): string[] =>
 export const ExtEnvVals = (env: ExtEnv): Value[] =>
     map(getFBindingVal, env.frame.fbindings);
 
-const applyExtEnvBdg = (env: ExtEnv, v: string): FBinding | Error => {
-    const bdg = applyFrame(env.frame, v);
-    if (isError(bdg))
-        return applyEnvBdg(env.env, v);
-    else
-        return bdg;
-};
+const applyExtEnvBdg = (env: ExtEnv, v: string): Result<FBinding> =>
+    either(applyFrame(env.frame, v), makeOk, _ => applyEnvBdg(env.env, v));
 
 // ========================================================
 // GlobalEnv
@@ -135,7 +128,7 @@ const applyExtEnvBdg = (env: ExtEnv, v: string): FBinding | Error => {
 interface GlobalEnv {
     tag: "GlobalEnv";
     frame: Box<Frame>;
-};
+}
 export const isGlobalEnv = (x: any): x is GlobalEnv => x.tag === "GlobalEnv";
 const makeGlobalEnv = (): GlobalEnv => ({tag: "GlobalEnv", frame: makeBox(makeFrame([], []))});
 // There is a single mutable value in the type Global-env
@@ -147,5 +140,5 @@ export const globalEnvAddBinding = (v: string, val: Value): void =>
     globalEnvSetFrame(theGlobalEnv,
                       extendFrame(unbox(theGlobalEnv.frame), v, val));
 
-const applyGlobalEnvBdg = (ge: GlobalEnv, v: string): FBinding | Error =>
+const applyGlobalEnvBdg = (ge: GlobalEnv, v: string): Result<FBinding> =>
     applyFrame(unbox(ge.frame), v);

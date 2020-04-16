@@ -2,11 +2,10 @@
 // Value type definition for L3
 
 import { isPrimOp, CExp, PrimOp, VarDecl } from './L3-ast';
-import { isNumber, isArray, isString } from '../shared/list';
-import { isError } from '../shared/error';
+import { isNumber, isArray, isString } from '../shared/type-predicates';
 import { append } from 'ramda';
 
-export type Value = SExp;
+export type Value = SExpValue;
 
 export type Functional = PrimOp | Closure;
 export const isFunctional = (x: any): x is Functional => isPrimOp(x) || isClosure(x);
@@ -17,7 +16,7 @@ export interface Closure {
     tag: "Closure";
     params: VarDecl[];
     body: CExp[];
-};
+}
 export const makeClosure = (params: VarDecl[], body: CExp[]): Closure =>
     ({tag: "Closure", params: params, body: body});
 export const isClosure = (x: any): x is Closure => x.tag === "Closure";
@@ -26,23 +25,23 @@ export const isClosure = (x: any): x is Closure => x.tag === "Closure";
 // SExp
 export interface CompoundSExp {
     tag: "CompoundSexp";
-    val1: SExp;
-    val2: SExp;
-};
+    val1: SExpValue;
+    val2: SExpValue;
+}
 export interface EmptySExp {
     tag: "EmptySExp";
-};
+}
 export interface SymbolSExp {
     tag: "SymbolSExp";
     val: string;
-};
+}
 
-export type SExp = number | boolean | string | PrimOp | Closure | SymbolSExp | EmptySExp | CompoundSExp;
-export const isSExp = (x: any): x is SExp =>
+export type SExpValue = number | boolean | string | PrimOp | Closure | SymbolSExp | EmptySExp | CompoundSExp;
+export const isSExp = (x: any): x is SExpValue =>
     typeof(x) === 'string' || typeof(x) === 'boolean' || typeof(x) === 'number' ||
     isSymbolSExp(x) || isCompoundSExp(x) || isEmptySExp(x) || isPrimOp(x) || isClosure(x);
 
-export const makeCompoundSExp = (val1: SExp, val2: SExp): CompoundSExp =>
+export const makeCompoundSExp = (val1: SExpValue, val2: SExpValue): CompoundSExp =>
     ({tag: "CompoundSexp", val1: val1, val2 : val2});
 export const isCompoundSExp = (x: any): x is CompoundSExp => x.tag === "CompoundSexp";
 
@@ -82,7 +81,3 @@ export const valueToString = (val: Value): string =>
     isEmptySExp(val) ? "'()" :
     isCompoundSExp(val) ? compoundSExpToString(val) :
     "Error: unknown value type "+val 
-
-export const parsedToString = (val: Value | Error): string =>
-    isError(val) ? `Error: ${val.message}` :
-    valueToString(val)

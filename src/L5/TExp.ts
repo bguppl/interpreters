@@ -29,12 +29,14 @@
 ;; [Empty -> number]
 ;; [Empty -> void]
 */
-import { chain, concat, filter, map, uniq } from "ramda";
-import p, { StringTree } from "s-expression";
-import { isArray, isBoolean, isEmpty, isString } from './L5-ast';
+import { chain, concat, map, uniq } from "ramda";
+import { Sexp } from "s-expression";
+import { isEmpty } from "../shared/list";
+import { isArray, isBoolean, isString } from '../shared/type-predicates';
 import { makeBox, setBox, unbox, Box } from '../shared/box';
-import { getErrorMessages, hasNoError, isError, safeF, safeFL } from '../shared/error';
 import { first, rest } from '../shared/list';
+import { Result, bind, makeOk, makeFailure, safe2, mapResult } from "../shared/result";
+import { parse as p } from "../shared/parser";
 
 export type TExp =  AtomicTExp | CompoundTExp | TVar;
 export const isTExp = (x: any): x is TExp => isAtomicTExp(x) || isCompoundTExp(x) || isTVar(x);
@@ -79,12 +81,12 @@ export type TupleTExp = NonEmptyTupleTExp | EmptyTupleTExp;
 export const isTupleTExp = (x: any): x is TupleTExp =>
     isNonEmptyTupleTExp(x) || isEmptyTupleTExp(x);
 
-export interface EmptyTupleTExp { tag: "EmptyTupleTExp" };
+export interface EmptyTupleTExp { tag: "EmptyTupleTExp" }
 export const makeEmptyTupleTExp = (): EmptyTupleTExp => ({tag: "EmptyTupleTExp"});
 export const isEmptyTupleTExp = (x: any): x is EmptyTupleTExp => x.tag === "EmptyTupleTExp";
 
 // NonEmptyTupleTExp(TEs: NonTupleTExp[])
-export interface NonEmptyTupleTExp { tag: "NonEmptyTupleTExp"; TEs: NonTupleTExp[]; };
+export interface NonEmptyTupleTExp { tag: "NonEmptyTupleTExp"; TEs: NonTupleTExp[]; }
 export const makeNonEmptyTupleTExp = (tes: NonTupleTExp[]): NonEmptyTupleTExp =>
     ({tag: "NonEmptyTupleTExp", TEs: tes});
 export const isNonEmptyTupleTExp = (x: any): x is NonEmptyTupleTExp => x.tag === "NonEmptyTupleTExp";
@@ -133,12 +135,12 @@ export const eqAtomicTExp = (te1: AtomicTExp, te2: AtomicTExp): boolean =>
 // ========================================================
 // TExp parser
 
-export const parseTE = (t: string): TExp | Error =>
-    parseTExp(p(t));
+export const parseTE = (t: string): Result<TExp> =>
+    bind(p(t), parseTExp);
 
 /*
 ;; Purpose: Parse a type expression
-;; Type: [SExp -> TEx[]]
+;; Type: [SExp -> TExp[]]
 ;; Example:
 ;; parseTExp("number") => 'num-te
 ;; parseTExp('boolean') => 'bool-te
@@ -146,82 +148,71 @@ export const parseTE = (t: string): TExp | Error =>
 ;; parseTExp('(T * T -> boolean)') => '(proc-te ((tvar T) (tvar T)) bool-te)
 ;; parseTExp('(number -> (number -> number)') => '(proc-te (num-te) (proc-te (num-te) num-te))
 */
-export const parseTExp = (texp: StringTree): TExp | Error =>
-    (texp === "number") ? makeNumTExp() :
-    (texp === "boolean") ? makeBoolTExp() :
-    (texp === "void") ? makeVoidTExp() :
-    (texp === "string") ? makeStrTExp() :
-    isString(texp) ? makeTVar(texp) :
+export const parseTExp = (texp: Sexp): Result<TExp> =>
+    (texp === "number") ? makeOk(makeNumTExp()) :
+    (texp === "boolean") ? makeOk(makeBoolTExp()) :
+    (texp === "void") ? makeOk(makeVoidTExp()) :
+    (texp === "string") ? makeOk(makeStrTExp()) :
+    isString(texp) ? makeOk(makeTVar(texp)) :
     isArray(texp) ? parseCompoundTExp(texp) :
-    Error(`Unexpected TExp - ${texp}`);
+    makeFailure(`Unexpected TExp - ${texp}`);
 
 /*
 ;; expected structure: (<params> -> <returnte>)
 ;; expected exactly one -> in the list
 ;; We do not accept (a -> b -> c) - must parenthesize
 */
-const parseCompoundTExp = (texps: any[]): ProcTExp | Error => {
+const parseCompoundTExp = (texps: Sexp[]): Result<ProcTExp> => {
     const pos = texps.indexOf('->');
-    return (pos === -1)  ? Error(`Procedure type expression without -> - ${texps}`) :
-    (pos === 0) ? Error(`No param types in proc texp - ${texps}`) :
-    (pos === texps.length - 1) ? Error(`No return type in proc texp - ${texps}`) :
-    (texps.slice(pos + 1).indexOf('->') > -1) ? Error(`Only one -> allowed in a procexp - ${texps}`) :
-    safeMakeProcTExp(parseTupleTExp(texps.slice(0, pos)),
-                     parseTExp(texps[pos + 1]));
+    return (pos === -1)  ? makeFailure(`Procedure type expression without -> - ${texps}`) :
+           (pos === 0) ? makeFailure(`No param types in proc texp - ${texps}`) :
+           (pos === texps.length - 1) ? makeFailure(`No return type in proc texp - ${texps}`) :
+           (texps.slice(pos + 1).indexOf('->') > -1) ? makeFailure(`Only one -> allowed in a procexp - ${texps}`) :
+           safe2((args: TExp[], returnTE: TExp) => makeOk(makeProcTExp(args, returnTE)))
+                (parseTupleTExp(texps.slice(0, pos)), parseTExp(texps[pos + 1]));
 };
-
-const safeMakeProcTExp = (args: Array<TExp | Error>, returnTE: Error | TExp): Error | ProcTExp =>
-    isError(returnTE) ? returnTE :
-    hasNoError(args) ? makeProcTExp(args, returnTE) :
-    Error(getErrorMessages(args));
 
 /*
 ;; Expected structure: <te1> [* <te2> ... * <ten>]?
 ;; Or: Empty
 */
-const parseTupleTExp = (texps: any[]): Array<TExp | Error> => {
-    const isEmptyTuple = (x: any[]): boolean =>
-        (x.length === 1) && (x[0] === 'Empty');
+const parseTupleTExp = (texps: Sexp[]): Result<TExp[]> => {
+    const isEmptyTuple = (texps: Sexp[]): boolean =>
+        (texps.length === 1) && (texps[0] === 'Empty');
     // [x1 * x2 * ... * xn] => [x1,...,xn]
-    const splitEvenOdds = (x: any[]): any[] =>
-        isEmpty(x) ? [] :
-        isEmpty(rest(x)) ? x :
-        (x[1] !== '*') ? [Error(`Parameters of procedure type must be separated by '*': ${texps}`)] :
-        [x[0], ...splitEvenOdds(x.splice(2))];
+    const splitEvenOdds = (texps: Sexp[]): Result<Sexp[]> =>
+        isEmpty(texps) ? makeOk([]) :
+        isEmpty(rest(texps)) ? makeOk(texps) :
+        texps[1] !== '*' ? makeFailure(`Parameters of procedure type must be separated by '*': ${texps}`) :
+        bind(splitEvenOdds(texps.slice(2)), (sexps: Sexp[]) => makeOk([texps[0], ...sexps]));
 
-    if (isEmptyTuple(texps))
-        return [];
-    else {
-        const argTEs = splitEvenOdds(texps);
-        if (hasNoError(argTEs))
-            return map(parseTExp, argTEs);
-        else
-            return filter(isError, argTEs);
-    }
+    return isEmptyTuple(texps) ? makeOk([]) : bind(splitEvenOdds(texps),
+                                                   (argTEs: Sexp[]) => mapResult(parseTExp, argTEs));
 }
 
 /*
 ;; Purpose: Unparse a type expression Texp into its concrete form
 */
-export const unparseTExp = (te: TExp | Error): string | Error => {
-    const unparseTuple = (paramTes: TExp[]): any =>
-        isEmpty(paramTes) ? ["Empty"] :
-        [unparseTExp(paramTes[0]), ...chain((te) => ['*', unparseTExp(te)], rest(paramTes))];
-    const up = (x: TExp | Error | undefined): string | string[] | Error =>
-        isError(x) ? x :
-        isNumTExp(x) ? 'number' :
-        isBoolTExp(x) ? 'boolean' :
-        isStrTExp(x) ? 'string' :
-        isVoidTExp(x) ? 'void' :
-        isEmptyTVar(x) ? x.var :
+export const unparseTExp = (te: TExp): Result<string> => {
+    const unparseTuple = (paramTes: TExp[]): Result<string[]> =>
+        isEmpty(paramTes) ? makeOk(["Empty"]) :
+        safe2((paramTE: string, paramTEs: string[]) => makeOk([paramTE].concat(chain(te => ['*', te], paramTEs))))
+            (unparseTExp(first(paramTes)), mapResult(unparseTExp, rest(paramTes)));
+    const up = (x?: TExp): Result<string | string[]> =>
+        isNumTExp(x) ? makeOk('number') :
+        isBoolTExp(x) ? makeOk('boolean') :
+        isStrTExp(x) ? makeOk('string') :
+        isVoidTExp(x) ? makeOk('void') :
+        isEmptyTVar(x) ? makeOk(x.var) :
         isTVar(x) ? up(tvarContents(x)) :
-        isProcTExp(x) ? [...unparseTuple(x.paramTEs), '->', unparseTExp(x.returnTE)] :
-        ["never"];
+        isProcTExp(x) ? safe2((paramTEs: string[], returnTE: string) => makeOk([...paramTEs, '->', returnTE]))
+                            (unparseTuple(x.paramTEs), unparseTExp(x.returnTE)) :
+        makeFailure("Never");
     const unparsed = up(te);
-    return isString(unparsed) ? unparsed :
-           isError(unparsed) ? unparsed :
-           isArray(unparsed) ? `(${unparsed.join(' ')})` :
-           `Error ${unparsed}`;
+    return bind(unparsed,
+                (x: string | string[]) => isString(x) ? makeOk(x) :
+                                          isArray(x) ? makeOk(`(${x.join(' ')})`) :
+                                          makeFailure(`Error ${x}`))
 }
 
 // ============================================================
@@ -292,7 +283,6 @@ export const equivalentTEs = (te1: TExp, te2: TExp): boolean => {
     if (isBoolean(tvarsPairs))
         return false;
     else {
-        const uniquePairs = uniq(tvarsPairs);
         return (uniq(map((p) => p.left.var, tvarsPairs)).length === uniq(map((p) => p.right.var, tvarsPairs)).length);
     }
 };

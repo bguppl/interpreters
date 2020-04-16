@@ -8,3 +8,7 @@
 ## Running the Tests
 
 Run `npm test` inside the `interpreters` folder.
+
+## Code Coverage
+
+Run `npm run coverage` inside the `interpreters` folder. A new folder called `coverage` will be created. Open the `index.html` file inside it to see coverage statistics.

@@ -41,11 +41,11 @@ export const sumCPS1 = (n: number): number =>
 
 type CCont = IdCont | Cont1;
 
-export interface Cont1 {tag: "Cont1"; n: number; cont: CCont};
+export interface Cont1 {tag: "Cont1"; n: number; cont: CCont}
 export const makeCont1 = (n: number, cont: CCont): Cont1 => ({tag: "Cont1", n: n, cont: cont});
 export const isCont1 = (x: any): x is Cont1 => x.tag === "Cont1";
 
-export interface IdCont {tag: "IdCont"};
+export interface IdCont {tag: "IdCont"}
 export const makeIdCont = (): IdCont => ({tag: "IdCont"});
 export const isIdCont = (x: any): x is IdCont => x.tag === "IdCont";
 

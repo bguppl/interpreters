@@ -1,15 +1,14 @@
 import { any as some } from "ramda";
 import { map, reduce, union, includes } from "ramda";
-import { Parsed, VarRef } from "./L3-ast";
+import { VarRef, Exp, Program } from "./L3-ast";
 import { isAppExp, isAtomicExp, isBoolExp, isDefineExp, isIfExp, isLetExp, isLitExp, isNumExp,
          isPrimOp, isProcExp, isProgram, isStrExp, isVarRef } from './L3-ast';
 
 const zero: number = 0
-const empty = <T>(): ReadonlyArray<T> => [];
-const varRefUnion = (x: ReadonlyArray<VarRef>, y: ReadonlyArray<VarRef>) => union(x, y);
+const varRefUnion = (x: VarRef[], y: VarRef[]) => union(x, y);
 
 // TODO: No error handling
-export const height = (exp: Parsed | Error): number =>
+export const height = (exp: Program | Exp): number =>
     isAtomicExp(exp) ? 1 :
     isLitExp(exp) ? 1 :
     isDefineExp(exp) ? 1 + height(exp.val) :
@@ -28,7 +27,7 @@ export const height = (exp: Parsed | Error): number =>
                                 map((e) => height(e), exp.exps)) :
     -1;
 
-export const occursFree = (v: string, e: Parsed | Error): boolean =>
+export const occursFree = (v: string, e: Program | Exp): boolean =>
     isBoolExp(e) ? false :
     isNumExp(e) ? false :
     isStrExp(e) ? false :
@@ -45,19 +44,19 @@ export const occursFree = (v: string, e: Parsed | Error): boolean =>
     isProgram(e) ? false : // TODO
     false;
 
-export const referencedVars = (e: Parsed | Error): ReadonlyArray<VarRef> =>
-    isBoolExp(e) ? empty<VarRef>() :
-    isNumExp(e) ? empty<VarRef>() :
-    isStrExp(e) ? empty<VarRef>() :
-    isLitExp(e) ? empty<VarRef>() :
-    isPrimOp(e) ? empty<VarRef>() :
+export const referencedVars = (e: Program | Exp): VarRef[] =>
+    isBoolExp(e) ? Array<VarRef>() :
+    isNumExp(e) ? Array<VarRef>() :
+    isStrExp(e) ? Array<VarRef>() :
+    isLitExp(e) ? Array<VarRef>() :
+    isPrimOp(e) ? Array<VarRef>() :
     isVarRef(e) ? [e] :
-    isIfExp(e) ? reduce(varRefUnion, empty<VarRef>(),
+    isIfExp(e) ? reduce(varRefUnion, Array<VarRef>(),
                         map(referencedVars, [e.test, e.then, e.alt])) :
     isAppExp(e) ? union(referencedVars(e.rator),
-                        reduce(varRefUnion, empty<VarRef>(), map(referencedVars, e.rands))) :
-    isProcExp(e) ? reduce(varRefUnion, empty<VarRef>(), map(referencedVars, e.body)) :
+                        reduce(varRefUnion, Array<VarRef>(), map(referencedVars, e.rands))) :
+    isProcExp(e) ? reduce(varRefUnion, Array<VarRef>(), map(referencedVars, e.body)) :
     isDefineExp(e) ? referencedVars(e.val) :
-    isProgram(e) ? reduce(varRefUnion, empty<VarRef>(), map(referencedVars, e.exps)) :
-    isLetExp(e) ? empty<VarRef>() : // TODO
-    empty<VarRef>();
+    isProgram(e) ? reduce(varRefUnion, Array<VarRef>(), map(referencedVars, e.exps)) :
+    isLetExp(e) ? Array<VarRef>() : // TODO
+    Array<VarRef>();

@@ -1,9 +1,8 @@
 import { map } from "ramda";
-import { AppExp, CExp, Exp, LetExp, Parsed }  from "./L3-ast";
+import { AppExp, CExp, Exp, LetExp, Program }  from "./L3-ast";
 import { isAppExp, isAtomicExp, isCExp, isDefineExp, isExp, isIfExp, isLetExp, isLitExp,
          isProcExp, isProgram }  from "./L3-ast";
 import { makeAppExp, makeDefineExp, makeIfExp, makeProcExp, makeProgram } from "./L3-ast";
-import { isError } from "../shared/error";
 
 /*
 Purpose: rewrite a single LetExp as a lambda-application form
@@ -21,10 +20,9 @@ const rewriteLet = (e: LetExp): AppExp => {
 /*
 Purpose: rewrite all occurrences of let in an expression to lambda-applications.
 Signature: rewriteAllLet(exp)
-Type: [Parsed -> Parsed]
+Type: [Program | Exp -> Program | Exp]
 */
-export const rewriteAllLet = (exp: Parsed | Error): Parsed | Error =>
-    isError(exp) ? exp :
+export const rewriteAllLet = (exp: Program | Exp): Program | Exp =>
     isExp(exp) ? rewriteAllLetExp(exp) :
     isProgram(exp) ? makeProgram(map(rewriteAllLetExp, exp.exps)) :
     exp;
