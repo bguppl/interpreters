@@ -59,7 +59,7 @@ export const isCExp = (x: any): x is CExp =>
 
 // Make sure to run "npm install ramda s-expression --save"
 import { Sexp, Token } from "s-expression";
-import { parse as parseSexp, isToken } from "../shared/parser"
+import { parse as parseSexp, isToken } from "../shared/parser";
 
 // combine Sexp parsing with the L1 parsing
 export const parseL1 = (x: string): Result<Program> =>
