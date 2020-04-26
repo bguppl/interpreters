@@ -5,30 +5,31 @@ import { map, reduce, repeat, zipWith, join } from "ramda";
 import { AppExp, CExp, DefineExp, Exp, IfExp, LetrecExp, LetExp,
          Parsed, PrimOp, Program, SetExp, VarDecl, makeProgram } from '../L5/L5-ast';
 import { isBoolExp, isLitExp, isNumExp, isPrimOp, isStrExp, isVarRef } from "../L5/L5-ast";
-import { parse, unparse } from "../L5/L5-ast";
-import { isBoolean, isEmpty, isNumber, isString } from "../L5/L5-ast";
+import { parseL5Exp, unparse } from "../L5/L5-ast";
 import { isAppExp, isDefineExp, isExp, isIfExp, isLetrecExp, isLetExp,
          isProcExp, isProgram, isSetExp } from "../L5/L5-ast";
 import { applyEnv, applyEnvBdg, globalEnvAddBinding, makeExtEnv, setFBinding,
          theGlobalEnv, Env, ExtEnv } from "../L5/L5-env";
-import { isEmptySExp, isSymbolSExp, makeEmptySExp, parsedToString, EmptySExp, valueToString } from '../L5/L5-value';
+import { isEmptySExp, isSymbolSExp, makeEmptySExp, EmptySExp, valueToString } from '../L5/L5-value';
 import { isClosure, isCompoundSExp, makeClosure, makeCompoundSExp, CompoundSExp, Value } from "../L5/L5-value";
-import { getErrorMessages, hasNoError, isError }  from "../shared/error";
-import { allT, first, rest } from '../shared/list';
+import { isBoolean, isNumber, isString } from "../shared/type-predicates";
+import { isEmpty, allT, first, rest } from '../shared/list';
 
 
 // ========================================================
 // Concrete Continuation datatype
-// type Cont = (res: Value | Error) => Value | Error;
-// type ContArray = (results: Array<Value | Error>) => Value | Error;
+// type Cont = (res: Result<Value>) => Result<Value>;
+// type ContArray = (results: Result<Value[]>) => Result<Value>;
 export type Cont = IfCont | FirstCont | SetCont | AppCont1 | ExpsCont1 | DefCont | TopCont;
 export type ContArray = LetCont | LetrecCont | AppCont2 | ExpsCont2;
 
-export const isCont = (x: any): x is Cont => isIfCont(x) || isFirstCont(x) || isSetCont(x) ||
-            isAppCont1(x) || isExpsCont1(x) || isDefCont(x) || isTopCont(x);
-export const isContArray = (x: any): x is ContArray => isLetCont(x) || isLetrecCont(x) || isAppCont2(x) || isExpsCont2(x);
+export const isCont = (x: any): x is Cont =>
+    isIfCont(x) || isFirstCont(x) || isSetCont(x) ||
+    isAppCont1(x) || isExpsCont1(x) || isDefCont(x) || isTopCont(x);
+export const isContArray = (x: any): x is ContArray =>
+    isLetCont(x) || isLetrecCont(x) || isAppCont2(x) || isExpsCont2(x);
 
- export interface TopCont {tag: "TopCont"}
+export interface TopCont {tag: "TopCont"}
 export const makeTopCont = (): TopCont => ({tag: "TopCont"});
 export const isTopCont = (x: any): x is TopCont => x.tag === "TopCont";
 
@@ -719,90 +720,3 @@ export const evalParse = (s: string): Value | Error => {
         return ast;
     }
 }
-
-// ========================================================
-// Primitives (Unchanged in L6)
-
-// @Pre: none of the args is an Error (checked in applyProcedure)
-export const applyPrimitive = (proc: PrimOp, args: Value[]): Value | Error =>
-    proc.op === "+" ? (allT(isNumber, args) ? reduce((x, y) => x + y, 0, args) : Error("+ expects numbers only")) :
-    proc.op === "-" ? minusPrim(args) :
-    proc.op === "*" ? (allT(isNumber, args) ? reduce((x, y) => x * y, 1, args) : Error("* expects numbers only")) :
-    proc.op === "/" ? divPrim(args) :
-    proc.op === ">" ? args[0] > args[1] :
-    proc.op === "<" ? args[0] < args[1] :
-    proc.op === "=" ? args[0] === args[1] :
-    proc.op === "not" ? ! args[0] :
-    proc.op === "eq?" ? eqPrim(args) :
-    proc.op === "string=?" ? args[0] === args[1] :
-    proc.op === "cons" ? consPrim(args[0], args[1]) :
-    proc.op === "car" ? carPrim(args[0]) :
-    proc.op === "cdr" ? cdrPrim(args[0]) :
-    proc.op === "list" ? listPrim(args) :
-    proc.op === "list?" ? isListPrim(args[0]) :
-    proc.op === "pair?" ? isPairPrim(args[0]) :
-    proc.op === "number?" ? typeof(args[0]) === 'number' :
-    proc.op === "boolean?" ? typeof(args[0]) === 'boolean' :
-    proc.op === "symbol?" ? isSymbolSExp(args[0]) :
-    proc.op === "string?" ? isString(args[0]) :
-    // display, newline
-    Error("Bad primitive op " + proc.op);
-
-const minusPrim = (args: Value[]): number | Error => {
-    // TODO complete
-    let x = args[0], y = args[1];
-    if (isNumber(x) && isNumber(y)) {
-        return x - y;
-    } else {
-        return Error(`Type error: - expects numbers ${args}`)
-    }
-}
-
-const divPrim = (args: Value[]): number | Error => {
-    // TODO complete
-    let x = args[0], y = args[1];
-    if (isNumber(x) && isNumber(y)) {
-        return x / y;
-    } else {
-        return Error(`Type error: / expects numbers ${args}`)
-    }
-}
-
-const eqPrim = (args: Value[]): boolean | Error => {
-    let x = args[0], y = args[1];
-    if (isSymbolSExp(x) && isSymbolSExp(y)) {
-        return x.val === y.val;
-    } else if (isEmptySExp(x) && isEmptySExp(y)) {
-        return true;
-    } else if (isNumber(x) && isNumber(y)) {
-        return x === y;
-    } else if (isString(x) && isString(y)) {
-        return x === y;
-    } else if (isBoolean(x) && isBoolean(y)) {
-        return x === y;
-    } else {
-        return false;
-    }
-}
-
-const carPrim = (v: Value): Value | Error =>
-    isCompoundSExp(v) ? v.val1 :
-    Error(`Car: param is not compound ${v}`);
-
-const cdrPrim = (v: Value): Value | Error =>
-    isCompoundSExp(v) ? v.val2 :
-    Error(`Cdr: param is not compound ${v}`);
-
-const consPrim = (v1: Value, v2: Value): CompoundSExp =>
-    makeCompoundSExp(v1, v2);
-
-export const listPrim = (vals: Value[]): EmptySExp | CompoundSExp =>
-    vals.length === 0 ? makeEmptySExp() :
-    makeCompoundSExp(first(vals), listPrim(rest(vals)))
-
-const isListPrim = (v: Value): boolean =>
-    isEmptySExp(v) || isCompoundSExp(v);
-
-const isPairPrim = (v: Value): boolean =>
-    isCompoundSExp(v);
-
