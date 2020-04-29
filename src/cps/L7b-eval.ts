@@ -235,4 +235,4 @@ export const evalProgram = (program: Program): Result<Value> =>
     evalSequence(program.exps, theGlobalEnv, makeTopCont());
 
 export const evalParse = (s: string): Result<Value> =>
-    bind(bind(p(s), parseL5Exp), (exp: Exp) => evalSequence([exp], theGlobalEnv, makeTopCont());
+    bind(bind(p(s), parseL5Exp), (exp: Exp) => evalSequence([exp], theGlobalEnv, makeTopCont()));
