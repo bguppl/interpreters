@@ -182,12 +182,12 @@ describe('L7 Eval', () => {
                 ((compose not number?) 2))`)).to.deep.equal(makeOk(false));
     });
 
-    it.only('properly captures variables in closures', () => {
-        // expect(evalP(`
-        //     (L5 (define makeAdder (lambda (n) (lambda (y) (+ y n))))
-        //         (define a6 (makeAdder 6))
-        //         (define a7 (makeAdder 7))
-        //         (+ (a6 1) (a7 1)))`)).to.deep.equal(makeOk(15));
+    it('properly captures variables in closures', () => {
+        expect(evalP(`
+            (L5 (define makeAdder (lambda (n) (lambda (y) (+ y n))))
+                (define a6 (makeAdder 6))
+                (define a7 (makeAdder 7))
+                (+ (a6 1) (a7 1)))`)).to.deep.equal(makeOk(15));
 
         expect(evalP(`
             (L5 (define makeCounter (lambda () (let ((c 0)) (lambda () (set! c (+ c 1)) c))))

@@ -98,7 +98,7 @@ export let expsREG: Exp[];
 export let envREG: Env;
 export let pcREG: InstructionSet;
 
-export let TRACE = true;
+export let TRACE = false;
 export let MAXCOUNT = 10000000;
 
 // ============= Debug utilities ===================
@@ -172,12 +172,7 @@ export const applyIfCont = (): void => {
     dumpREG();
     if (isIfCont(contREG)) {
         const cont = contREG;
-        if (valREG === undefined) {
-            valREG = makeFailure(`"undefined" valREG in applyIfCont`);
-            pcREG = "halt";
-            return;
-        }
-        either(valREG,
+        either(valREG !== undefined ? valREG : makeOk(undefined),
                val => {
                    if (isTrueValue(val)) {
                        expREG = cont.exp.then;
@@ -233,12 +228,7 @@ export const applyFirstCont = (): void => {
     dumpREG();
     if (isFirstCont(contREG)) {
         const cont = contREG;
-        if (valREG === undefined) {
-            valREG = makeFailure(`"undefined" valREG in applyFirstCont`);
-            pcREG = "halt";
-        }
-
-        either(valREG,
+        either(valREG !== undefined ? valREG : makeOk(undefined),
                () => {
                    expsREG = cont.exps;
                    envREG = cont.env;
@@ -289,13 +279,7 @@ export const applySetCont = (): void => {
     dumpREG();
     if (isSetCont(contREG)) {
         const cont = contREG;
-        if (valREG === undefined) {
-            valREG = makeFailure(`"undefined" valREG in applySetCont`);
-            pcREG = "halt";
-            return;
-        }
-
-        either(valREG,
+        either(valREG !== undefined ? valREG : makeOk(undefined),
                val => {
                    const v = cont.exp.var.var;
                    const bdgResult = applyEnvBdg(cont.env, v);
@@ -358,13 +342,7 @@ export const applyExpsCont1 = (): void => {
     dumpREG();
     if (isExpsCont1(contREG)) {
         const cont = contREG;
-        if (valREG === undefined) {
-            valREG = makeFailure(`"undefined" valREG in applyExpsCont1`);
-            pcREG = "halt";
-            return;
-        }
-
-        either(valREG,
+        either(valREG !== undefined ? valREG : makeOk(undefined),
                val => {
                    expsREG = cont.exps;
                    envREG = cont.env;
@@ -413,13 +391,7 @@ export const applyDefCont = (): void => {
     dumpREG();
     if (isDefCont(contREG)) {
         const cont = contREG;
-        if (valREG === undefined) {
-            valREG = makeFailure(`"undefined" valREG in applyDefCont`);
-            pcREG = "halt";
-            return;
-        }
-
-        either(valREG,
+        either(valREG !== undefined ? valREG : makeOk(undefined),
                val => {
                    globalEnvAddBinding(cont.exp.var.var, val);
                    expsREG = cont.exps;
