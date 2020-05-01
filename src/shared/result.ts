@@ -2,29 +2,29 @@ import { isEmpty, first, rest, cons } from "./list";
 import { Optional, makeSome, makeNone } from "./optional";
 
 export type Result<T> = Ok<T> | Failure;
-​
+
 interface Ok<T> {
     tag: "Ok";
     value: T;
 }
-​
+
 interface Failure {
     tag: "Failure";
     message: string;
 }
-​
+
 export const makeOk = <T>(value: T): Result<T> =>
     ({ tag: "Ok", value: value });
-​
+
 export const makeFailure = <T>(message: string): Result<T> =>
     ({ tag: "Failure", message: message });
-​
+
 export const isOk = <T>(r: Result<T>): r is Ok<T> =>
     r.tag === "Ok";
-​
+
 export const isFailure = <T>(r: Result<T>): r is Failure =>
     r.tag === "Failure";
-​
+
 export const bind = <T, U>(r: Result<T>, f: (x: T) => Result<U>): Result<U> =>
     isOk(r) ? f(r.value) : r;
 
@@ -38,7 +38,7 @@ export const either = <T, U>(r: Result<T>, ifOk: (value: T) => U, ifFailure: (me
 //     isOkT(isAppExp)(r) ? [here "r" is Ok<AppExp>]
 export const isOkT = <T>(pred: (x: any) => x is T) => (r: any): r is Ok<T> =>
     isOk(r) && pred(r.value);
-​
+
 // Purpose: Like map on an array - but when the transformer function applied returns a Result<T>
 //          With f: T=>Result<U> and list: T[] return a Result<U[]> 
 //          If one of the items of the list fails on f - returns the Failure on the first item that fails.
