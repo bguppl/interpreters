@@ -61,9 +61,9 @@ const valueToLitExp = (v: Value): NumExp | BoolExp | StrExp | LitExp | PrimOp | 
     makeLitExp(v);
 
 const applyClosure = (proc: Closure, args: Value[], env: Env): Result<Value> => {
-    let vars = map((v: VarDecl) => v.var, proc.params);
-    let body = renameExps(proc.body);
-    let litArgs = map(valueToLitExp, args);
+    const vars = map((v: VarDecl) => v.var, proc.params);
+    const body = renameExps(proc.body);
+    const litArgs = map(valueToLitExp, args);
     return evalSequence(substitute(body, vars, litArgs), env);
 }
 

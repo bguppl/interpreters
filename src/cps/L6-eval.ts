@@ -135,7 +135,7 @@ const applyProcedure = (proc: Value, args: Value[], cont: Cont): Result<Value> =
     cont(makeFailure(`Bad procedure ${JSON.stringify(proc)}`));
 
 const applyClosure = (proc: Closure, args: Value[], cont: Cont): Result<Value> => {
-    let vars = map((v: VarDecl) => v.var, proc.params);
+    const vars = map((v: VarDecl) => v.var, proc.params);
     return evalSequence(proc.body, makeExtEnv(vars, args, proc.env), cont);
 }
 

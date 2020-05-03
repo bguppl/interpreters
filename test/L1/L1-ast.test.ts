@@ -18,7 +18,7 @@ describe("L1 Parsing", () => {
     });
 
     it('parses "define" expressions as DefineExp', () => {
-        let parsed = bind(p("(define x 1)"), parseL1Exp);
+        const parsed = bind(p("(define x 1)"), parseL1Exp);
         expect(parsed).to.satisfy(isOkT(isDefineExp));
         if (isOkT(isDefineExp)(parsed)) {
             expect(parsed.value.var).to.satisfy(isVarDecl);

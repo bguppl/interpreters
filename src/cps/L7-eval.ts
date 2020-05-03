@@ -154,7 +154,7 @@ const applyProcedure = (proc: Result<Value>, args: Result<Value[]>, cont: Cont):
         (proc, args);
 
 const applyClosure = (proc: Closure, args: Value[], cont: Cont): Result<Value> => {
-    let vars = map((v: VarDecl) => v.var, proc.params);
+    const vars = map((v: VarDecl) => v.var, proc.params);
     return evalSequence(proc.body, makeExtEnv(vars, args, proc.env), cont);
 }
 

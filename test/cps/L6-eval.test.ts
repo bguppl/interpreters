@@ -107,7 +107,7 @@ describe('L6 Eval', () => {
     });
 
     it('evaluates procedures', () => {
-        let closure = evalParse("(lambda (x) x)");
+        const closure = evalParse("(lambda (x) x)");
         expect(closure).to.satisfy(isOkT(isClosure));
         if (isOkT(isClosure)(closure)) {
             expect(closure.value.params[0]).to.satisfy(isVarDecl);

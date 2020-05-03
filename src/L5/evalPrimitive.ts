@@ -31,7 +31,7 @@ export const applyPrimitive = (proc: PrimOp, args: Value[]): Result<Value> =>
 
 const minusPrim = (args: Value[]): Result<number> => {
     // TODO complete
-    let x = args[0], y = args[1];
+    const x = args[0], y = args[1];
     if (isNumber(x) && isNumber(y)) {
         return makeOk(x - y);
     } else {
@@ -41,7 +41,7 @@ const minusPrim = (args: Value[]): Result<number> => {
 
 const divPrim = (args: Value[]): Result<number> => {
     // TODO complete
-    let x = args[0], y = args[1];
+    const x = args[0], y = args[1];
     if (isNumber(x) && isNumber(y)) {
         return makeOk(x / y);
     } else {
@@ -50,7 +50,7 @@ const divPrim = (args: Value[]): Result<number> => {
 }
 
 const eqPrim = (args: Value[]): boolean => {
-    let x = args[0], y = args[1];
+    const x = args[0], y = args[1];
     if (isSymbolSExp(x) && isSymbolSExp(y)) {
         return x.val === y.val;
     } else if (isEmptySExp(x) && isEmptySExp(y)) {

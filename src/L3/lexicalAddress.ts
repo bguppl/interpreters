@@ -272,7 +272,7 @@ unparseLA(addLexicalAddresses(parseLA(`
 */
 export const addLexicalAddresses = (exp: CExpLA): Result<CExpLA> => {
     const visitProc = (proc: ProcExpLA, addresses: LexicalAddress[]): Result<ProcExpLA> => {
-        let newAddresses = crossContour(proc.params, addresses);
+        const newAddresses = crossContour(proc.params, addresses);
         return bind(mapResult(b => visit(b, newAddresses), proc.body),
                     (bs: CExpLA[]) => makeOk(makeProcExpLA(proc.params, bs)));
     };
