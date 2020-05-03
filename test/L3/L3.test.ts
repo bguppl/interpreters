@@ -391,19 +391,15 @@ describe('L3 Eval', () => {
     it('applies higher-order functions', () => {
         // L3 higher order functions
 
-        const program1 = parseL3(`
-            (L3 (define map
-                  (lambda (f l)
-                    (if (eq? l '())
-                        l
-                        (cons (f (car l)) (map f (cdr l))))))
-                (map (lambda (x) (* x x)) '(1 2 3)))`);
+        expect(bind(parseL3(`
+        (L3 (define map
+              (lambda (f l)
+                (if (eq? l '())
+                    l
+                    (cons (f (car l)) (map f (cdr l))))))
+            (map (lambda (x) (* x x)) '(1 2 3)))`), evalL3program)).to.deep.equal(makeOk(listPrim([1, 4, 9])));
 
-        if (isOk(program1)) {
-            expect(evalL3program(program1.value)).to.deep.equal(makeOk(listPrim([1, 4, 9])));
-        }
-
-        const program2 = parseL3(`
+        expect(bind(parseL3(`
             (L3 (define empty? (lambda (x) (eq? x '())))
                 (define filter
                   (lambda (pred l)
@@ -412,37 +408,25 @@ describe('L3 Eval', () => {
                         (if (pred (car l))
                             (cons (car l) (filter pred (cdr l)))
                             (filter pred (cdr l))))))
-                (filter (lambda (x) (not (= x 2))) '(1 2 3 2)))`);
-        
-        if (isOk(program2)) {
-            expect(evalL3program(program2.value)).to.deep.equal(makeOk(listPrim([1, 3])));
-        }
+                (filter (lambda (x) (not (= x 2))) '(1 2 3 2)))`), evalL3program)).to.deep.equal(makeOk(listPrim([1, 3])));
 
-        const program3 = parseL3(`
+        expect(bind(parseL3(`
             (L3 (define compose (lambda (f g) (lambda (x) (f (g x)))))
-                ((compose not number?) 2))`);
-        
-        if (isOk(program3)) {
-            expect(evalL3program(program3.value)).to.deep.equal(makeOk(false));
-        }
+                ((compose not number?) 2))`), evalL3program)).to.deep.equal(makeOk(false));
 
-        const program4 = parseL3(`
+        expect(bind(parseL3(`
             (L3 (define equal? (lambda (e1 e2)
                                  (if (eq? e1 e2)
                                      #t
                                      (if (and (pair? e1) (pair? e2))
                                          (and (equal? (car e1) (car e2)) (equal? (cdr e1) (cdr e2)))
                                          #f))))
-                (and (equal? '(1 . (2 . 3)) '(1 2 . 3)) (equal? '(1 . (2)) '(1 2))))`);
-        
-        if (isOk(program4)) {
-            expect(evalL3program(program4.value)).to.deep.equal(makeOk(true));
-        }
+                (and (equal? '(1 . (2 . 3)) '(1 2 . 3)) (equal? '(1 . (2)) '(1 2))))`), evalL3program)).to.deep.equal(makeOk(true));
     });
 
     it('evaluates the examples', () => {
         // Preserve bound variables in subst
-        const program1 = parseL3(`
+        expect(bind(parseL3(`
             (L3 (define nf
                   (lambda (f n)
                     (if (= n 0)
@@ -450,32 +434,20 @@ describe('L3 Eval', () => {
                         (if (= n 1)
                             f
                             (lambda (x) (f ((nf f (- n 1)) x)))))))
-                ((nf (lambda (x) (* x x)) 2) 3))`);
-        
-        if (isOk(program1)) {
-            expect(evalL3program(program1.value)).to.deep.equal(makeOk(81));
-        }
+                ((nf (lambda (x) (* x x)) 2) 3))`), evalL3program)).to.deep.equal(makeOk(81));
 
         // Accidental capture of the z variable if no renaming
-        const program2 = parseL3(`
+        expect(bind(parseL3(`
             (L3 (define z (lambda (x) (* x x)))
-                (((lambda (x) (lambda (z) (x z))) (lambda (w) (z w))) 2))`);
-
-        if (isOk(program2)) {
-            expect(evalL3program(program2.value)).to.deep.equal(makeOk(4));
-        }
+                (((lambda (x) (lambda (z) (x z))) (lambda (w) (z w))) 2))`), evalL3program)).to.deep.equal(makeOk(4));
 
         // Y-combinator
-        const program3 = parseL3(`
+        expect(bind(parseL3(`
             (L3 (((lambda (f) (f f))
                     (lambda (fact)
                       (lambda (n)
                         (if (= n 0)
                             1
-                            (* n ((fact fact) (- n 1))))))) 6))`);
-        
-        if (isOk(program3)) {
-            expect(evalL3program(program3.value)).to.deep.equal(makeOk(720));
-        }
+                            (* n ((fact fact) (- n 1))))))) 6))`), evalL3program)).to.deep.equal(makeOk(720));
     });
 });
