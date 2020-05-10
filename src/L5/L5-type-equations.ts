@@ -50,11 +50,11 @@ const reducePool = (fun: (e: A.Exp, pool: Pool) => Pool, exps: A.Exp[], result: 
               _ => reducePool(fun, rest(exps), result),
               () => reducePool(fun, rest(exps), fun(first(exps), result)));
 
-const mapPoolVarDecls = (fun: (e: A.VarDecl, pool: Pool) => Pool, vds: A.VarDecl[], result: Pool): Pool =>
+const reducePoolVarDecls = (fun: (e: A.VarDecl, pool: Pool) => Pool, vds: A.VarDecl[], result: Pool): Pool =>
     isEmpty(vds) ? result :
     Opt.maybe(inPool(result, A.makeVarRef(first(vds).var)),
-              _ => mapPoolVarDecls(fun, rest(vds), result),
-              () => mapPoolVarDecls(fun, rest(vds), fun(first(vds), result)));
+              _ => reducePoolVarDecls(fun, rest(vds), result),
+              () => reducePoolVarDecls(fun, rest(vds), fun(first(vds), result)));
 
 // Purpose: Traverse the abstract syntax tree L5-exp
 //          and collect all sub-expressions into a Pool of fresh type variables.
@@ -67,7 +67,7 @@ const mapPoolVarDecls = (fun: (e: A.VarDecl, pool: Pool) => Pool, vds: A.VarDecl
 export const expToPool = (exp: A.Exp): Pool => {
     const findVars = (e: A.Exp, pool: Pool): Pool =>
         A.isAtomicExp(e) ? extendPool(e, pool) :
-        A.isProcExp(e) ? extendPool(e, reducePool(findVars, e.body, mapPoolVarDecls(extendPoolVarDecl, e.args, pool))) :
+        A.isProcExp(e) ? extendPool(e, reducePool(findVars, e.body, reducePoolVarDecls(extendPoolVarDecl, e.args, pool))) :
         A.isCompoundExp(e) ? extendPool(e, reducePool(findVars, A.expComponents(e), pool)) :
         makeEmptyPool();
     return findVars(exp, makeEmptyPool());
@@ -94,14 +94,14 @@ export const safeLast = <T extends any>(list: readonly T[]): Opt.Optional<T> => 
 export const poolToEquations = (pool: Pool): Opt.Optional<Equation[]> => {
     // VarRef generate no equations beyond that of var-decl - remove them.
     const poolWithoutVars: Pool = R.filter(R.propSatisfies(R.complement(A.isVarRef), 'e'), pool);
-    return Opt.bind(Opt.mapOptional((e: A.Exp) => makeEquationFromExp(e, pool), R.map(R.prop('e'), poolWithoutVars)),
+    return Opt.bind(Opt.mapOptional((e: A.Exp) => makeEquationsFromExp(e, pool), R.map(R.prop('e'), poolWithoutVars)),
                     (eqns: Equation[][]) => Opt.makeSome(R.chain(R.identity, eqns)));
 };
 
 // Signature: make-equation-from-exp(exp, pool)
 // Purpose: Return a single equation
 // @Pre: exp is a member of pool
-export const makeEquationFromExp = (exp: A.Exp, pool: Pool): Opt.Optional<Equation[]> =>
+export const makeEquationsFromExp = (exp: A.Exp, pool: Pool): Opt.Optional<Equation[]> =>
     // An application must respect the type of its operator
     // Type(Operator) = [T1 * .. * Tn -> Te]
     // Type(Application) = Te
@@ -121,7 +121,7 @@ export const makeEquationFromExp = (exp: A.Exp, pool: Pool): Opt.Optional<Equati
     // The type of a primitive procedure is given by the primitive.
     A.isPrimOp(exp) ? Opt.safe2((left: T.TExp, right: T.TExp) => Opt.makeSome([makeEquation(left, right)]))
                         (inPool(pool, exp), Res.resultToOptional(TC.typeofPrim(exp))) :
-    Opt.makeSome([]); // Error(`makeEquationFromExp: Unsupported exp ${exp}`)
+    Opt.makeNone();
 
 
 // ========================================================
