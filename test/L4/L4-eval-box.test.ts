@@ -3,7 +3,7 @@ import { makeVarDecl, makeVarRef, parseL4 } from '../../src/L4/L4-ast';
 import { isEnv, makeExtEnv, applyEnv, theGlobalEnv, globalEnvAddBinding } from '../../src/L4/L4-env-box';
 import { makeClosure, makeCompoundSExp, makeEmptySExp, makeSymbolSExp } from '../../src/L4/L4-value-box';
 import { evalParse, evalProgram } from '../../src/L4/L4-eval-box';
-import { makeOk, bind } from '../../src/shared/result';
+import { makeOk, bind, isFailure } from '../../src/shared/result';
 
 describe('L4 Box Environment', () => {
     const env1 = makeExtEnv(["a", "b"], [1, 2], theGlobalEnv);
@@ -152,6 +152,10 @@ describe('L4 Box Eval', () => {
 
     it('evaluates recursive procedures without "letrec"', () => {
         expect(bind(parseL4("(L4 (define f (lambda (x) (if (= x 0) 1 (* x (f (- x 1)))))) (f 3))"), evalProgram)).to.deep.equal(makeOk(6));
+    });
+
+    it('returns a Failure in "letrec" if a binding is invalid', () => {
+        expect(evalParse(`(letrec ((a (1 2))) a)`)).to.satisfy(isFailure);
     });
 
     it('evaluates recursive procedures with "letrec"', () => {

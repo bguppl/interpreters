@@ -104,10 +104,9 @@ const evalLetrec = (exp: LetrecExp, env: Env): Result<Value> => {
     const extEnv = makeExtEnv(vars, repeat(undefined, vars.length), env);
     // @@ Compute the vals in the extended env
     const cvalsResult = mapResult((v: CExp) => applicativeEval(v, extEnv), vals);
-    // This returns a Result<void[]>, so we can ignore it
-    bind(cvalsResult,
-         (cvals: Value[]) => makeOk(zipWith((bdg, cval) => setFBinding(bdg, cval), extEnv.frame.fbindings, cvals)));
-    return evalSequence(exp.body, extEnv);
+    const result = bind(cvalsResult,
+                        (cvals: Value[]) => makeOk(zipWith((bdg, cval) => setFBinding(bdg, cval), extEnv.frame.fbindings, cvals)));
+    return bind(result, _ => evalSequence(exp.body, extEnv));
 };
 
 // L4-eval-box: Handling of mutation with set!

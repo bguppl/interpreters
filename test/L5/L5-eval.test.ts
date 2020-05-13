@@ -3,7 +3,7 @@ import { isVarDecl, isVarRef, parseL5 } from '../../src/L5/L5-ast';
 import { evalParse, evalProgram } from '../../src/L5/L5-eval';
 import { makeEmptySExp, makeSymbolSExp } from '../../src/L5/L5-value';
 import { isClosure, makeCompoundSExp } from '../../src/L5/L5-value';
-import { makeOk, bind, isOkT } from '../../src/shared/result';
+import { makeOk, bind, isOkT, isFailure } from '../../src/shared/result';
 
 describe('L5 Eval', () => {
     it('evaluates data type literals', () => {
@@ -129,6 +129,10 @@ describe('L5 Eval', () => {
 
     it('evaluates recursion with "letrec"', () => {
         expect(evalParse("(letrec ((f (lambda (n) (if (= n 0) 1 (* n (f (- n 1))))))) (f 5))")).to.deep.equal(makeOk(120));
+    });
+
+    it('returns a Failure in "letrec" if a binding is invalid', () => {
+        expect(evalParse(`(letrec ((a (1 2))) a)`)).to.satisfy(isFailure);
     });
 
     it('evaluates the examples', () => {
