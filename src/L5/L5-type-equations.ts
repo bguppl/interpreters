@@ -7,8 +7,7 @@ import * as T from "./TExp";
 import * as Res from "../shared/result";
 import * as Opt from "../shared/optional";
 import { isEmpty, first, rest, cons } from "../shared/list";
-// import { Result, bind as bindResult, makeOk, makeFailure, resultToOptional } from "../shared/result";
-// import { Optional, bind as bindOptional, maybe, makeSome, makeNone, mapOptional, safe3, safe2 } from "../shared/optional";
+import { parse as p } from "../shared/parser";
 
 // ============================================================n
 // Pool ADT
@@ -144,7 +143,7 @@ export const inferType = (exp: A.Exp): Opt.Optional<T.TExp> => {
 
 // Type: [Concrete-Exp -> Concrete-TExp]
 export const infer = (exp: string): Res.Result<string> =>
-    Res.bind(A.parseL5Exp(exp),
+    Res.bind(Res.bind(p(exp), A.parseL5Exp),
              (exp: A.Exp) => Opt.maybe(inferType(exp),
                                        (te: T.TExp) => T.unparseTExp(te),
                                        () => Res.makeFailure("Infer type failed")));
