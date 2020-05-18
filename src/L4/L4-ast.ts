@@ -31,7 +31,7 @@ import { makeEmptySExp, makeSymbolSExp, SExpValue, makeCompoundSExp, valueToStri
 ;; <cexp> ::= <number>                        / NumExp(val:number)
 ;;         |  <boolean>                       / BoolExp(val:boolean)
 ;;         |  <string>                        / StrExp(val:string)
-;;         |  ( lambda ( <var>* ) <cexp>+ )   / ProcExp(params:VarDecl[], body:CExp[]))
+;;         |  ( lambda ( <var>* ) <cexp>+ )   / ProcExp(args:VarDecl[], body:CExp[]))
 ;;         |  ( if <cexp> <cexp> <cexp> )     / IfExp(test: CExp, then: CExp, alt: CExp)
 ;;         |  ( let ( <binding>* ) <cexp>+ )  / LetExp(bindings:Binding[], body:CExp[]))
 ;;         |  ( quote <sexp> )                / LitExp(val:SExp)

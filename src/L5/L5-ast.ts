@@ -34,7 +34,7 @@ import { isArray, isString, isNumericString, isIdentifier } from "../shared/type
 //         |  <boolean>                       / BoolExp(val:boolean)
 //         |  <string>                        / StrExp(val:string)
 //         |  <var-ref>
-//         |  ( lambda ( <var-decl>* ) <TExp>* <cexp>+ ) / ProcExp(params:VarDecl[], body:CExp[], returnTE: TExp))
+//         |  ( lambda ( <var-decl>* ) <TExp>? <cexp>+ ) / ProcExp(args:VarDecl[], body:CExp[], returnTE: TExp))
 //         |  ( if <cexp> <cexp> <cexp> )     / IfExp(test: CExp, then: CExp, alt: CExp)
 //         |  ( quote <sexp> )                / LitExp(val:SExp)
 //         |  ( <cexp> <cexp>* )              / AppExp(operator:CExp, operands:CExp[]))
