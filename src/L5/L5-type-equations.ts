@@ -134,7 +134,7 @@ export const inferType = (exp: A.Exp): Opt.Optional<T.TExp> => {
     // console.log(`Pool ${JSON.stringify(pool)}`);
     const equations = poolToEquations(pool);
     // console.log(`Equations ${JSON.stringify(equations)}`);
-    const sub = Opt.bind(equations, (eqns: Equation[]) => Res.resultToOptional(solveEquations(eqns)))
+    const sub = Opt.bind(equations, (eqns: Equation[]) => Res.resultToOptional(solveEquations(eqns)));
     // console.log(`Sub ${JSON.stringify(sub)}`);
     const texp = inPool(pool, exp);
     // console.log(`TExp = ${JSON.stringify(bindResult(optionalToResult(texp, "TExp is None"), T.unparseTExp))}`);
