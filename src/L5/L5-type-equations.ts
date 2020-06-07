@@ -117,6 +117,8 @@ export const makeEquationsFromExp = (exp: A.Exp, pool: Pool): Opt.Optional<Equat
     A.isNumExp(exp) ? Opt.bind(inPool(pool, exp), (left: T.TExp) => Opt.makeSome([makeEquation(left, T.makeNumTExp())])) :
     // The type of a boolean is Boolean
     A.isBoolExp(exp) ? Opt.bind(inPool(pool, exp), (left: T.TExp) => Opt.makeSome([makeEquation(left, T.makeBoolTExp())])) :
+    // The type of a string is String
+    A.isStrExp(exp) ? Opt.bind(inPool(pool, exp), (left: T.TExp) => Opt.makeSome([makeEquation(left, T.makeStrTExp())])) :
     // The type of a primitive procedure is given by the primitive.
     A.isPrimOp(exp) ? Opt.safe2((left: T.TExp, right: T.TExp) => Opt.makeSome([makeEquation(left, right)]))
                         (inPool(pool, exp), Res.resultToOptional(TC.typeofPrim(exp))) :
