@@ -353,7 +353,7 @@ export const unparse = (e: Parsed): Result<string> =>
     // DefineExp | Program
     isDefineExp(e) ? safe2((vd: string, val: string) => makeOk(`(define ${vd} ${val})`))
                         (unparseVarDecl(e.var), unparse(e.val)) :
-    bind(mapResult(unparse, e.exps), (exps: string[]) => makeOk(`(L5 ${exps})`));
+    bind(unparseLExps(e.exps), (exps: string) => makeOk(`(L5 ${exps})`));
 
 const unparseReturn = (te: TExp): Result<string> =>
     isTVar(te) ? makeOk("") :
