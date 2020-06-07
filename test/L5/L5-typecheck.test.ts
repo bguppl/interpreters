@@ -61,6 +61,32 @@ describe('L5 Type Checker', () => {
             expect(L5typeof("not")).to.deep.equal(makeOk("(boolean -> boolean)"));
         });
 
+        it("returns the type of primitive op applications", () => {
+            expect(L5typeof("(+ 1 2)")).to.deep.equal(makeOk("number"));
+            expect(L5typeof("(- 1 2)")).to.deep.equal(makeOk("number"));
+            expect(L5typeof("(* 1 2)")).to.deep.equal(makeOk("number"));
+            expect(L5typeof("(/ 1 2)")).to.deep.equal(makeOk("number"));
+
+            expect(L5typeof("(= 1 2)")).to.deep.equal(makeOk("boolean"));
+            expect(L5typeof("(< 1 2)")).to.deep.equal(makeOk("boolean"));
+            expect(L5typeof("(> 1 2)")).to.deep.equal(makeOk("boolean"));
+
+            expect(L5typeof("(not (< 1 2))")).to.deep.equal(makeOk("boolean"));
+        });
+
+        it.skip('type checking of generic functions is not supported', () => {
+            // All of these fail in TypeCheck because we do not support generic functions
+            // They do work in Type Inference.
+            expect(L5typeof("(eq? 1 2)")).to.deep.equal(makeOk("boolean"));
+            expect(L5typeof('(string=? "a" "b")')).to.deep.equal(makeOk("boolean"));
+            expect(L5typeof('(number? 1)')).to.deep.equal(makeOk("boolean"));
+            expect(L5typeof('(boolean? "a")')).to.deep.equal(makeOk("boolean"));
+            expect(L5typeof('(string? "a")')).to.deep.equal(makeOk("boolean"));
+            expect(L5typeof('(symbol? "a")')).to.deep.equal(makeOk("boolean"));
+            expect(L5typeof('(list? "a")')).to.deep.equal(makeOk("boolean"));
+            expect(L5typeof('(pair? "a")')).to.deep.equal(makeOk("boolean"));
+        });
+
         it('returns the type of a VarRef in a given TEnv', () => {
             expect(bind(bind(p("x"), parseL5Exp), (exp: Exp) => typeofExp(exp, makeExtendTEnv(["x"], [makeNumTExp()], makeEmptyTEnv())))).to.deep.equal(makeOk(makeNumTExp()));
         });
@@ -80,6 +106,7 @@ describe('L5 Type Checker', () => {
 
         it('returns the type of "let" expressions', () => {
             expect(L5typeof("(let (((x : number) 1)) (* x 2))")).to.deep.equal(makeOk("number"));
+            expect(L5typeof("(let (((x : number) 1) ((y : number) 3)) (+ x y))")).to.deep.equal(makeOk("number"));
             expect(L5typeof("(let (((x : number) 1) ((y : number) 2)) (lambda((a : number)) : number (+ (* x a) y)))")).to.deep.equal(makeOk("(number -> number)"));
         });
 

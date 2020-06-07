@@ -27,6 +27,30 @@ describe('L5 Type Equations', () => {
         expect(verifyTeOfExprWithEquations(">", "(number * number -> boolean)")).to.deep.equal(makeOk(true));
     });
 
+    it("infers the type of primitive op applications", () => {
+        expect(verifyTeOfExprWithEquations("(+ 1 2)", "number")).to.deep.equal(makeOk(true));
+        expect(verifyTeOfExprWithEquations("(- 1 2)", "number")).to.deep.equal(makeOk(true));
+        expect(verifyTeOfExprWithEquations("(* 1 2)", "number")).to.deep.equal(makeOk(true));
+        expect(verifyTeOfExprWithEquations("(/ 1 2)", "number")).to.deep.equal(makeOk(true));
+
+        expect(verifyTeOfExprWithEquations("(= 1 2)", "boolean")).to.deep.equal(makeOk(true));
+        expect(verifyTeOfExprWithEquations("(< 1 2)", "boolean")).to.deep.equal(makeOk(true));
+        expect(verifyTeOfExprWithEquations("(> 1 2)", "boolean")).to.deep.equal(makeOk(true));
+
+        expect(verifyTeOfExprWithEquations("(not (< 1 2))", "boolean")).to.deep.equal(makeOk(true));
+    });
+
+    it('infers the type of generic primitive op application', () => {
+        expect(verifyTeOfExprWithEquations("(eq? 1 2)", "boolean")).to.deep.equal(makeOk(true));
+        expect(verifyTeOfExprWithEquations('(string=? "a" "b")', "boolean")).to.deep.equal(makeOk(true));
+        expect(verifyTeOfExprWithEquations('(number? 1)', "boolean")).to.deep.equal(makeOk(true));
+        expect(verifyTeOfExprWithEquations('(boolean? "a")', "boolean")).to.deep.equal(makeOk(true));
+        expect(verifyTeOfExprWithEquations('(string? "a")', "boolean")).to.deep.equal(makeOk(true));
+        expect(verifyTeOfExprWithEquations('(symbol? "a")', "boolean")).to.deep.equal(makeOk(true));
+        expect(verifyTeOfExprWithEquations('(list? "a")', "boolean")).to.deep.equal(makeOk(true));
+        expect(verifyTeOfExprWithEquations('(pair? "a")', "boolean")).to.deep.equal(makeOk(true));
+    });
+
     it('infers the type of procedures', () => {
         expect(verifyTeOfExprWithEquations("(lambda (x) (+ x 1))", "(number -> number)")).to.deep.equal(makeOk(true));
         expect(verifyTeOfExprWithEquations("(lambda (x) (x 1))", "((number -> T) -> T)")).to.deep.equal(makeOk(true));

@@ -71,14 +71,13 @@ const typeofStr = (s: StrExp): StrTExp => makeStrTExp();
 const numOpTExp = parseTE('(number * number -> number)');
 const numCompTExp = parseTE('(number * number -> boolean)');
 const boolOpTExp = parseTE('(boolean * boolean -> boolean)');
-const typePredTExp = parseTE('(T -> boolean)');
 
 // Todo: cons, car, cdr
 export const typeofPrim = (p: PrimOp): Result<TExp> =>
     ['+', '-', '*', '/'].includes(p.op) ? numOpTExp :
     ['and', 'or'].includes(p.op) ? boolOpTExp :
     ['>', '<', '='].includes(p.op) ? numCompTExp :
-    ['number?', 'boolean?', 'string?', 'symbol?', 'list?'].includes(p.op) ? typePredTExp :
+    ['number?', 'boolean?', 'string?', 'symbol?', 'list?', 'pair?'].includes(p.op) ? parseTE('(T -> boolean)') :
     (p.op === 'not') ? parseTE('(boolean -> boolean)') :
     (p.op === 'eq?') ? parseTE('(T1 * T2 -> boolean)') :
     (p.op === 'string=?') ? parseTE('(T1 * T2 -> boolean)') :

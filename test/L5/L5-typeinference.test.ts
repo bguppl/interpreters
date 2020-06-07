@@ -25,6 +25,30 @@ describe('L5 Type Inference', () => {
             expect(inferTypeOf("not")).to.deep.equal(makeOk("(boolean -> boolean)"));
         });
 
+        it("infers the type of primitive op applications", () => {
+            expect(inferTypeOf("(+ 1 2)")).to.deep.equal(makeOk("number"));
+            expect(inferTypeOf("(- 1 2)")).to.deep.equal(makeOk("number"));
+            expect(inferTypeOf("(* 1 2)")).to.deep.equal(makeOk("number"));
+            expect(inferTypeOf("(/ 1 2)")).to.deep.equal(makeOk("number"));
+
+            expect(inferTypeOf("(= 1 2)")).to.deep.equal(makeOk("boolean"));
+            expect(inferTypeOf("(< 1 2)")).to.deep.equal(makeOk("boolean"));
+            expect(inferTypeOf("(> 1 2)")).to.deep.equal(makeOk("boolean"));
+
+            expect(inferTypeOf("(not (< 1 2))")).to.deep.equal(makeOk("boolean"));
+        });
+
+        it('infers the type of generic primitive op application', () => {
+            expect(inferTypeOf("(eq? 1 2)")).to.deep.equal(makeOk("boolean"));
+            expect(inferTypeOf('(string=? "a" "b")')).to.deep.equal(makeOk("boolean"));
+            expect(inferTypeOf('(number? 1)')).to.deep.equal(makeOk("boolean"));
+            expect(inferTypeOf('(boolean? "a")')).to.deep.equal(makeOk("boolean"));
+            expect(inferTypeOf('(string? "a")')).to.deep.equal(makeOk("boolean"));
+            expect(inferTypeOf('(symbol? "a")')).to.deep.equal(makeOk("boolean"));
+            expect(inferTypeOf('(list? "a")')).to.deep.equal(makeOk("boolean"));
+            expect(inferTypeOf('(pair? "a")')).to.deep.equal(makeOk("boolean"));
+        });
+
         it('infers the type of a VarRef in a given TEnv', () => {
             expect(bind(bind(p("x"), parseL5Exp), (exp: Exp) => typeofExp(exp, makeExtendTEnv(["x"], [makeNumTExp()], makeEmptyTEnv())))).to.deep.equal(makeOk(makeNumTExp()));
         });
