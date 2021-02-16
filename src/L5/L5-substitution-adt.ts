@@ -1,4 +1,4 @@
-import { curry, map, prop } from 'ramda';
+import { partial, map, prop } from 'ramda';
 import { eqTVar, isAtomicTExp, isProcTExp, isTVar, makeProcTExp, unparseTExp, TExp, TVar } from "./TExp";
 import { isEmpty, first, rest } from "../shared/list";
 import { Result, makeOk, makeFailure, mapResult, bind, zipWithResult } from '../shared/result';
@@ -62,7 +62,7 @@ export const applySub = (sub: Sub, te: TExp): TExp =>
     isEmptySub(sub) ? te :
     isAtomicTExp(te) ? te :
     isTVar(te) ? subGet(sub, te) :
-    isProcTExp(te) ? makeProcTExp(map(curry(applySub)(sub), te.paramTEs), applySub(sub, te.returnTE)) :
+    isProcTExp(te) ? makeProcTExp(map(partial(applySub, [sub]), te.paramTEs), applySub(sub, te.returnTE)) :
     te;
 
 // ============================================================
@@ -81,7 +81,7 @@ const combine = (sub: Sub, vars: TVar[], tes: TExp[]): Result<Sub> =>
 // Calls to makeSub to do the occur-check
 export const extendSub = (sub: Sub, v: TVar, te: TExp): Result<Sub> =>
     bind(makeSub([v], [te]), (sub2: Sub) => {
-        const updatedTEs = map(curry(applySub)(sub2), sub.tes);
+        const updatedTEs = map(partial(applySub, [sub2]), sub.tes);
         return map(prop('var'), sub.vars).includes(v.var)
                ? makeSub(sub.vars, updatedTEs)
                : makeSub([v].concat(sub.vars), [te].concat(updatedTEs));
