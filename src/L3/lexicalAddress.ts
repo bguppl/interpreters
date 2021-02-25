@@ -111,7 +111,7 @@ export const parseLASExp = (sexp: Sexp): Result<CExpLA> =>
     isEmpty(sexp) ? makeFailure("Parse: Unexpected empty") :
     isArray(sexp) ? parseLACompound(sexp) :
     isToken(sexp) ? makeOk(parseLAAtomic(sexp)) :
-    makeFailure(`Parse: Unexpected type ${sexp}`);
+    sexp;
 
 const parseLAAtomic = (sexp: Token): CExpLA =>
     sexp === "#t" ? makeBoolExp(true) :
