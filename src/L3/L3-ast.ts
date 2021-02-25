@@ -143,7 +143,7 @@ export const parseL3Exp = (sexp: Sexp): Result<Exp> =>
     isEmpty(sexp) ? makeFailure("Exp cannot be an empty list") :
     isArray(sexp) ? parseL3CompoundExp(first(sexp), rest(sexp)) :
     isToken(sexp) ? parseL3Atomic(sexp) :
-    makeFailure("Unexpected type " + sexp);
+    sexp;
 
 // Compound -> DefineExp | CompoundCExp
 export const parseL3CompoundExp = (op: Sexp, params: Sexp[]): Result<Exp> => 
@@ -179,7 +179,7 @@ export const parseL3CExp = (sexp: Sexp): Result<CExp> =>
     isEmpty(sexp) ? makeFailure("CExp cannot be an empty list") :
     isArray(sexp) ? parseL3CompoundCExp(first(sexp), rest(sexp)) :
     isToken(sexp) ? parseL3Atomic(sexp) :
-    makeFailure("Unexpected type " + sexp);
+    sexp;
 
 // Atomic -> number | boolean | primitiveOp | string
 export const parseL3Atomic = (token: Token): Result<CExp> =>
@@ -259,7 +259,7 @@ export const parseSExp = (sexp: Sexp): Result<SExpValue> =>
         sexp[0] === '.' ? makeFailure("Bad dotted sexp: " + sexp) : 
         safe2((val1: SExpValue, val2: SExpValue) => makeOk(makeCompoundSExp(val1, val2)))
             (parseSExp(first(sexp)), parseSExp(rest(sexp)))) :
-    makeFailure(`Bad literal expression: ${sexp}`);
+    sexp;
 
 
 // ==========================================================================
@@ -297,4 +297,4 @@ export const unparseL3 = (exp: Program | Exp): string =>
     isLetExp(exp) ? unparseLetExp(exp) :
     isDefineExp(exp) ? `(define ${exp.var.var} ${unparseL3(exp.val)})` :
     isProgram(exp) ? `(L3 ${unparseLExps(exp.exps)})` :
-    "";
+    exp;

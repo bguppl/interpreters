@@ -43,11 +43,11 @@ const L1applicativeEval = (exp: CExp, env: Env): Result<Value> =>
     isAppExp(exp) ? bind(mapResult((rand: CExp) =>  L1applicativeEval(rand, env),
                                    exp.rands),
                          (rands: Value[]) => L1applyProcedure(exp.rator, rands)) :
-    makeFailure("Bad L1 AST " + exp);
+    exp;
 
 const L1applyProcedure = (proc: CExp, args: Value[]): Result<Value> =>
     isPrimOp(proc) ? applyPrimitive(proc, args) :
-    makeFailure("Bad procedure " + proc)
+    makeFailure("Bad procedure " + proc);
 
 // There are type errors which we will address in L3
 const applyPrimitive = (proc: PrimOp, args: Value[]): Result<Value> =>

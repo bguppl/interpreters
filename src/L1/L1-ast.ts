@@ -78,7 +78,7 @@ export const parseL1Program = (sexp: Sexp): Result<Program> =>
     sexp === "" || isEmpty(sexp) ? makeFailure("Unexpected empty program") :
     isToken(sexp) ? makeFailure("Program cannot be a single token") :
     isArray(sexp) ? parseL1GoodProgram(first(sexp), rest(sexp)) :
-    makeFailure("Unexpected type " + sexp);
+    sexp;
 
 const parseL1GoodProgram = (keyword: Sexp, body: Sexp[]): Result<Program> =>
     keyword === "L1" && !isEmpty(body) ? bind(mapResult(parseL1Exp, body),
@@ -90,8 +90,8 @@ export const parseL1Exp = (sexp: Sexp): Result<Exp> =>
     isEmpty(sexp) ? makeFailure("Exp cannot be an empty list") :
     isArray(sexp) ? parseL1CompoundExp(first(sexp), rest(sexp)) :
     isToken(sexp) ? parseL1Atomic(sexp) :
-    makeFailure("Unexpected type " + sexp);
-
+    sexp;
+    
 // Compound -> DefineExp | CompoundCExp
 export const parseL1CompoundExp = (op: Sexp, params: Sexp[]): Result<Exp> => 
     op === "define"? parseDefine(params) :
@@ -118,7 +118,7 @@ export const parseL1CExp = (sexp: Sexp): Result<CExp> =>
     isEmpty(sexp) ? makeFailure("CExp cannot be an empty list") :
     isArray(sexp) ? parseL1CompoundCExp(first(sexp), rest(sexp)) :
     isToken(sexp) ? parseL1Atomic(sexp) :
-    makeFailure("Unexpected type " + sexp);
+    sexp;
 
 // Atomic -> number | boolean | primitiveOp
 export const parseL1Atomic = (token: Token): Result<CExp> =>

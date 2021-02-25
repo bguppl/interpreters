@@ -25,7 +25,7 @@ export const height = (exp: Program | Exp): number =>
                                     map((rand) => height(rand), exp.rands))) :
     isProgram(exp) ? 1 + reduce(Math.max, zero,
                                 map((e) => height(e), exp.exps)) :
-    -1;
+    exp;
 
 export const occursFree = (v: string, e: Program | Exp): boolean =>
     isBoolExp(e) ? false :
@@ -42,7 +42,7 @@ export const occursFree = (v: string, e: Program | Exp): boolean =>
     isDefineExp(e) ? (v !== e.var.var) && occursFree(v, e.val) :
     isLetExp(e) ? false : // TODO
     isProgram(e) ? false : // TODO
-    false;
+    e;
 
 export const referencedVars = (e: Program | Exp): VarRef[] =>
     isBoolExp(e) ? Array<VarRef>() :
@@ -59,4 +59,4 @@ export const referencedVars = (e: Program | Exp): VarRef[] =>
     isDefineExp(e) ? referencedVars(e.val) :
     isProgram(e) ? reduce(varRefUnion, Array<VarRef>(), map(referencedVars, e.exps)) :
     isLetExp(e) ? Array<VarRef>() : // TODO
-    Array<VarRef>();
+    e;

@@ -31,7 +31,7 @@ const L3applicativeEval = (exp: CExp, env: Env): Result<Value> =>
     isAppExp(exp) ? safe2((rator: Value, rands: Value[]) => L3applyProcedure(rator, rands, env))
         (L3applicativeEval(exp.rator, env), mapResult(rand => L3applicativeEval(rand, env), exp.rands)) :
     isLetExp(exp) ? makeFailure('"let" not supported (yet)') :
-    makeFailure(`Bad L3 AST ${exp}`);
+    exp;
 
 export const isTrueValue = (x: Value): boolean =>
     ! (x === false);
