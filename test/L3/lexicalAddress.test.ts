@@ -3,6 +3,7 @@ import { map } from 'ramda';
 import { makeNumExp, makeVarDecl, makeVarRef } from "../../src/L3/L3-ast";
 import * as LA from "../../src/L3/lexicalAddress";
 import { Result, makeOk, bind, isOkT } from "../../src/shared/result";
+import { Sexp } from "s-expression";
 
 describe('parseLA', () => {
     it('parses lexical addresses', () => {
@@ -14,9 +15,9 @@ describe('parseLA', () => {
 
 describe('unparseLA', () => {
     it('unparses lexical addresses', () => {
-        expect(bind(LA.parseLA("1"), cexpla => makeOk(LA.unparseLA(cexpla)))).to.deep.equal(makeOk(1));
-        expect(bind(LA.parseLA("#t"), cexpla => makeOk(LA.unparseLA(cexpla)))).to.deep.equal(makeOk(true));
-        expect(bind(LA.parseLA("(if #t (+ 1 2) 'ok)"), cexpla => makeOk(LA.unparseLA(cexpla)))).to.deep.equal(makeOk(["if", true, ["+", 1, 2], ["quote", "ok"]]));
+        expect(bind(LA.parseLA("1"), cexpla => makeOk(LA.unparseLA(cexpla)))).to.deep.equal(makeOk("1"));
+        expect(bind(LA.parseLA("#t"), cexpla => makeOk(LA.unparseLA(cexpla)))).to.deep.equal(makeOk("#t"));
+        expect(bind(LA.parseLA("(if #t (+ 1 2) 'ok)"), cexpla => makeOk(LA.unparseLA(cexpla)))).to.deep.equal(makeOk(["if", "#t", ["+", "1", "2"], ["quote", "ok"]]));
         expect(bind(LA.parseLA("(lambda (x) x)"), cexpla => makeOk(LA.unparseLA(cexpla)))).to.deep.equal(makeOk(["lambda", ["x"], "x"]));
         expect(bind(LA.parseLA("(lambda (x) (* x x))"), cexpla => makeOk(LA.unparseLA(cexpla)))).to.deep.equal(makeOk(["lambda", ["x"], ["*", "x", "x"]]));
     });
@@ -62,10 +63,11 @@ describe('crossContour', () => {
 
 describe('addLexicalAddress', () => {
     it('works...', () => {
-        const f = (s: string): Result<any> =>
+        const f = (s: string): Result<Sexp> =>
             bind(LA.parseLA(s), cexpla => bind(LA.addLexicalAddresses(cexpla), cexpla => makeOk(LA.unparseLA(cexpla))));
-        expect(f("(lambda (x) x)")).to.deep.equal(makeOk(["lambda", ["x"], ["x", ":", 0, 0]]));
-        expect(f("(lambda (x) (lambda (y) (+ x y)))")).to.deep.equal(makeOk(["lambda", ["x"], ["lambda", ["y"], [["+", "free"], ["x", ":", 1, 0], ["y", ":", 0, 0]]]]));
-        expect(f("((lambda (x) (* x x)) ((lambda (x) (+ x x)) 2))")).to.deep.equal(makeOk([["lambda", ["x"], [["*", "free"], ["x", ":", 0, 0], ["x", ":", 0, 0]]], [["lambda", ["x"], [["+", "free"], ["x", ":", 0, 0], ["x", ":", 0, 0]]], 2]]));
+        expect(f("(lambda (x) x)")).to.deep.equal(makeOk(["lambda", ["x"], ["x", ":", "0", "0"]]));
+        expect(f("(lambda (x) (lambda (y) (+ x y)))")).to.deep.equal(makeOk(["lambda", ["x"], ["lambda", ["y"], [["+", "free"], ["x", ":", "1", "0"], ["y", ":", "0", "0"]]]]));
+        expect(f("((lambda (x) (* x x)) ((lambda (x) (+ x x)) 2))")).to.deep.equal(
+            makeOk([["lambda", ["x"], [["*", "free"], ["x", ":", "0", "0"], ["x", ":", "0", "0"]]], [["lambda", ["x"], [["+", "free"], ["x", ":", "0", "0"], ["x", ":", "0", "0"]]], "2"]]));
     });
 });

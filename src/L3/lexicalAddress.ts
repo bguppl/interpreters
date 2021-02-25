@@ -22,7 +22,7 @@ import { concat, map } from 'ramda';
 import { BoolExp, LitExp, NumExp, StrExp, VarDecl, VarRef } from './L3-ast';
 import { isBoolExp, isLitExp, isNumExp, isStrExp, isVarRef } from './L3-ast';
 import { makeBoolExp, makeNumExp, makeStrExp, makeVarDecl, makeVarRef } from './L3-ast';
-import { first, rest, isEmpty, allT, second } from '../shared/list';
+import { first, rest, isEmpty, allT, second, cons } from '../shared/list';
 import { isArray, isNumericString, isString } from "../shared/type-predicates";
 import { parseLitExp } from './L3-ast';
 import { Result, makeFailure, makeOk, bind, mapResult, safe3, safe2 } from '../shared/result';
@@ -149,23 +149,23 @@ const parseProcExpLA = (sexps: Sexp[]): Result<ProcExpLA> => {
 
 import { isCompoundSExp, isEmptySExp, isSymbolSExp, valueToString } from './L3-value';
 
-const unparseLitExp = (le: LitExp): any =>
+const unparseLitExp = (le: LitExp): Sexp =>
     isEmptySExp(le.val) ? ["quote", valueToString(le.val)] :
     isSymbolSExp(le.val) ? ["quote", valueToString(le.val)] :
     isCompoundSExp(le.val) ? ["quote", valueToString(le.val)] :
-    le.val;
+    valueToString(le.val);
 
-export const unparseLA = (exp: CExpLA): any =>
-    isBoolExp(exp) ? exp.val :
-    isNumExp(exp) ? exp.val :
+export const unparseLA = (exp: CExpLA): Sexp =>
+    isBoolExp(exp) ? valueToString(exp.val) :
+    isNumExp(exp) ? valueToString(exp.val) :
     isStrExp(exp) ? exp.val :
     isLitExp(exp) ? unparseLitExp(exp) :
     isVarRef(exp) ? exp.var :
-    isProcExpLA(exp) ? ["lambda", map((p) => p.var, exp.params)].concat(map(unparseLA, exp.body)) :
+    isProcExpLA(exp) ? cons("lambda", cons(map((p) => p.var, exp.params), map(unparseLA, exp.body))) :
     isIfExpLA(exp) ? ["if", unparseLA(exp.test), unparseLA(exp.then), unparseLA(exp.alt)] :
     isAppExpLA(exp) ? [unparseLA(exp.rator)].concat(map(unparseLA, exp.rands)) :
     isFreeVar(exp) ? [exp.var, "free"] :
-    isLexicalAddress(exp) ? [exp.var, ":", exp.depth, exp.pos] :
+    isLexicalAddress(exp) ? [exp.var, ":", `${exp.depth}`, `${exp.pos}`] :
     exp;
 
 /*
