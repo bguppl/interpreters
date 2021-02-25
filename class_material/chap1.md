@@ -762,7 +762,7 @@ $$ \begin{align}
                                      &\forall j \notin \{i_1, \ldots, i_k\}, pred(a_j) ~\text{is false}.
    \end{align} $$
 
-Using this definition of the way $filter$ is computed, we obtain (we skip the false conditions):
+Using this definition of the way $$filter$$ is computed, we obtain (we skip the false conditions):
 
 $$ \begin{align}
     f(a) &= [cube(a_{i_1}), \ldots, cube(a_{i_k})] \\
