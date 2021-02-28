@@ -29,6 +29,7 @@ import { map, zipWith } from "ramda";
 import { Value } from './L5-value';
 import { makeBox, setBox, unbox, Box} from '../shared/box';
 import { Result, makeFailure, makeOk, bind, either } from "../shared/result";
+import { cons } from "../shared/list";
 
 // ========================================================
 // Frame binding
@@ -55,7 +56,7 @@ interface Frame {
 const makeFrame = (vars: string[], vals: Value[]): Frame =>
     ({tag: "Frame", fbindings: zipWith(makeFBinding, vars, vals)});
 const extendFrame = (frame: Frame, v: string, val: Value): Frame =>
-    ({tag: "Frame", fbindings: [makeFBinding(v, val)].concat(frame.fbindings)});
+    ({tag: "Frame", fbindings: cons(makeFBinding(v, val), frame.fbindings)});
 const isFrame = (x: any): x is Frame => x.tag === "Frame";
 const frameVars = (frame: Frame): string[] => map(getFBindingVar, frame.fbindings);
 const frameVals = (frame: Frame): Value[] => map(getFBindingVal, frame.fbindings);

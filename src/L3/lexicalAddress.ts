@@ -163,7 +163,7 @@ export const unparseLA = (exp: CExpLA): Sexp =>
     isVarRef(exp) ? exp.var :
     isProcExpLA(exp) ? cons("lambda", cons(map((p) => p.var, exp.params), map(unparseLA, exp.body))) :
     isIfExpLA(exp) ? ["if", unparseLA(exp.test), unparseLA(exp.then), unparseLA(exp.alt)] :
-    isAppExpLA(exp) ? [unparseLA(exp.rator)].concat(map(unparseLA, exp.rands)) :
+    isAppExpLA(exp) ? cons(unparseLA(exp.rator), map(unparseLA, exp.rands)) :
     isFreeVar(exp) ? [exp.var, "free"] :
     isLexicalAddress(exp) ? [exp.var, ":", `${exp.depth}`, `${exp.pos}`] :
     exp;

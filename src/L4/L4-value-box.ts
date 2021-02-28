@@ -71,8 +71,8 @@ export const closureToString = (c: Closure): string =>
 
 export const compoundSExpToArray = (cs: CompoundSExp, res: string[]): string[] | { s1: string[], s2: string } =>
     isEmptySExp(cs.val2) ? append(valueToString(cs.val1), res) :
-    isCompoundSExp(cs.val2) ? compoundSExpToArray(cs.val2, res.concat([valueToString(cs.val1)])) :
-    ({ s1: res.concat([valueToString(cs.val1)]), s2: valueToString(cs.val2)})
+    isCompoundSExp(cs.val2) ? compoundSExpToArray(cs.val2, append(valueToString(cs.val1), res)) :
+    ({ s1: append(valueToString(cs.val1), res), s2: valueToString(cs.val2)})
  
 export const compoundSExpToString = (cs: CompoundSExp, css = compoundSExpToArray(cs, [])): string => 
     isArray(css) ? `(${css.join(' ')})` :

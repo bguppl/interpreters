@@ -1,6 +1,6 @@
 import { partial, map, prop } from 'ramda';
 import { eqTVar, isAtomicTExp, isProcTExp, isTVar, makeProcTExp, unparseTExp, TExp, TVar } from "./TExp";
-import { isEmpty, first, rest } from "../shared/list";
+import { cons, isEmpty, first, rest } from "../shared/list";
 import { Result, makeOk, makeFailure, mapResult, bind, zipWithResult } from '../shared/result';
 
 // Implementation of the Substitution ADT
@@ -84,5 +84,5 @@ export const extendSub = (sub: Sub, v: TVar, te: TExp): Result<Sub> =>
         const updatedTEs = map(partial(applySub, [sub2]), sub.tes);
         return map(prop('var'), sub.vars).includes(v.var)
                ? makeSub(sub.vars, updatedTEs)
-               : makeSub([v].concat(sub.vars), [te].concat(updatedTEs));
+               : makeSub(cons(v, sub.vars), cons(te, updatedTEs));
     });

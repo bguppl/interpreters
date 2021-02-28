@@ -1,4 +1,4 @@
-import { isEmpty, first, rest } from "./list";
+import { cons, isEmpty, first, rest } from "./list";
 import { makeOk, makeFailure, Result } from "./result";
 
 export type Optional<T> = Some<T> | None;
@@ -34,7 +34,7 @@ export const mapOptional = <T, U>(f: (x: T) => Optional<U>, list: T[]): Optional
     isEmpty(list) ? makeSome([]) :
     bind(f(first(list)),
          (fa: U) => bind(mapOptional(f, rest(list)),
-                         (fas: U[]) => makeSome([fa].concat(fas))));
+                         (fas: U[]) => makeSome(cons(fa, fas))));
 
 export const safe2 = <T1, T2, T3>(f: (x: T1, y: T2) => Optional<T3>): (xr: Optional<T1>, yr: Optional<T2>) => Optional<T3> =>
     (xr: Optional<T1>, yr: Optional<T2>) =>

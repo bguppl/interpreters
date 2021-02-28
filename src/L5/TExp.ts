@@ -34,7 +34,7 @@ import { Sexp } from "s-expression";
 import { isEmpty } from "../shared/list";
 import { isArray, isBoolean, isString } from '../shared/type-predicates';
 import { makeBox, setBox, unbox, Box } from '../shared/box';
-import { first, rest } from '../shared/list';
+import { cons, first, rest } from '../shared/list';
 import { Result, bind, makeOk, makeFailure, safe2, mapResult } from "../shared/result";
 import { parse as p } from "../shared/parser";
 
@@ -196,7 +196,7 @@ const parseTupleTExp = (texps: Sexp[]): Result<TExp[]> => {
 export const unparseTExp = (te: TExp): Result<string> => {
     const unparseTuple = (paramTes: TExp[]): Result<string[]> =>
         isEmpty(paramTes) ? makeOk(["Empty"]) :
-        safe2((paramTE: string, paramTEs: string[]) => makeOk([paramTE].concat(chain(te => ['*', te], paramTEs))))
+        safe2((paramTE: string, paramTEs: string[]) => makeOk(cons(paramTE, chain(te => ['*', te], paramTEs))))
             (unparseTExp(first(paramTes)), mapResult(unparseTExp, rest(paramTes)));
     const up = (x?: TExp): Result<string | string[]> =>
         isNumTExp(x) ? makeOk('number') :
@@ -268,7 +268,9 @@ const matchTVarsInTEs = <T1, T2>(te1: TExp[], te2: TExp[],
     (isEmpty(te1) || isEmpty(te2)) ? fail() :
     // Match first then continue on rest
     matchTVarsInTE(first(te1), first(te2),
-                    (subFirst) => matchTVarsInTEs(rest(te1), rest(te2), (subRest) => succ(concat(subFirst, subRest)), fail),
+                    (subFirst) => matchTVarsInTEs(rest(te1), rest(te2), 
+                                        (subRest) => succ(concat(subFirst, subRest)), 
+                                        fail),
                     fail);
 
 // Signature: equivalent-tes?(te1, te2)
