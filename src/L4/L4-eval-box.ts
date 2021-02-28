@@ -5,7 +5,8 @@
 import { map, repeat, zipWith } from "ramda";
 import { isBoolExp, isCExp, isLitExp, isNumExp, isPrimOp, isStrExp, isVarRef, isSetExp,
          isAppExp, isDefineExp, isIfExp, isLetrecExp, isLetExp, isProcExp, Binding, VarDecl, CExp, Exp, IfExp, LetrecExp, LetExp, ProcExp, Program, SetExp,
-         parseL4Exp } from "./L4-ast";
+         parseL4Exp, 
+         DefineExp} from "./L4-ast";
 import { applyEnv, applyEnvBdg, globalEnvAddBinding, makeExtEnv, setFBinding,
             theGlobalEnv, Env, FBinding } from "./L4-env-box";
 import { isClosure, makeClosure, Closure, Value } from "./L4-value-box";
@@ -31,7 +32,7 @@ const applicativeEval = (exp: CExp, env: Env): Result<Value> =>
     isSetExp(exp) ? evalSet(exp, env) :
     isAppExp(exp) ? safe2((proc: Value, args: Value[]) => applyProcedure(proc, args))
                         (applicativeEval(exp.rator, env), mapResult((rand: CExp) => applicativeEval(rand, env), exp.rands)) :
-    makeFailure(`Bad L4 AST ${exp}`);
+    exp;
 
 export const isTrueValue = (x: Value): boolean =>
     ! (x === false);
@@ -58,13 +59,13 @@ const applyClosure = (proc: Closure, args: Value[]): Result<Value> => {
 // Evaluate a sequence of expressions (in a program)
 export const evalSequence = (seq: Exp[], env: Env): Result<Value> =>
     isEmpty(seq) ? makeFailure("Empty program") :
-    isDefineExp(first(seq)) ? evalDefineExps(first(seq), rest(seq)) :
     evalCExps(first(seq), rest(seq), env);
     
 const evalCExps = (first: Exp, rest: Exp[], env: Env): Result<Value> =>
+    isDefineExp(first) ? evalDefineExps(first, rest) :
     isCExp(first) && isEmpty(rest) ? applicativeEval(first, env) :
     isCExp(first) ? bind(applicativeEval(first, env), _ => evalSequence(rest, env)) :
-    makeFailure("Never");
+    first;
 
 // Eval a sequence of expressions when the first exp is a Define.
 // Compute the rhs of the define, extend the env with the new binding
@@ -72,11 +73,10 @@ const evalCExps = (first: Exp, rest: Exp[], env: Env): Result<Value> =>
 // L4-BOX @@
 // define always updates theGlobalEnv
 // We also only expect defineExps at the top level.
-const evalDefineExps = (def: Exp, exps: Exp[]): Result<Value> =>
-    isDefineExp(def) ? bind(applicativeEval(def.val, theGlobalEnv),
-                            (rhs: Value) => { globalEnvAddBinding(def.var.var, rhs);
-                                              return evalSequence(exps, theGlobalEnv); }) :
-    makeFailure("Unexpected " + def);
+const evalDefineExps = (def: DefineExp, exps: Exp[]): Result<Value> =>
+    bind(applicativeEval(def.val, theGlobalEnv),
+            (rhs: Value) => { globalEnvAddBinding(def.var.var, rhs);
+                                return evalSequence(exps, theGlobalEnv); });
 
 // Main program
 // L4-BOX @@ Use GE instead of empty-env

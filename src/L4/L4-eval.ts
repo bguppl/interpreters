@@ -7,7 +7,7 @@ import { map } from "ramda";
 import { isBoolExp, isCExp, isLitExp, isNumExp, isPrimOp, isStrExp, isVarRef,
          isAppExp, isDefineExp, isIfExp, isLetrecExp, isLetExp, isProcExp,
          Binding, VarDecl, CExp, Exp, IfExp, LetrecExp, LetExp, ProcExp, Program,
-         parseL4Exp} from "./L4-ast";
+         parseL4Exp, isSetExp, DefineExp} from "./L4-ast";
 import { applyEnv, makeEmptyEnv, makeExtEnv, makeRecEnv, Env } from "./L4-env";
 import { isClosure, makeClosure, Closure, Value } from "./L4-value";
 import { applyPrimitive } from "./evalPrimitive";
@@ -31,7 +31,8 @@ const applicativeEval = (exp: CExp, env: Env): Result<Value> =>
     isLetrecExp(exp) ? evalLetrec(exp, env) :
     isAppExp(exp) ? safe2((proc: Value, args: Value[]) => applyProcedure(proc, args))
                         (applicativeEval(exp.rator, env), mapResult((rand: CExp) => applicativeEval(rand, env), exp.rands)) :
-    makeFailure(`Bad L4 AST ${exp}`);
+    isSetExp(exp) ? makeFailure(`To implement ${exp}`) :
+    exp;
 
 export const isTrueValue = (x: Value): boolean =>
     ! (x === false);
@@ -58,21 +59,21 @@ const applyClosure = (proc: Closure, args: Value[]): Result<Value> => {
 // Evaluate a sequence of expressions (in a program)
 export const evalSequence = (seq: Exp[], env: Env): Result<Value> =>
     isEmpty(seq) ? makeFailure("Empty sequence") :
-    isDefineExp(first(seq)) ? evalDefineExps(first(seq), rest(seq), env) :
     evalCExps(first(seq), rest(seq), env);
     
 const evalCExps = (first: Exp, rest: Exp[], env: Env): Result<Value> =>
+    isDefineExp(first) ? evalDefineExps(first, rest, env) :
     isCExp(first) && isEmpty(rest) ? applicativeEval(first, env) :
     isCExp(first) ? bind(applicativeEval(first, env), _ => evalSequence(rest, env)) :
-    makeFailure("Never");
+    first;
     
 // Eval a sequence of expressions when the first exp is a Define.
 // Compute the rhs of the define, extend the env with the new binding
 // then compute the rest of the exps in the new env.
-const evalDefineExps = (def: Exp, exps: Exp[], env: Env): Result<Value> =>
-    isDefineExp(def) ? bind(applicativeEval(def.val, env),
-                            (rhs: Value) => evalSequence(exps, makeExtEnv([def.var.var], [rhs], env))) :
-    makeFailure("Unexpected " + def);
+const evalDefineExps = (def: DefineExp, exps: Exp[], env: Env): Result<Value> =>
+    bind(applicativeEval(def.val, env),
+            (rhs: Value) => evalSequence(exps, makeExtEnv([def.var.var], [rhs], env)));
+
 
 // Main program
 export const evalProgram = (program: Program): Result<Value> =>

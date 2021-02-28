@@ -152,7 +152,7 @@ export const parseL4Program = (sexp: Sexp): Result<Program> =>
     sexp === "" || isEmpty(sexp) ? makeFailure("Unexpected empty program") :
     isToken(sexp) ? makeFailure("Program cannot be a single token") :
     isArray(sexp) ? parseL4GoodProgram(first(sexp), rest(sexp)) :
-    makeFailure("Unexpected type " + sexp);
+    sexp;
 
 const parseL4GoodProgram = (keyword: Sexp, body: Sexp[]): Result<Program> =>
     keyword === "L4" && !isEmpty(body) ? bind(mapResult(parseL4Exp, body),
@@ -163,7 +163,7 @@ export const parseL4Exp = (sexp: Sexp): Result<Exp> =>
     isEmpty(sexp) ? makeFailure("Exp cannot be an empty list") :
     isArray(sexp) ? parseL4CompoundExp(first(sexp), rest(sexp)) :
     isToken(sexp) ? parseL4Atomic(sexp) :
-    makeFailure("Unexpected type " + sexp);
+    sexp;
 
 export const parseL4CompoundExp = (op: Sexp, params: Sexp[]): Result<Exp> => 
     op === "define" ? parseDefine(params) :
@@ -173,6 +173,7 @@ export const parseL4CompoundCExp = (op: Sexp, params: Sexp[]): Result<CExp> =>
     isString(op) && isSpecialForm(op) ? parseL4SpecialForm(op, params) :
     parseAppExp(op, params);
 
+// TODO: Define a type for special form tokens
 export const parseL4SpecialForm = (op: Sexp, params: Sexp[]): Result<CExp> =>
     isEmpty(params) ? makeFailure("Empty args for special form") :
     op === "if" ? parseIfExp(params) :
@@ -206,18 +207,20 @@ export const parseL4CExp = (sexp: Sexp): Result<CExp> =>
     isEmpty(sexp) ? makeFailure("CExp cannot be an empty list") :
     isArray(sexp) ? parseL4CompoundCExp(first(sexp), rest(sexp)) :
     isToken(sexp) ? parseL4Atomic(sexp) :
-    makeFailure("Unexpected type " + sexp);
+    sexp;
 
 /*
     ;; <prim-op>  ::= + | - | * | / | < | > | = | not | and | or | eq? | string=?
     ;;                  | cons | car | cdr | pair? | number? | list
     ;;                  | boolean? | symbol? | string?      ##### L3
 */
+// TODO: Define a type for primitive ops
 const isPrimitiveOp = (x: string): boolean =>
     ["+", "-", "*", "/", ">", "<", "=", "not", "and", "or", 
      "eq?", "string=?", "cons", "car", "cdr", "list", "pair?",
      "list?", "number?", "boolean?", "symbol?", "string?"].includes(x);
 
+// TODO: Define a type for primitive ops
 const isSpecialForm = (x: string): boolean =>
     ["if", "lambda", "let", "quote", "letrec", "set!"].includes(x);
 
@@ -294,8 +297,7 @@ export const parseSExp = (sexp: Sexp): Result<SExpValue> =>
         sexp[0] === '.' ? makeFailure("Bad dotted sexp: " + sexp) : 
         safe2((val1: SExpValue, val2: SExpValue) => makeOk(makeCompoundSExp(val1, val2)))
             (parseSExp(first(sexp)), parseSExp(rest(sexp)))) :
-    makeFailure(`Bad literal expression: ${sexp}`);
-
+    sexp;
 
 // ==========================================================================
 // Unparse: Map an AST to a concrete syntax string.
@@ -340,4 +342,4 @@ export const unparse = (exp: Parsed): string =>
     isSetExp(exp) ? unparseSetExp(exp) :
     isDefineExp(exp) ? `(define ${exp.var.var} ${unparse(exp.val)})` :
     isProgram(exp) ? `(L4 ${unparseLExps(exp.exps)})` :
-    "";
+    exp;
