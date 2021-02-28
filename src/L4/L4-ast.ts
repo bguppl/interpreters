@@ -63,7 +63,7 @@ export interface DefineExp {tag: "DefineExp"; var: VarDecl; val: CExp; }
 export interface NumExp {tag: "NumExp"; val: number; }
 export interface BoolExp {tag: "BoolExp"; val: boolean; }
 export interface StrExp {tag: "StrExp"; val: string; }
-export interface PrimOp {tag: "PrimOp"; op: string; }
+export interface PrimOp {tag: "PrimOp"; op: PrimOpKeyword; }
 export interface VarRef {tag: "VarRef"; var: string; }
 export interface VarDecl {tag: "VarDecl"; var: string; }
 export interface AppExp {tag: "AppExp"; rator: CExp; rands: CExp[]; }
@@ -78,6 +78,24 @@ export interface LitExp {tag: "LitExp"; val: SExpValue; }
 export interface LetrecExp {tag: "LetrecExp"; bindings: Binding[]; body: CExp[]; }
 export interface SetExp {tag: "SetExp", var: VarRef; val: CExp; }
 
+// To help parser - define a type for reserved key words.
+export type SpecialFormKeyword = "lambda" | "let" | "letrec" | "if" | "set!" | "quote";
+const isSpecialFormKeyword = (x: string): x is SpecialFormKeyword =>
+    ["if", "lambda", "let", "quote", "letrec", "set!"].includes(x);
+
+/*
+    ;; <prim-op>  ::= + | - | * | / | < | > | = | not | and | or | eq? | string=?
+    ;;                  | cons | car | cdr | pair? | number? | list
+    ;;                  | boolean? | symbol? | string?      ##### L3
+*/
+export type PrimOpKeyword = "+" | "-" | "*" | "/" | ">" | "<" | "=" | "not" | "and" | "or" | "eq?" | "string=?" | 
+        "cons" | "car" | "cdr" | "list" | "pair?" | "list?" | "number?" | "boolean?" | "symbol?" | "string?";
+const isPrimOpKeyword = (x: string): x is PrimOpKeyword =>
+    ["+", "-", "*", "/", ">", "<", "=", "not", "and", "or", 
+     "eq?", "string=?", "cons", "car", "cdr", "list", "pair?",
+     "list?", "number?", "boolean?", "symbol?", "string?"].includes(x);
+
+
 // Type value constructors for disjoint types
 export const makeProgram = (exps: Exp[]): Program => ({tag: "Program", exps: exps});
 export const makeDefineExp = (v: VarDecl, val: CExp): DefineExp =>
@@ -85,7 +103,7 @@ export const makeDefineExp = (v: VarDecl, val: CExp): DefineExp =>
 export const makeNumExp = (n: number): NumExp => ({tag: "NumExp", val: n});
 export const makeBoolExp = (b: boolean): BoolExp => ({tag: "BoolExp", val: b});
 export const makeStrExp = (s: string): StrExp => ({tag: "StrExp", val: s});
-export const makePrimOp = (op: string): PrimOp => ({tag: "PrimOp", op: op});
+export const makePrimOp = (op: PrimOpKeyword): PrimOp => ({tag: "PrimOp", op: op});
 export const makeVarRef = (v: string): VarRef => ({tag: "VarRef", var: v});
 export const makeVarDecl = (v: string): VarDecl => ({tag: "VarDecl", var: v});
 export const makeAppExp = (rator: CExp, rands: CExp[]): AppExp =>
@@ -170,11 +188,10 @@ export const parseL4CompoundExp = (op: Sexp, params: Sexp[]): Result<Exp> =>
     parseL4CompoundCExp(op, params);
 
 export const parseL4CompoundCExp = (op: Sexp, params: Sexp[]): Result<CExp> =>
-    isString(op) && isSpecialForm(op) ? parseL4SpecialForm(op, params) :
+    isString(op) && isSpecialFormKeyword(op) ? parseL4SpecialForm(op, params) :
     parseAppExp(op, params);
 
-// TODO: Define a type for special form tokens
-export const parseL4SpecialForm = (op: Sexp, params: Sexp[]): Result<CExp> =>
+export const parseL4SpecialForm = (op: SpecialFormKeyword, params: Sexp[]): Result<CExp> =>
     isEmpty(params) ? makeFailure("Empty args for special form") :
     op === "if" ? parseIfExp(params) :
     op === "lambda" ? parseProcExp(first(params), rest(params)) :
@@ -182,7 +199,7 @@ export const parseL4SpecialForm = (op: Sexp, params: Sexp[]): Result<CExp> =>
     op === "quote" ? parseLitExp(first(params)) :
     op === "letrec" ? parseLetrecExp(first(params), rest(params)) :
     op === "set!" ? parseSetExp(params) :
-    makeFailure("Never");
+    op;
 
 export const parseDefine = (params: Sexp[]): Result<DefineExp> =>
     isEmpty(params) ? makeFailure("define missing 2 arguments") :
@@ -199,7 +216,7 @@ export const parseL4Atomic = (token: Token): Result<CExp> =>
     token === "#t" ? makeOk(makeBoolExp(true)) :
     token === "#f" ? makeOk(makeBoolExp(false)) :
     isString(token) && isNumericString(token) ? makeOk(makeNumExp(+token)) :
-    isString(token) && isPrimitiveOp(token) ? makeOk(makePrimOp(token)) :
+    isString(token) && isPrimOpKeyword(token) ? makeOk(makePrimOp(token)) :
     isString(token) ? makeOk(makeVarRef(token)) :
     makeOk(makeStrExp(token.toString()));
 
@@ -208,21 +225,6 @@ export const parseL4CExp = (sexp: Sexp): Result<CExp> =>
     isArray(sexp) ? parseL4CompoundCExp(first(sexp), rest(sexp)) :
     isToken(sexp) ? parseL4Atomic(sexp) :
     sexp;
-
-/*
-    ;; <prim-op>  ::= + | - | * | / | < | > | = | not | and | or | eq? | string=?
-    ;;                  | cons | car | cdr | pair? | number? | list
-    ;;                  | boolean? | symbol? | string?      ##### L3
-*/
-// TODO: Define a type for primitive ops
-const isPrimitiveOp = (x: string): boolean =>
-    ["+", "-", "*", "/", ">", "<", "=", "not", "and", "or", 
-     "eq?", "string=?", "cons", "car", "cdr", "list", "pair?",
-     "list?", "number?", "boolean?", "symbol?", "string?"].includes(x);
-
-// TODO: Define a type for primitive ops
-const isSpecialForm = (x: string): boolean =>
-    ["if", "lambda", "let", "quote", "letrec", "set!"].includes(x);
 
 const parseAppExp = (op: Sexp, params: Sexp[]): Result<AppExp> =>
     safe2((rator: CExp, rands: CExp[]) => makeOk(makeAppExp(rator, rands)))
