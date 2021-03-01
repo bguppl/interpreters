@@ -418,7 +418,7 @@ describe("cubes", () => {
     it("does nothing to an empty array", () => {
         let numbers = [];
         cubes(numbers);
-        expect(number.length).to.equal(0);
+        expect(numbers.length).to.equal(0);
     });
 
     it("does not change invariant cubes", () => {
