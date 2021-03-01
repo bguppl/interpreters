@@ -1,6 +1,6 @@
-<h1>Operational Semantics</h1>
+<h1><b>Operational Semantics</b></h1>
 
-<h2>Practical Session - Week #5 </h2>
+<h2><b>Practical Session - Week #5</b></h2>
 
 The operational semantics of a programming language is specified by a set of formal evaluation rules that operate on the AST of an expression. 
 The evaluation process can be specified as an algorithm ***eval(exp) : [AST -> Value]***.
@@ -19,7 +19,7 @@ In this session, we review:
 
 
 
-<h3>What is an Environment?</h3>
+<h3><b>What is an Environment?</b></h3>
 
 An environment represents a partial function (as opposed to a total function) from symbols (variable names) to values.
 It supports the operation ***apply-env(env, var)*** which either returns the value of ***var*** in the environment ***env***, or else throws an error.
@@ -66,7 +66,7 @@ applyEnv(makeEnv('x', 3,
 ```
 
 
-<h3> Handling Primitives in L1 </h3>
+<h3><b>Handling Primitives in L1</b></h3>
 
 Let us recall the syntax of L1 using the BNF + Abstract Syntax specification we have developed in the previous lectures:
 
@@ -92,7 +92,7 @@ Value = number | boolean | PrimOp
 
  **Note:**  In L1, the only side-effect that we can get is from a ***define*** expression.
 
-<h4> Representing Primitive Operators </h4>
+<h4><b> Representing Primitive Operators </b></h4>
 
 In Scheme, when we compute this expression, we get:
 ```scheme
@@ -129,7 +129,7 @@ The steps of the change are:
 
 The result of all the changes discussed in this section appears in accompanying zip file.
 
-<h4> Change of AST for Primitives </h4>
+<h4><b> Change of AST for Primitives</b></h4>
 
 ```scheme
 ;; The main change is that we remove the expression type prim-op
@@ -190,7 +190,7 @@ instead of:
     ]
 }
 ```
-<h4> Change the Structure of the Returned Values </h4>
+<h4><b>Change the Structure of the Returned Values</b></h4>
 
 The second change is now how to evaluate the sub-expression ```{ "tag": "VarRef", "var": "*" }```: in this case, we expect to obtain a value of a different type - which is a primitive procedure mapped to the variable <b>*</b> in the global environment.
 
@@ -215,7 +215,7 @@ interface PrimProc {
 ```
 
 
-<h4> Change the applyPrimitive procedure </h4>
+<h4><b> Change the applyPrimitive procedure </b></h4>
 
 The original version of <code>applyPrimitive</code> is:
 
@@ -241,7 +241,7 @@ const applyPrimitive = (proc: PrimProc, args: Value[]): Result<Value> =>
 This is a shorter version of the function - but one that exploits the fact that we have pre-defined the primitive functions
 and bound them to functions in the meta-language that all expect arguments in the same form (an array of Values).
 
-<h4> Initializing the Global Environment with Primitive Values </h4>
+<h4><b> Initializing the Global Environment with Primitive Values</b></h4>
 
 This last step is where we map variable references to actual TypeScript functions.
 We initialize the global environment with the bindings of the primitives defined in L1 to the corresponding procedures in the meta-language.
@@ -268,7 +268,7 @@ const evalL1program = (program: Program): Value =>
 
 This implementation explains properly what is meant by "primitive functions": they are the functions which are pre-defined in the global environment when the interpreter starts running - without the need for the programmer to define them.
 
-<h4> Adding a Primitive to the Interpreter </h4>
+<h4><b> Adding a Primitive to the Interpreter</b></h4>
 
 With this implementation, it is easy to add a primitive to the interpreter - we need only:
 * Add the proper binding in the initialization of the global environment
@@ -294,7 +294,7 @@ const makeGlobalEnv = (): Env =>
 and we have two new primitives in our language (display and newline).
 
 
-<h3> Order of Evaluation of Parameters in a Procedure Application </h3>
+<h3><b>Order of Evaluation of Parameters in a Procedure Application</b></h3>
 
 L1-eval-program(program) receives a program, which includes an ordered sequence of expressions. 
 It iterates over the expressions and depending on the type of each expression, it either evaluates a ***DefineExp*** and obtains a new environment, which is then used to evaluate the next steps of the program; or it evaluates the expression.
@@ -322,7 +322,7 @@ or
 ```
 
 
-<h3> L2 Evaluation </h3>
+<h3><b>L2 Evaluation</b></h3>
 
 NOTE: In the rest of the notes, we return to the syntactic treatment of primitives as discussed in the lectures
 (as opposed to the semantic treatment discussed above).
@@ -400,9 +400,9 @@ The substitution procedure addresses 3 issues:
 * <b>we do not replace bound variables inside the body - only free variables</b>
 
 
-<h3> Renaming and Substitution </h3>
+<h3><b>Renaming and Substitution</b></h3>
 
-<h4>Renaming</h4>
+<h4><b>Renaming</b></h4>
 
 Bound variables in expressions can be consistently renamed by new variables (that do not occur in the expression) without changing the intended meaning of the expression.
 That is, expressions that differ only by consistent renaming of bound variables are semantically equivalent.
@@ -534,7 +534,7 @@ Substitution involves renaming as a first step:
     Substitute: ((+ 5 ((lambda (x1) (* x1 2)) 3)))
 ```
 
-<h3>Question: Why do we need renaming?</h3> 
+<h3><b>Question: Why do we need renaming?</b></h3> 
 
 Let us look at this program:
 
@@ -596,7 +596,7 @@ How it works with renaming:
 #t
 ```
 
-<h3>Applicative Eval</h3>
+<h3><b>Applicative Eval</b></h3>
 
 Look at the next code:
 ```scheme
@@ -629,7 +629,7 @@ reduce:
 ```
 
 
-<h3> Normal Eval </h3>
+<h3><b>Normal Eval</b></h3>
 
 <b> Q:</b>  Evaluate the following expression according to the normal evaluation algorithm:
 ```scheme
@@ -664,7 +664,7 @@ normal-eval[ (( (lambda (x)(lambda (y)(* x y)))(+ 1 2))2) ]
    ==> 6
 ```
 
-<h3> applicative-eval VS normal-eval</h3>
+<h3><b>applicative-eval VS normal-eval</b></h3>
 
 <b>Q:</b>Does the evaluation order matter? 
 
@@ -740,7 +740,7 @@ We saw two examples where different manner of evaluation get different result.
 
 <b>Notice:</b> If both evaluations don't get into an infinte loop and/or an error - they both return the same value!
 
-<h3> Distinguish between different evaluation orders</h3>
+<h3><b> Distinguish between different evaluation orders</b></h3>
 
 <b>Q: </b> How can we distinguish what evaluation order the interpreter is using?
 
@@ -764,7 +764,7 @@ for example:
 Normal eval will not have any side-effects while applicative eval will display "applic" to the screen.
 They both will return the value 1.
 
-<h3> letrec </h3>
+<h3><b> letrec </b></h3>
 
 Let us recall the exp procedure:
 ```scheme
