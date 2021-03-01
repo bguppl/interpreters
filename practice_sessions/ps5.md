@@ -289,7 +289,6 @@ const makeGlobalEnv = (): Env =>
     makeEnv('display', makePrimProc((args: Value[]) => console.log(args)),
     makeEnv('newline', makePrimProc((args: Value[]) => console.log("")),
     makeEmptyEnv()))));
-</code>
 ```
 
 and we have two new primitives in our language (display and newline).
