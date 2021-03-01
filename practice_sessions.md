@@ -16,5 +16,3 @@ All the code for the practice sessions can be found [here](https://github.com/bg
     * [Solution](./practice_sessions/ps1_sol.html)
 
 
-* [PS #1: TypeScript: Complex Data Types, JSON, Map, Filter, Reduce](./practice_sessions/ps6.html)
-    * [Solution](./practice_sessions/ps1_sol.html)
