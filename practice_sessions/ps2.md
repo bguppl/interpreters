@@ -772,7 +772,7 @@ upper("abcd"); // ==> 'ABCD'
 ```
 
 ```typescript
-let upperReverse: (s: string) => s = compose(reverse, upper);
+let upperReverse: (s: string) => string = compose(reverse, upper);
 upperReverse("abcd"); // ==> 'DCBA'
 ```
 
