@@ -16,13 +16,12 @@ All the code for the practice sessions can be found [here](https://github.com/bg
     * [Solution](./practice_sessions/ps1_sol.html)
 
 <!--
-
 ## Week 2
 
-* [PS #2:](./practice_sessions/ps2.html)
+* [PS #2: TypeScript: Type Checking](./practice_sessions/ps2.html)
 * Add link to the ps2.ts
-* 
+
+## Week 6
 
 * [PS #6: UPDATE](./practice_sessions/ps6.html)
-    
 -->
