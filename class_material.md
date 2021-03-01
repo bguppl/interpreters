@@ -4,4 +4,7 @@
 
 ### Introduction
 
-[Chapter 1: Practical Functional Programming](./class_material/chap1.html)
+[1. Introduction](./class_material/chap1.html)
+
+[2. Semantics and Programming Languages and Types](./class_material/1.1TypescriptDatatypes.html)
+
