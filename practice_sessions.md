@@ -17,8 +17,6 @@ All the code for the practice sessions can be found [here](https://github.com/bg
 
 <!--
 
-<<<<<<< HEAD
-=======
 ## Week 2
 
 * [PS #2:](./practice_sessions/ps2.html)
@@ -28,4 +26,3 @@ All the code for the practice sessions can be found [here](https://github.com/bg
 * [PS #6: UPDATE](./practice_sessions/ps6.html)
     
 -->
->>>>>>> 5fdd5012dff928545d3e1327d003eda3350d8184
