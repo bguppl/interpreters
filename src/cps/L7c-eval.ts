@@ -146,7 +146,7 @@ export const applyCont = (): void => {
     isExpsCont1(contREG) ? 'applyExpsCont1' :
     isDefCont(contREG) ? 'applyDefCont' :
     isTopCont(contREG) ? 'applyTopCont' :
-    (console.error(`1 Unknown cont ${JSON.stringify(contREG)}`), 'halt');
+    contREG;
 }
 
 // type ContArray = LetCont | LetrecCont | AppCont2 | ExpsCont2;

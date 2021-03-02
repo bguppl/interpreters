@@ -36,7 +36,7 @@ export const evalCont = (exp: CExp, env: Env, cont: Cont): Result<Value> =>
     isLetrecExp(exp) ? evalLetrec(exp, env, cont) :
     isSetExp(exp) ? evalSet(exp, env, cont) :
     isAppExp(exp) ? evalApp(exp, env, cont) :
-    cont(makeFailure(`Bad L5 AST ${exp}`));
+    exp;
 
 export const isTrueValue = (x: Value): boolean =>
     ! (x === false);
@@ -63,8 +63,11 @@ const letVars = (exp: LetExp | LetrecExp): string[] =>
 // compute the values, extend the env, eval the body.
 const evalLet = (exp: LetExp, env: Env, cont: Cont): Result<Value> =>
     evalExps(letVals(exp), env,
-             (vals: Result<Value[]>) => bind(vals,
-                                             (values: Value[]) => evalSequence(exp.body, makeExtEnv(letVars(exp), values, env), cont)));
+             (vals: Result<Value[]>) => 
+                bind(vals,
+                     (values: Value[]) => 
+                         evalSequence(exp.body, makeExtEnv(letVars(exp), values, env), 
+                                      cont)));
 
 // Evaluate an array of expressions in sequence - pass the result of the last element to cont
 // @Pre: exps is not empty

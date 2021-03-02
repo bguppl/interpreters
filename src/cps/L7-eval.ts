@@ -39,7 +39,7 @@ export const evalCont = (exp: CExp, env: Env, cont: Cont): Result<Value> =>
     isLetrecExp(exp) ? evalLetrec(exp, env, cont) :
     isSetExp(exp) ? evalSet(exp, env, cont) :
     isAppExp(exp) ? evalApp(exp, env, cont) :
-    applyCont(cont, makeFailure(`Bad L5 AST ${exp}`));
+    exp;
 
 export const isTrueValue = (x: Value): boolean =>
     ! (x === false);

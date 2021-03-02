@@ -81,14 +81,14 @@ const applyCont = (cont: Cont, val: Result<Value>): Result<Value> =>
     isExpsCont1(cont) ? applyExpsCont1(cont, val) :
     isDefCont(cont) ? applyDefCont(cont, val) :
     isTopCont(cont) ? applyTopCont(cont, val) :
-    makeFailure(`Unknown cont ${cont}`);
+    cont;
 
 const applyContArray = (cont: ContArray, val: Result<Value[]>): Result<Value> =>
     isLetCont(cont) ? applyLetCont(cont, val) :
     isLetrecCont(cont) ? applyLetrecCont(cont, val) :
     isAppCont2(cont) ? applyAppCont2(cont, val) :
     isExpsCont2(cont) ? applyExpsCont2(cont, val) :
-    makeFailure(`Unknown cont ${cont}`);
+    cont;
 
 const applyTopCont = (cont: TopCont, val: Result<Value>): Result<Value> => {
     either(val, (v: Value) => console.log(valueToString(v)), console.error);
@@ -147,7 +147,7 @@ export const evalCont = (exp: CExp, env: Env, cont: Cont): Result<Value> =>
     isLetrecExp(exp) ? evalLetrec(exp, env, cont) :
     isSetExp(exp) ? evalSet(exp, env, cont) :
     isAppExp(exp) ? evalApp(exp, env, cont) :
-    applyCont(cont, makeFailure(`Bad L5 AST ${exp}`));
+    exp;
 
 export const isTrueValue = (x: Value): boolean =>
     ! (x === false);
