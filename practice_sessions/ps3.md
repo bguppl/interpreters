@@ -742,7 +742,7 @@ We need to implement the function 'exp':
     (lambda (b e) 
        (if (zero? e) 
            1
-           (* b (exp b (- e 1)))))))
+           (* b (exp b (- e 1))))))
 ```
 
 
