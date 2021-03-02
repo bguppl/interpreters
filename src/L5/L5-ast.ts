@@ -102,8 +102,8 @@ export interface StrExp {tag: "StrExp"; val: string; }
 export const makeStrExp = (s: string): StrExp => ({tag: "StrExp", val: s});
 export const isStrExp = (x: any): x is StrExp => x.tag === "StrExp";
 
-export interface PrimOp {tag: "PrimOp"; op: string; }
-export const makePrimOp = (op: string): PrimOp => ({tag: "PrimOp", op: op});
+export interface PrimOp {tag: "PrimOp"; op: PrimOpKeyword; }
+export const makePrimOp = (op: PrimOpKeyword): PrimOp => ({tag: "PrimOp", op: op});
 export const isPrimOp = (x: any): x is PrimOp => x.tag === "PrimOp";
 
 export interface VarRef {tag: "VarRef"; var: string; }
@@ -153,6 +153,24 @@ export const makeSetExp = (v: VarRef, val: CExp): SetExp =>
     ({tag: "SetExp", var: v, val: val});
 export const isSetExp = (x: any): x is SetExp => x.tag === "SetExp";
 
+// To help parser - define a type for reserved key words.
+export type SpecialFormKeyword = "lambda" | "let" | "letrec" | "if" | "set!" | "quote";
+const isSpecialFormKeyword = (x: string): x is SpecialFormKeyword =>
+    ["if", "lambda", "let", "quote", "letrec", "set!"].includes(x);
+
+/*
+    ;; <prim-op>  ::= + | - | * | / | < | > | = | not | and | or | eq? | string=?
+    ;;                  | cons | car | cdr | pair? | number? | list
+    ;;                  | boolean? | symbol? | string?      ##### L3
+*/
+export type PrimOpKeyword = "+" | "-" | "*" | "/" | ">" | "<" | "=" | "not" | "and" | "or" | "eq?" | "string=?" | 
+        "cons" | "car" | "cdr" | "list" | "pair?" | "list?" | "number?" | "boolean?" | "symbol?" | "string?" |
+        "display" | "newline";
+const isPrimOpKeyword = (x: string): x is PrimOpKeyword =>
+    ["+", "-", "*", "/", ">", "<", "=", "not", "and", "or", 
+     "eq?", "string=?", "cons", "car", "cdr", "list", "pair?",
+     "list?", "number?", "boolean?", "symbol?", "string?", "display", "newline"].includes(x);
+
 // ========================================================
 // Parsing
 
@@ -163,7 +181,7 @@ export const parseL5Program = (sexp: Sexp): Result<Program> =>
     sexp === "" || isEmpty(sexp) ? makeFailure("Unexpected empty program") :
     isToken(sexp) ? makeFailure("Program cannot be a single token") :
     isArray(sexp) ? parseL5GoodProgram(first(sexp), rest(sexp)) :
-    makeFailure("Unexpected type " + sexp);
+    sexp;
 
 const parseL5GoodProgram = (keyword: Sexp, body: Sexp[]): Result<Program> =>
     keyword === "L5" && !isEmpty(body) ? bind(mapResult(parseL5Exp, body),
@@ -174,17 +192,17 @@ export const parseL5Exp = (sexp: Sexp): Result<Exp> =>
     isEmpty(sexp) ? makeFailure("Exp cannot be an empty list") :
     isArray(sexp) ? parseL5CompoundExp(first(sexp), rest(sexp)) :
     isToken(sexp) ? parseL5Atomic(sexp) :
-    makeFailure("Unexpected type " + sexp);
+    sexp;
 
 export const parseL5CompoundExp = (op: Sexp, params: Sexp[]): Result<Exp> =>
     op === "define" ? parseDefine(params) :
     parseL5CompoundCExp(op, params);
 
 export const parseL5CompoundCExp = (op: Sexp, params: Sexp[]): Result<CExp> =>
-    isString(op) && isSpecialForm(op) ? parseL5SpecialForm(op, params) :
+    isString(op) && isSpecialFormKeyword(op) ? parseL5SpecialForm(op, params) :
     parseAppExp(op, params);
 
-export const parseL5SpecialForm = (op: Sexp, params: Sexp[]): Result<CExp> =>
+export const parseL5SpecialForm = (op: SpecialFormKeyword, params: Sexp[]): Result<CExp> =>
     isEmpty(params) ? makeFailure("Empty args for special form") :
     op === "if" ? parseIfExp(params) :
     op === "lambda" ? parseProcExp(first(params), rest(params)) :
@@ -192,7 +210,7 @@ export const parseL5SpecialForm = (op: Sexp, params: Sexp[]): Result<CExp> =>
     op === "quote" ? parseLitExp(first(params)) :
     op === "letrec" ? parseLetrecExp(first(params), rest(params)) :
     op === "set!" ? parseSetExp(params) :
-    makeFailure("Never");
+    op;
 
 export const parseDefine = (params: Sexp[]): Result<DefineExp> =>
     isEmpty(params) ? makeFailure("define missing 2 arguments") :
@@ -209,7 +227,7 @@ export const parseL5Atomic = (token: Token): Result<AtomicExp> =>
     token === "#t" ? makeOk(makeBoolExp(true)) :
     token === "#f" ? makeOk(makeBoolExp(false)) :
     isString(token) && isNumericString(token) ? makeOk(makeNumExp(+token)) :
-    isString(token) && isPrimitiveOp(token) ? makeOk(makePrimOp(token)) :
+    isString(token) && isPrimOpKeyword(token) ? makeOk(makePrimOp(token)) :
     isString(token) ? makeOk(makeVarRef(token)) :
     makeOk(makeStrExp(token.toString()));
 
@@ -217,20 +235,7 @@ export const parseL5CExp = (sexp: Sexp): Result<CExp> =>
     isEmpty(sexp) ? makeFailure("CExp cannot be an empty list") :
     isArray(sexp) ? parseL5CompoundCExp(first(sexp), rest(sexp)) :
     isToken(sexp) ? parseL5Atomic(sexp) :
-    makeFailure("Unexpected type " + sexp);
-
-/*
-    // <prim-op>  ::= + | - | * | / | < | > | = | not |  eq? | string=?
-    //                  | cons | car | cdr | list? | number?
-    //                  | boolean? | symbol? | string?
-*/
-const isPrimitiveOp = (x: string): boolean =>
-    ["+", "-", "*", "/", ">", "<", "=", "not", "eq?",
-     "string=?", "cons", "car", "cdr", "pair?", "list?",
-     "number?", "boolean?", "symbol?", "string?", "display", "newline"].includes(x);
-
-const isSpecialForm = (x: string): boolean =>
-    ["if", "lambda", "let", "quote", "letrec", "set!"].includes(x);
+    sexp;
 
 const parseAppExp = (op: Sexp, params: Sexp[]): Result<AppExp> =>
     safe2((rator: CExp, rands: CExp[]) => makeOk(makeAppExp(rator, rands)))
@@ -284,7 +289,8 @@ export const parseVarDecl = (sexp: Sexp): Result<VarDecl> => {
 
 const parseBindings = (bindings: [Sexp, Sexp][]): Result<Binding[]> =>
     safe2((vds: VarDecl[], vals: CExp[]) => makeOk(zipWith(makeBinding, vds, vals)))
-        (mapResult(parseVarDecl, map(b => b[0], bindings)), mapResult(parseL5CExp, map(b => b[1], bindings)));
+        (mapResult(parseVarDecl, map(b => b[0], bindings)), 
+         mapResult(parseL5CExp, map(b => b[1], bindings)));
 
 const parseLetrecExp = (bindings: Sexp, body: Sexp[]): Result<LetrecExp> =>
     isEmpty(body) ? makeFailure('Body of "letrec" cannot be empty') :
@@ -328,7 +334,7 @@ export const parseSExp = (sexp: Sexp): Result<SExpValue> =>
         sexp[0] === '.' ? makeFailure("Bad dotted sexp: " + sexp) : 
         safe2((val1: SExpValue, val2: SExpValue) => makeOk(makeCompoundSExp(val1, val2)))
             (parseSExp(first(sexp)), parseSExp(rest(sexp)))) :
-    makeFailure(`Bad literal expression: ${sexp}`);
+    sexp;
 
 // ==========================================================================
 // Unparse: Map an AST to a concrete syntax string.
@@ -353,7 +359,8 @@ export const unparse = (e: Parsed): Result<string> =>
     // DefineExp | Program
     isDefineExp(e) ? safe2((vd: string, val: string) => makeOk(`(define ${vd} ${val})`))
                         (unparseVarDecl(e.var), unparse(e.val)) :
-    bind(unparseLExps(e.exps), (exps: string) => makeOk(`(L5 ${exps})`));
+    isProgram(e) ? bind(unparseLExps(e.exps), (exps: string) => makeOk(`(L5 ${exps})`)) :
+    e;
 
 const unparseReturn = (te: TExp): Result<string> =>
     isTVar(te) ? makeOk("") :

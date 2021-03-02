@@ -207,12 +207,16 @@ export const unparseTExp = (te: TExp): Result<string> => {
         isTVar(x) ? up(tvarContents(x)) :
         isProcTExp(x) ? safe2((paramTEs: string[], returnTE: string) => makeOk([...paramTEs, '->', returnTE]))
                             (unparseTuple(x.paramTEs), unparseTExp(x.returnTE)) :
-        makeFailure("Never");
+        isEmptyTupleTExp(x) ? makeOk("Empty") :
+        isNonEmptyTupleTExp(x) ? unparseTuple(x.TEs) :
+        x === undefined ? makeFailure("Undefined TVar") :
+        x;
+
     const unparsed = up(te);
     return bind(unparsed,
                 (x: string | string[]) => isString(x) ? makeOk(x) :
                                           isArray(x) ? makeOk(`(${x.join(' ')})`) :
-                                          makeFailure(`Error ${x}`))
+                                          x);
 }
 
 // ============================================================

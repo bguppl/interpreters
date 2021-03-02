@@ -82,6 +82,13 @@ export const safeLast = <T extends any>(list: readonly T[]): Opt.Optional<T> => 
     return last ? Opt.makeSome(last) : Opt.makeNone();
 }
 
+// Purpose: flatten a list of lists into a flat list of items
+// Example:
+// flatten([[1,2], [], [3]]) => [1,2,3]
+// flatten([]) => []
+// flatten([[]]) => []
+export const flatten = <T>(listOfLists: readonly T[][]): T[] => R.chain(R.identity, listOfLists);
+
 // Constructor for equations for a Scheme expression:
 // this constructor implements the second step of the type-inference-equations
 // algorithm -- derive equations for all composite sub expressions of a
@@ -94,7 +101,7 @@ export const poolToEquations = (pool: Pool): Opt.Optional<Equation[]> => {
     // VarRef generate no equations beyond that of var-decl - remove them.
     const poolWithoutVars: Pool = R.filter(R.propSatisfies(R.complement(A.isVarRef), 'e'), pool);
     return Opt.bind(Opt.mapOptional((e: A.Exp) => makeEquationsFromExp(e, pool), R.map(R.prop('e'), poolWithoutVars)),
-                    (eqns: Equation[][]) => Opt.makeSome(R.chain(R.identity, eqns)));
+                    (eqns: Equation[][]) => Opt.makeSome(flatten(eqns)));
 };
 
 // Signature: make-equation-from-exp(exp, pool)
@@ -122,6 +129,7 @@ export const makeEquationsFromExp = (exp: A.Exp, pool: Pool): Opt.Optional<Equat
     // The type of a primitive procedure is given by the primitive.
     A.isPrimOp(exp) ? Opt.safe2((left: T.TExp, right: T.TExp) => Opt.makeSome([makeEquation(left, right)]))
                         (inPool(pool, exp), Res.resultToOptional(TC.typeofPrim(exp))) :
+    // Todo: define, let, letrec, set 
     Opt.makeNone();
 
 
@@ -138,12 +146,15 @@ export const inferType = (exp: A.Exp): Opt.Optional<T.TExp> => {
     // console.log(`Equations ${JSON.stringify(equations)}`);
     const sub = Opt.bind(equations, (eqns: Equation[]) => Res.resultToOptional(solveEquations(eqns)));
     // console.log(`Sub ${JSON.stringify(sub)}`);
+    // Extract the computed type of the root expression from the pool
     const texp = inPool(pool, exp);
     // console.log(`TExp = ${JSON.stringify(bindResult(optionalToResult(texp, "TExp is None"), T.unparseTExp))}`);
+    // Replace all TVars in the computed type by their type expression
     return Opt.safe2((sub: S.Sub, texp: T.TExp) => Opt.makeSome(T.isTVar(texp) ? S.subGet(sub, texp) : texp))(sub, texp);
 };
 
 // Type: [Concrete-Exp -> Concrete-TExp]
+// End to end processing: parse, infer type, unparse.
 export const infer = (exp: string): Res.Result<string> =>
     Res.bind(Res.bind(p(exp), A.parseL5Exp),
              (exp: A.Exp) => Opt.maybe(inferType(exp),
@@ -153,7 +164,6 @@ export const infer = (exp: string): Res.Result<string> =>
 // ========================================================
 // type equation solving
 
-// Signature: solveEquations(equations)
 // Purpose: Solve the type equations and return the resulting substitution
 //          or error, if not solvable
 // Type: [List(Equation) -> Sub | Error]
@@ -164,7 +174,6 @@ export const infer = (exp: string): Res.Result<string> =>
 export const solveEquations = (equations: Equation[]): Res.Result<S.Sub> =>
     solve(equations, S.makeEmptySub());
 
-// Signature: solve(equations, substitution)
 // Purpose: Solve the equations, starting from a given substitution.
 //          Returns the resulting substitution, or error, if not solvable
 const solve = (equations: Equation[], sub: S.Sub): Res.Result<S.Sub> => {

@@ -48,7 +48,7 @@ export const typeofExp = (exp: Parsed, tenv: TEnv): Result<TExp> =>
     isLetrecExp(exp) ? typeofLetrec(exp, tenv) :
     isDefineExp(exp) ? typeofDefine(exp, tenv) :
     isProgram(exp) ? typeofProgram(exp, tenv) :
-    // Skip isSetExp(exp) isLitExp(exp)
+    // TODO: isSetExp(exp) isLitExp(exp)
     makeFailure("Unknown type");
 
 // Purpose: Compute the type of a sequence of expressions
@@ -72,19 +72,30 @@ const numOpTExp = parseTE('(number * number -> number)');
 const numCompTExp = parseTE('(number * number -> boolean)');
 const boolOpTExp = parseTE('(boolean * boolean -> boolean)');
 
-// Todo: cons, car, cdr
+// Todo: cons, car, cdr, list
 export const typeofPrim = (p: PrimOp): Result<TExp> =>
-    ['+', '-', '*', '/'].includes(p.op) ? numOpTExp :
-    ['and', 'or'].includes(p.op) ? boolOpTExp :
-    ['>', '<', '='].includes(p.op) ? numCompTExp :
-    ['number?', 'boolean?', 'string?', 'symbol?', 'list?', 'pair?'].includes(p.op) ? parseTE('(T -> boolean)') :
+    (p.op === '+') ? numOpTExp :
+    (p.op === '-') ? numOpTExp :
+    (p.op === '*') ? numOpTExp :
+    (p.op === '/') ? numOpTExp :
+    (p.op === 'and') ? boolOpTExp :
+    (p.op === 'or') ? boolOpTExp :
+    (p.op === '>') ? numCompTExp :
+    (p.op === '<') ? numCompTExp :
+    (p.op === '=') ? numCompTExp :
+    // Important to use a different signature for each op with a TVar to avoid capture
+    (p.op === 'number?') ? parseTE('(T -> boolean)') :
+    (p.op === 'boolean?') ? parseTE('(T -> boolean)') :
+    (p.op === 'string?') ? parseTE('(T -> boolean)') :
+    (p.op === 'list?') ? parseTE('(T -> boolean)') :
+    (p.op === 'pair?') ? parseTE('(T -> boolean)') :
+    (p.op === 'symbol?') ? parseTE('(T -> boolean)') :
     (p.op === 'not') ? parseTE('(boolean -> boolean)') :
     (p.op === 'eq?') ? parseTE('(T1 * T2 -> boolean)') :
     (p.op === 'string=?') ? parseTE('(T1 * T2 -> boolean)') :
     (p.op === 'display') ? parseTE('(T -> void)') :
     (p.op === 'newline') ? parseTE('(Empty -> void)') :
-    makeFailure(`Unknown primitive ${p.op}`);
-
+    makeFailure(`Primitive not yet implemented: ${p.op}`);
 
 // Purpose: compute the type of an if-exp
 // Typing rule:

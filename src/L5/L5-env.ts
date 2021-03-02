@@ -81,7 +81,7 @@ Type: [Env * string -> Result<FBinding>]
 export const applyEnvBdg = (env: Env, v: string): Result<FBinding> =>
     isGlobalEnv(env) ? applyGlobalEnvBdg(env, v) :
     isExtEnv(env) ? applyExtEnvBdg(env, v) :
-    makeFailure(`Bad env type ${env}`);
+    env;
 
 /*
 Purpose: lookup the value of var in env.

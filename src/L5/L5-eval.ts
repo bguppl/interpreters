@@ -32,14 +32,15 @@ export const applicativeEval = (exp: CExp, env: Env): Result<Value> =>
     isSetExp(exp) ? evalSet(exp, env) :
     isAppExp(exp) ? safe2((proc: Value, args: Value[]) => applyProcedure(proc, args))
                         (applicativeEval(exp.rator, env), mapResult(rand => applicativeEval(rand, env), exp.rands)) :
-    makeFailure(`Bad L5 AST ${exp}`);
+    exp;
 
 export const isTrueValue = (x: Value): boolean =>
     ! (x === false);
 
 const evalIf = (exp: IfExp, env: Env): Result<Value> =>
     bind(applicativeEval(exp.test, env),
-         (test: Value) => isTrueValue(test) ? applicativeEval(exp.then, env) : applicativeEval(exp.alt, env));
+         (test: Value) => isTrueValue(test) ? applicativeEval(exp.then, env) : 
+                          applicativeEval(exp.alt, env));
 
 const evalProc = (exp: ProcExp, env: Env): Result<Closure> =>
     makeOk(makeClosure(exp.args, exp.body, env));
@@ -59,13 +60,13 @@ const applyClosure = (proc: Closure, args: Value[]): Result<Value> => {
 // Evaluate a sequence of expressions (in a program)
 export const evalSequence = (seq: Exp[], env: Env): Result<Value> =>
     isEmpty(seq) ? makeFailure("Empty sequence") :
-    isDefineExp(first(seq)) ? evalDefineExps(first(seq), rest(seq)) :
     evalCExps(first(seq), rest(seq), env);
     
 const evalCExps = (first: Exp, rest: Exp[], env: Env): Result<Value> =>
+    isDefineExp(first) ? evalDefineExps(first, rest) :
     isCExp(first) && isEmpty(rest) ? applicativeEval(first, env) :
     isCExp(first) ? bind(applicativeEval(first, env), _ => evalSequence(rest, env)) :
-    makeFailure("Never");
+    first;
     
 // define always updates theGlobalEnv
 // We also only expect defineExps at the top level.

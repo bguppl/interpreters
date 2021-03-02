@@ -85,7 +85,7 @@ export const typeofExp = (exp: A.Parsed, tenv: E.TEnv): Result<T.TExp> =>
     A.isLetrecExp(exp) ? typeofLetrec(exp, tenv) :
     A.isDefineExp(exp) ? typeofDefine(exp, tenv) :
     A.isProgram(exp) ? typeofProgram(exp, tenv) :
-    // Skip isSetExp(exp) isLitExp(exp)
+    // TODO: isSetExp(exp) isLitExp(exp)
     makeFailure("Unknown type");
 
 // Purpose: Compute the type of a sequence of expressions
