@@ -291,7 +291,7 @@ interface Video {
 type Releases = Video[];
 ```
 
-This type annotation lets us think about the data we obtained from the API as an array `[v1, v2, v3, v4]` where each item $$v_i$$ is a map `{ id, title, boxart, uri, rating, bookmark }`.
+This type annotation lets us think about the data we obtained from the API as an array `[v1, v2, v3, v4]` where each item v<sub>i</sub> is a map `{ id, title, boxart, uri, rating, bookmark }`.
 
 
 Note: while `interface` actually introduces a new type, `type` only provides an alias and not a new type. For instance, alias names will not be used in error messages. In addition, unlike an interface, one can give a type alias to any type annotation.
@@ -420,7 +420,7 @@ interface Boxart {
 }
 ```
 
-We would like to find the largest box-art image size, so that we could know what is the maximal size of the image placeholder should be.  We measure rectangles by their area ($$width \times height$$).
+We would like to find the largest box-art image size, so that we could know what is the maximal size of the image placeholder should be.  We measure rectangles by their area (width × height).
 
 A straightforward way to do this is by going over each boxart, and keeping a temporary variable that holds the largest size out of the boxarts we have seen so far.
 
@@ -551,7 +551,7 @@ interface VideoCategory {
 type VideoCategories = VideoCategory[];
 ```
 
-The structure of the value is thus a *tree*: $$[ category_1, category_2 ]$$ where $$category_i$$ is of the form:<br>
+The structure of the value is thus a *tree*: `[ category₁, category₂ ]` where category<sub>i</sub> is of the form:<br>
 `{ name: string, videos: [v1,...] }`.
 
 These kinds of trees impose a challenge when working with them: if we apply `map` or `filter`, the transformer or the predicate will receive as argument a `VideoCategory` object.  If we want to process the embedded `Video` objects inside the categories, we must first **flatten** the tree.
@@ -601,7 +601,7 @@ a.map(x => x.numbers).reduce((acc,curr) => acc.concat(curr), []); // ==> [ 1, 2,
 
 ### 2.4.1 The Ramda package
 
-Ramda is a library of functions designed tofacilitate functional programming in JavaScript.
+Ramda is a library of functions designed to facilitate functional programming in JavaScript.
 
 Ramda includes a function called `chain` (often also called `flatmap`) which can come handy in our last example: If we want to return all of the results as a single flat array instead of as an array of arrays, then we can use Ramda's `chain`:
 
