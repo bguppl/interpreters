@@ -368,7 +368,7 @@ We see a first case of procedural abstraction in this example: the procedure `pr
 
 If such discipline is applied systematically, we can enforce abstraction barriers between collections of procedures: higher-level procedures only call lower-level procedures. To support such discipline, some languages introduce concepts such as modules or packages.
 
-See [https://mitpress.mit.edu/sicp/full-text/sicp/book/node29.html](https://mitpress.mit.edu/sicp/full-text/sicp/book/node29.html) for a discussion of Abstraction Barriers.
+See [https://mitpress.mit.edu/sites/default/files/sicp/full-text/book/book-Z-H-14.html#%_sec_2.1.2](https://mitpress.mit.edu/sites/default/files/sicp/full-text/book/book-Z-H-14.html#%_sec_2.1.2) for a discussion of Abstraction Barriers.
 
 ### 1.3.4 Testing Requirements
 
