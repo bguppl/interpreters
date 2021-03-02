@@ -89,7 +89,7 @@ For example:
 
 We can represent that evaluation in an *evaluation tree*:
 
-[[image:practice/PS3_img1.PNG]]
+![evaluation_tree](./resources/PS3_img1.png)
 
 ## Abstraction
 
@@ -434,15 +434,14 @@ For people with C++ background, it helps to think of a cons-cell (a pair) as 2 p
 '(1 . 2)
 ```
 
-[[image:practice/PS3_img2.PNG]]
+![cons_cell1](./resources/PS3_img2.png)
 
 <big>Example 2:</big>
 ```scheme
 > (cons 1 (cons 2 (lambda () (+ 1 2))))
 '(1 2 . #<procedure>)
 ```
-
-[[image:practice/PS3_img3.PNG]]
+![cons_cell2](./resources/PS3_img3.png)
 
 We can use compound accessors to traverse recursive pairs.  
 These are convenient abbreviations of combinations of `car` and `cdr`: the `cdd...dr` procedures (maximum 4-`d`):
@@ -522,8 +521,7 @@ NOTE: We use the same `cons` primitive as for pairs - but we *think of it* as a 
 > (list (list 1 2) 1 2)
 '((1 2) 1 2)
 ```
-
-[[image:practice/PS3_img4.PNG]]
+![cons_cell3](./resources/PS3_img4.png)
 
 
 ### Atomic / Compound Values and Equality Testing
