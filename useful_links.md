@@ -33,7 +33,7 @@ The full installation and configuration guide can be seen [here](https://youtu.b
 0. Download VS Code from [https://code.visualstudio.com/](https://code.visualstudio.com/) and install.
 0. Open command prompt by clicking on Start and typing `cmd`.
 0. Make sure node is installed by running `node -v`. The expected output is either v14.x or v15.x.
-0. Globally install Typescript's compiler and REPL `npm i -g ts-node`.
+0. Globally install Typescript's compiler and REPL `npm i -g ts-node typescript`.
 0. Navigate to a directory you want to create your projects in (e.g., 'Desktop\ppl').
 0. Open VS Code in this foler using `code .`
 0. Open the "Extensions" panel (`ctrl-shift-x`) and search for "runner".
