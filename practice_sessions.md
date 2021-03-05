@@ -15,10 +15,11 @@ All the code for the practice sessions can be found [here](https://github.com/bg
 * [PS #1: TypeScript: Complex Data Types, JSON, Map, Filter, Reduce](./practice_sessions/ps1.html)
     * [Solution](./practice_sessions/ps1_sol.html)
 
-<!--
+
 ## Week 2
 
 * [PS #2: TypeScript: Type Checking](./practice_sessions/ps2.html)
+<!--
 * Add link to the ps2.ts
 
 ## Week 6
