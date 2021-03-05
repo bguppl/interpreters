@@ -19,7 +19,7 @@ All the code for the practice sessions can be found [here](https://github.com/bg
 ## Week 2
 
 * [PS #2: TypeScript: Type Checking](./practice_sessions/ps2.html)
-* [Code](https://github.com/bguppl/practice/week2/ps2.ts)  
+* [Code](https://github.com/bguppl/practice/tree/main/week2/ps2.ts)  
 
 
 <!--
