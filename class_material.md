@@ -21,11 +21,13 @@
 ### Defining a Programming Language Bottom-up: Elements of Programming
 
 [1. Elements of Programming - Defining Scheme Bottom-up](./class_material/2.1Scheme-bottom-up.html)
+
 [2.Higher-order Functions in Scheme and Local Variables](./class_material/2.2Higher-Order-Functions-Let.html)
 
 ### Syntax
 
 [3.Syntax of Programming Languages: BNF, Abstract Syntax Tree](./class_material/2.3Syntax.html)
+
 [4.Syntactic Operations: L1 Parsing, Type Guards, Scoping, Lexical Addresses, Syntactic Rewrites](./class_material/2.4SyntacticOperations.html)
 
 
