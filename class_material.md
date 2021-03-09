@@ -31,5 +31,14 @@
 [4.Syntactic Operations: L1 Parsing, Type Guards, Scoping, Lexical Addresses, Syntactic Rewrites](./class_material/2.4SyntacticOperations.html)
 
 
+### Operational Semantics: Substitution-based Interpreter
 
+[5. Operational Semantics: L1 evaluation, environment](./class_material/2.5OperationalSemantics.html)
 
+[6. Substitution Model: L2 (ProcExp, IfExp), Closures, L3 (SExp), Error Processing, Applicative Order vs. Normal Order evaluation](./class_material/2.6SubstitutionModel.html)
+
+### Operational Semantics: Environment-based Interpreter
+
+[7. Environment Model, L4 evaluation, let evaluation, visual notation of environments, using closures, closure-based compound data structures](./class_material/2.7EnvironmentModel.html)
+
+[8. Recursion and Mutation](./class_material/2.8RecursionMutation.md)
