@@ -1,0 +1,18 @@
+#content {text-align:right;text-align:justify;direction:rtl;}
+#content h2 {break-before:page;}
+.br {break-before:page;}
+h1, h2, h3, .c {text-align:center;}
+li, p, .av {page-break-inside:avoid;}
+.highlight, .site-footer, .l {text-align:left;direction:ltr;page-break-inside:avoid;}
+.ll {text-align:left;direction:ltr;}
+.highlighter-rouge {white-space:nowrap;}
+.ind {text-indent:10%}
+.top {vertical-align:top;}
+.courier {font-family:'Courier New';}
+.pr {position:relative;}
+.s1 {position:absolute;left:55px;top:13px;}
+.s2 {position:absolute;left:290px;top:13px;}
+.s3 {position:absolute;left:355px;top:60px;}
+.s4 {position:absolute;left:25px;top:50px;}
+.s5 {position:absolute;left:400px;top:58px;text-align:left;}
+.s6 {position:absolute;left:5px;top:110px;}

@@ -1,0 +1,11 @@
+#content {text-align:right;text-align:justify;direction:rtl;}
+.br {break-before:page;}
+h1, h2, h3, .c {text-align:center;}
+li {page-break-inside:avoid;}
+.highlight, .site-footer, .l {text-align:left;direction:ltr;page-break-inside:avoid;}
+.highlighter-rouge {white-space:nowrap;}
+.ind {text-indent:10%}
+.top {vertical-align:top;}
+.courier {font-family:'Courier New';}
+.pr {position:relative;}
+td {border:1px solid black !important;}
