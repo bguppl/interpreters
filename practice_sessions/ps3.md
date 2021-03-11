@@ -735,6 +735,7 @@ We need to implement the function 'exp':
 ```
 
 <big>Question 1:</big> write a recursive version
+
 ```scheme
 (define exp 
     (lambda (b e) 
@@ -763,6 +764,46 @@ This version is iterative because the call to exp-iter is in tail position.
 
 It is a different algorithm than the one shown above.
 
+We can use the `trace` function of Racket to see exactly how a recursive function runs vs. an iterative function:
+
+```scheme
+(require racket/trace)
+
+(define exp ...)
+(define exp-iter ...)
+
+(trace exp)
+(trace exp-iter)
+```
+
+```scheme
+> (exp 2 5)
+>(exp 2 5)
+> (exp 2 4)
+> >(exp 2 3)
+> > (exp 2 2)
+> > >(exp 2 1)
+> > > (exp 2 0)
+< < < 1
+< < <2
+< < 4
+< <8
+< 16
+<32
+32
+
+> (exp-iter 2 5 1)
+>(exp-iter 2 5 1)
+>(exp-iter 2 4 2)
+>(exp-iter 2 3 4)
+>(exp-iter 2 2 8)
+>(exp-iter 2 1 16)
+>(exp-iter 2 0 32)
+<32
+32
+```
+
+We can see in the call to `exp` that we need to keep track of the previous stack frames, which creates a "pyramid" stack trace. This is in contrast to the iterative `exp-iter` which creates a linear stack trace.
 
 <big>Question 3:</big> write an iterative version
 
