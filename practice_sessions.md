@@ -22,6 +22,10 @@ All the code for the practice sessions can be found [here](https://github.com/bg
 * [Code](https://github.com/bguppl/practice/tree/main/week2/ps2.ts)  
 
 
+## Week 3
+
+* [PS #3: Scheme Intro](./practice_sessions/ps3.html)
+
 <!--
 ## Week 6
 
