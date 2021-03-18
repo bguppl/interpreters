@@ -263,23 +263,23 @@ enter into an infinite loop on the same inputs, or throw exceptions on the same 
 <big>Question 2:</big> look at the following procedure:
 
 ```scheme
-(define average (lambda (x y)
+(define addition (lambda (x y)
   (+ x y)
   (display 'ok)))
 
-> (average 2 4)
+> (addition 2 4)
 ok
 ```
 
 What should be the value of the expression?
 ```scheme
-> (void? (average 2 4))
+> (void? (addition 2 4))
 ok#t
 ```
 
 What is the return value?
 ```scheme
-(average 2 (average 3 5))
+(addition 2 (addition 3 5))
 ```
 
 ## Design By Contract
