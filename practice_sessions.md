@@ -27,9 +27,11 @@ All the code for the practice sessions can be found [here](https://github.com/bg
 * [PS #3: Scheme Intro](./practice_sessions/ps3.html)
 
 
+<!-- 
 ## Week 4
 
 * [PS #4: Concrete and Abstract Syntax](./practice_sessions/ps4.html)
+-->
 
 <!--
 ## Week 6
