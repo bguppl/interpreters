@@ -44,3 +44,9 @@ All the code for the practice sessions can be found [here](https://github.com/bg
 
 * [PS #11: UPDATE](./practice_sessions/ps11.html)
 -->
+
+<!--
+## Week 12
+
+* [PS #12: UPDATE](./practice_sessions/ps11.html)
+-->
