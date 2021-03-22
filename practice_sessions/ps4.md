@@ -31,7 +31,7 @@ Abstract syntax defines:
 * Alternative kinds for expression categories (e.g., kinds of if-expressions),
 * The components of composite elements (as well as the role, the category, and cardinality of each component).
 
-**Formal definition**
+## Formal definition
 
 To define formally the syntax of Scheme, we adopt the notation below. This notation combines both the concrete syntax syntactic rules as BNF notation and for each rule, the corresponding abstract syntax type.
 
@@ -53,7 +53,8 @@ To define formally the syntax of Scheme, we adopt the notation below. This notat
 
 The following diagram illustrates the steps through which a program is processed until it is evaluated by an interpreter. We focus in this session on Scanning and Parsing.
 
-![eval-process](./practice_sessions/resources/ps4/img1.png)
+
+![eval_process](./resources/ps4/eval_process.jpg)
 
 
 # Parsing a program string into S-Exp
@@ -224,8 +225,8 @@ isVarRef(x) || isAppExp(x);
 The following set of functions implement the parser.
  Parsing (which includes using the "shortcut" scanner) a program starts by a call to the function `parseL1` by giving it our program as string. For example, by calling `parseL1("(L1 (define x 5) (+ x 6))")`. Note that there are a few helpful functions we have omitted here, such as `isEmpty,isArray,isString`.
 
- ```typescript
- import { Sexp, Token } from "s-expression";
+```typescript
+import { Sexp, Token } from "s-expression";
 import { parse as parseSexp, isToken } from "../shared/parser";
  
 // combine Sexp parsing with the L1 parsing
@@ -305,7 +306,7 @@ export const parseAppExp = (op: Sexp, params: Sexp[]): Result<CExp> =>
         (parseL1CExp(op), mapResult(parseL1CExp, params));
 ```
 
- ## Using the Result Type for Error Processing
+## Using the Result Type for Error Processing
 
  The parser can result either a "good value" or an error when the input string does not belong to the language specified by the concrete syntax. To ease error handling, we use the `Result<T>` monad introduced in Assignment 1. A result is a disjoint union between an OK type `Ok<T>` and the Failure type which is returned in case of errors.
 
