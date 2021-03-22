@@ -1,0 +1,13 @@
+/* RTL support */
+#content {text-align:right; direction:rtl;}
+.site-footer, .highlight, pre, .l, .ll {text-align:left; direction:ltr;}
+
+/* Printing support */
+#content h2 {break-before:page;}
+li, pre, p, .highlight, .site-footer, .ll {page-break-inside:avoid;}
+
+/* Rest support */
+#content {text-align:justify;}
+h1, h2, h3, .c {text-align:center;}
+code.highlighter-rouge {white-space:nowrap;}
+td {border:1px solid black !important;}
