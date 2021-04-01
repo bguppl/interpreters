@@ -60,7 +60,7 @@ The following diagram illustrates the steps through which a program is processed
 # Parsing a program string into S-Exp
 
 
-Since Scheme is a language that is based on a general structure called the S-Expression (in short S-exp https://en.wikipedia.org/wiki/S-expression), we will take a "shortcut" approach to transform our program as string to significant hierarchical structures.
+Since Scheme is a language that is based on a general structure called the S-Expression (in short [S-exp](https://en.wikipedia.org/wiki/S-expression)), we will take a "shortcut" approach to transform our program as string to significant hierarchical structures.
 This work will be done by an existing Node parser for S-Exp. Make sure you install it in your parser folder by running the command `npm install s-expression --save`.
 
 Because the function "s-expression" exposes can return an error for incorrect inputs (such as `"(+ 1"`), we wrap s-expression's function in a function that returns a `Result<Sexp>` (more on `Result<T>` later).
@@ -180,7 +180,7 @@ export const isNumExp = (x:any): x is NumExp => x.tag === 'NumExp'; // The type 
 describe("L1 Parsing", () => {
   it("parses AppExps correctly", () => {
     const result = bind(parseSexp("(> 1 2)"), parseL1CExp);
-    if (isOk(result) && isAppExp(result.value)) {
+    if (isOkT(isAppExp)(result)) {
       // With the type predicate isAppExp, the type checker infers
       // that in this scope "result.value" is exactly of type AppExp
       // so it is safe to access properties that only exist on AppExp
@@ -228,11 +228,11 @@ The following set of functions implement the parser.
 ```typescript
 import { Sexp, Token } from "s-expression";
 import { parse as parseSexp, isToken } from "../shared/parser";
- 
+
 // combine Sexp parsing with the L1 parsing
 export const parseL1 = (x: string): Result<Program> =>
     bind(parseSexp(x), parseL1Program);
- 
+
 // L1 concrete syntax
 // <Program> -> (L1 <Exp>+)
 // <Exp> -> <DefineExp> | <CExp>
@@ -240,54 +240,54 @@ export const parseL1 = (x: string): Result<Program> =>
 // <CExp> -> <AtomicExp> | <AppExp>
 // <AtomicExp> -> <number> | <boolean> | <primOp>
 // <AppExp> -> (<CExp>+)
- 
+
 // <Program> -> (L1 <Exp>+)
 export const parseL1Program = (sexp: Sexp): Result<Program> =>
     sexp === "" || isEmpty(sexp) ? makeFailure("Unexpected empty program") :
     isToken(sexp) ? makeFailure("Program cannot be a single token") :
     isArray(sexp) ? parseL1GoodProgram(first(sexp), rest(sexp)) :
-    makeFailure("Unexpected type " + sexp);
- 
+    sexp;
+
 const parseL1GoodProgram = (keyword: Sexp, body: Sexp[]): Result<Program> =>
     keyword === "L1" && !isEmpty(body) ? bind(mapResult(parseL1Exp, body),
                                               (exps: Exp[]) => makeOk(makeProgram(exps))) :
     makeFailure("Program must be of the form (L1 <exp>+)");
- 
+
 // Exp -> <DefineExp> | <Cexp>
 export const parseL1Exp = (sexp: Sexp): Result<Exp> =>
     isEmpty(sexp) ? makeFailure("Exp cannot be an empty list") :
     isArray(sexp) ? parseL1CompoundExp(first(sexp), rest(sexp)) :
     isToken(sexp) ? parseL1Atomic(sexp) :
-    makeFailure("Unexpected type " + sexp);
- 
+    sexp;
+
 // Compound -> DefineExp | CompoundCExp
 export const parseL1CompoundExp = (op: Sexp, params: Sexp[]): Result<Exp> => 
     op === "define"? parseDefine(params) :
     parseL1CompoundCExp(op, params);
- 
+
 // CompoundCExp -> AppExp
 export const parseL1CompoundCExp = (op: Sexp, params: Sexp[]): Result<CExp> =>
     parseAppExp(op, params);
- 
+
 // DefineExp -> (define <varDecl> <CExp>)
 export const parseDefine = (params: Sexp[]): Result<DefineExp> =>
     isEmpty(params) ? makeFailure("define missing 2 arguments") :
     isEmpty(rest(params)) ? makeFailure("define missing 1 arguments") :
     ! isEmpty(rest(rest(params))) ? makeFailure("define has too many arguments") :
     parseGoodDefine(first(params), second(params));
- 
+
 const parseGoodDefine = (variable: Sexp, val: Sexp): Result<DefineExp> =>
     ! isIdentifier(variable) ? makeFailure("First arg of define must be an identifier") :
     bind(parseL1CExp(val),
          (value: CExp) => makeOk(makeDefineExp(makeVarDecl(variable), value)));
- 
+
 // CExp -> AtomicExp | CompondCExp
 export const parseL1CExp = (sexp: Sexp): Result<CExp> =>
     isEmpty(sexp) ? makeFailure("CExp cannot be an empty list") :
     isArray(sexp) ? parseL1CompoundCExp(first(sexp), rest(sexp)) :
     isToken(sexp) ? parseL1Atomic(sexp) :
-    makeFailure("Unexpected type " + sexp);
- 
+    sexp;
+
 // Atomic -> number | boolean | primitiveOp
 export const parseL1Atomic = (token: Token): Result<CExp> =>
     token === "#t" ? makeOk(makeBoolExp(true)) :
@@ -296,10 +296,10 @@ export const parseL1Atomic = (token: Token): Result<CExp> =>
     isString(token) && isPrimitiveOp(token) ? makeOk(makePrimOp(token)) :
     isString(token) ? makeOk(makeVarRef(token)) :
     makeFailure("Invalid atomic token: " + token);
- 
+
 export const isPrimitiveOp = (x: string): boolean =>
     ["+", "-", "*", "/", ">", "<", "=", "not"].includes(x)
- 
+
 // AppExp -> ( <cexp>+ )
 export const parseAppExp = (op: Sexp, params: Sexp[]): Result<CExp> =>
     safe2((rator: CExp, rands: CExp[]) => makeOk(makeAppExp(rator, rands)))
@@ -366,7 +366,7 @@ It is used exactly like the traditional `map` function, but if `f` fails on any 
 Similarly, `safe2` works for a function receiving two parameters.
 
 
-## Supporting *if* expressions
+## Supporting `if` expressions
 
 Recall that `if` expressions have the form `(if <test> <then> <else>)`. We would like our parser to support these expressions.
 
@@ -392,12 +392,12 @@ In order to add if in the concrete and abstract syntax, we must modify the synta
 
 ```typescript
 // Type definitions
-export interface IfExp {tag: "IfExp"; test:CExp; then:CExp; alt:CExp;};
+export interface IfExp { tag: "IfExp"; test:CExp; then: CExp; alt: CExp; };
 // Value constructors
-export const makeIfExp = (test: CExp, then: CExp, alt: CExp) : IfExp =>
-    ({tag: "IfExp", test: test, then: then, alt: alt}); 
+export const makeIfExp = (test: CExp, then: CExp, alt: CExp): IfExp =>
+    ({ tag: "IfExp", test: test, then: then, alt: alt }); 
 // Type predicates:
-export const isIfExp = (x: any) : x is IfExp => x.tag === "IfExp";
+export const isIfExp = (x: any): x is IfExp => x.tag === "IfExp";
 ```
 
 **Step-2**: Update the cexp disjoint union type
@@ -484,7 +484,7 @@ console.log(JSON.stringify(myIfExp, null, 2))
 ```
 
 
-## Supporting cond expressions
+## Supporting `cond` expressions
 
 * We want our parser to support cond expressions.
 * A cond expression is of the form `(<cond> (<cond-clause> ...))`
@@ -500,15 +500,15 @@ console.log(JSON.stringify(myIfExp, null, 2))
                               (fib (- n 2)))))))
 ```
 
-Pay attention! cond is a "special form": it is a compound expression which is not evaluated like regular (application) compound expressions.
+Pay attention! `cond` is a "special form": it is a compound expression which is not evaluated like regular (application) compound expressions.
 
 
-## Computation Rule for (cond (cond-clause …))
+## Computation Rule for `(cond (cond-clause …))`
 
 1. Compute the expression in the first
-2. If the value is not #f, compute the expression
+2. If the value is not `#f`, compute the expression
 3. Otherwise, continue with the next expression
-4. If all expressions evaluate to #f, return the value of the last expression (the "else clause").
+4. If all expressions evaluate to `#f`, return the value of the last expression (the "else clause").
 
 
 ## Adding cond in the concrete and abstract syntax
@@ -532,16 +532,16 @@ Pay attention! cond is a "special form": it is a compound expression which is no
 
 ```typescript
 // Type definitions
-export interface CondClause {tag: "CondClause", test: CExp, then: CExp[];}
-export interface CondExp {tag: "CondExp", condclauses: CondClause[];}
+export interface CondClause { tag: "CondClause", test: CExp, then: CExp[]; }
+export interface CondExp { tag: "CondExp", condclauses: CondClause[]; }
 // Value constructors
 export const makeCondClause = (test: CExp, then: CExp[]) : CondClause =>
-    ({tag: "CondClause", test: test, then: then});
+    ({ tag: "CondClause", test: test, then: then });
 export const makeCondExp = (condclauses: CondClause[]) : CondExp =>
-    ({tag: "CondExp", condclauses: condclauses});
+    ({ tag: "CondExp", condclauses: condclauses });
 // Type predicates:
 export const isCondClause = (x:any): x is CondClause => x.tag === "CondClause";
-export const isCondExp = (x:any) : x is CondExp => x.tag === "CondExp";
+export const isCondExp = (x:any): x is CondExp => x.tag === "CondExp";
 ```
 
 **Step-2**: Update the cexp disjoint union type
@@ -673,18 +673,20 @@ into:
 ```typescript
 // Rewrite a single if expression as a semantically equivalent
 // cond-exp form
-const rewriteIf = (exp: IfExp): Result<CondExp> =>
-    makeOk(makeCondExp([
+const rewriteIf = (exp: IfExp): CondExp =>
+    makeCondExp([
         makeCondClause(exp.test, [exp.then]),
         makeCondClause(makeBoolExp(true), [exp.alt])
-    ]));
+    ]);
 ```
 
 Example:
 
 ```typescript
 let myIfExp = bind(parseSexp("(if 1 2 3)"), parseL1Exp);
-console.log(JSON.stringify(bind(exp, rewriteIf), null, 2));
+if (isOkT(isIfExp)(myIfExp)) {
+    console.log(JSON.stringify(bind(myIfExp, exp => makeOk(rewriteIf(exp))), null, 2));
+}
  
 // Output:
 {
@@ -726,27 +728,30 @@ console.log(JSON.stringify(bind(exp, rewriteIf), null, 2));
 We then need to make sure we transform all if-exp nodes in an AST wherever they occur. So we must rewrite all `if` expressions wherever the language permits their appearance.
 
 ```typescript
-const rewriteAllIf = (e: CExp): Result<CExp> =>
-    isBoolExp(e) ? makeOk(e) :
-    isNumExp(e) ? makeOk(e) :
-    isPrimOp(e) ? makeOk(e) :
-    isVarRef(e) ? makeOk(e) :
-    isVarDecl(e) ? makeOk(e) :
-    isIfExp(e) ?  safe3((test: CExp, then: CExp, alt: CExp) => rewriteIf(makeIfExp(test, then, alt)))
-                        (rewriteAllIf(e.test), rewriteAllIf(e.then), rewriteAllIf(e.alt)) :
-    isCondExp(e) ? bind(mapResult((clause: CondClause) =>
-                            safe2((test: CExp, then: CExp[]) => makeOk(makeCondClause(test, then)))
-                                (rewriteAllIf(clause.test), mapResult(rewriteAllIf, clause.then)), e.condClauses),
-                        (clauses: CondClause[]) => makeOk(makeCondExp(clauses))) :
-    isAppExp(e) ? safe2((rator: CExp, rands: CExp[]) => makeOk(makeAppExp(rator, rands)))
-                    (rewriteAllIf(e.rator), mapResult(rewriteAllIf, e.rands)) :
-    makeFailure("Unexpected expression " + e);
+const rewriteAllIf = (e: CExp): CExp =>
+    isBoolExp(e) ? e :
+    isNumExp(e) ? e :
+    isPrimOp(e) ? e :
+    isVarRef(e) ? e :
+    isVarDecl(e) ? e :
+    isIfExp(e) ?  rewriteIf(makeIfExp(rewriteAllIf(e.test),
+                                      rewriteAllIf(e.then),
+                                      rewriteAllIf(e.alt))) :
+    isCondExp(e) ? makeCondExp(
+        map(clause => makeCondClause(rewriteAllIf(clause.test),
+                                     map(rewriteAllIf, clause.then)),
+            e.condClauses)) :
+    isAppExp(e) ? makeAppExp(rewriteAllIf(e.rator), map(rewriteAllIf, e.rands)) :
+    e;
 ```
 
 Example:
 
 ```typescript
-const rewrittenResult = bind(bind(parseSexp("(if (= 3 2) 5 (if (= 3 3) 12 27))"), parseL1CExp), rewriteAllIf);
+const rewrittenIf = bind(
+  bind(parseSexp("(if (= 3 2) 5 (if (= 3 3) 12 27))"), parseL1CExp),
+  exp => makeOk(rewriteAllIf(exp))
+);
 console.log(JSON.stringify(rewrittenResult, null, 2));
  
 // Output:
