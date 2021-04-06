@@ -31,7 +31,7 @@ All the code for the practice sessions can be found [here](https://github.com/bg
 ## Week 4
 
 * [PS #4: Concrete and Abstract Syntax](./practice_sessions/ps4.html)
-
+* [Code](https://github.com/bguppl/practice/tree/main/week4)
 
 <!--
 ## Week 6
