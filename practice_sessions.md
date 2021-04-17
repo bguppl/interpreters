@@ -33,6 +33,11 @@ All the code for the practice sessions can be found [here](https://github.com/bg
 * [PS #4: Concrete and Abstract Syntax](./practice_sessions/ps4.html)
 * [Code](https://github.com/bguppl/practice/tree/main/week4)
 
+## Week 5
+
+* [PS #5: Operational Semantics](./practice_sessions/ps5.html)
+
+
 <!--
 ## Week 6
 
