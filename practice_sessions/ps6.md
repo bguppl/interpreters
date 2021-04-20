@@ -70,8 +70,8 @@ Consider this snippet:
     (a3 2)))
 ```
 
-We observe in this program a risk that the variable @@c@@ which appears free in the body of the closure returned when computing <code>(lambda (x) (+ x c))</code>
-could be captured in the @@let@@ of E2.
+We observe in this program a risk that the variable `c` which appears free in the body of the closure returned when computing <code>(lambda (x) (+ x c))</code>
+could be captured in the `let` of E2.
 
 <h4><b>How does this program work in the substitution model</b></h4>
 
@@ -127,7 +127,7 @@ We exercise the drawing of environment diagrams in the box-env model presented i
 
 <h4><b>Definitions</b></h4>
 
-* <b>Frame:</b> <p>mapping variables to values.  Displayed as a rectangle with bindings x:val.</p>
+* <b>Frame:</b> mapping variables to values.  Displayed as a rectangle with bindings x:val.
 
 * <b>Environment:</b> finite linked list of frames, where the last frame is the frame of the global 
 environment (GE).
