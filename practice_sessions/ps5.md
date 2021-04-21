@@ -666,7 +666,7 @@ normal-eval[ (( (lambda (x)(lambda (y)(* x y)))(+ 1 2))2) ]
 
 <h3><b>applicative-eval VS normal-eval</b></h3>
 
-<b>Q:</b>Does the evaluation order matter? 
+<b>Q:</b>Does the evaluation Strategy matter? 
 
 Let us look at the next program:
 
@@ -740,9 +740,9 @@ We saw two examples where different manner of evaluation get different result.
 
 <b>Notice:</b> If both evaluations don't get into an infinte loop and/or an error - they both return the same value!
 
-<h3><b> Distinguish between different evaluation orders</b></h3>
+<h3><b> Distinguish between different evaluation strategies</b></h3>
 
-<b>Q: </b> How can we distinguish what evaluation order the interpreter is using?
+<b>Q: </b> How can we distinguish what evaluation strategy the interpreter is using?
 
 <b>A:</b>
 As we saw in the previous questions -
