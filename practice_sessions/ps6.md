@@ -48,6 +48,17 @@ Consider this program:
 When we compute the body of the inner-let <code>(+ (* y y) x)</code>, variable **y** is defined in the first frame accessible (head of E2),
 and variable **x** is defined in the second frame accessible (head of E1). E1 has E2 as a tail.
 
+
+Consider this program:
+```scheme
+(let ((x 1))                ;; Enter scope E1
+  (let ((x (+ x 1)))        ;; Enter scope E2
+    (+ x x)))    
+```
+when we compute the body of the inner-let the  variable **x** that was defined in E1 is hidden by the variable x that was defined in E2
+
+
+
 <b>NOTE</b>: The number of frames that must be traversed when we compute <code>applyEnv(env,var)</code> to resolve a <code>var-ref(var)</code>
 expression is related to the lexical address of var in the expression.  Work out the lexical address of the program above and show this relation.
 
