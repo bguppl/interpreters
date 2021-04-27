@@ -38,11 +38,9 @@ All the code for the practice sessions can be found [here](https://github.com/bg
 * [PS #5: Operational Semantics](./practice_sessions/ps5.html)
 
 
-<!--
 ## Week 6
 
-* [PS #6: UPDATE](./practice_sessions/ps6.html)
--->
+* [PS #6: Environment Model](./practice_sessions/ps6.html)
 
 <!--
 ## Week 11
