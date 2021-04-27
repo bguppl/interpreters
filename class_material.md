@@ -16,6 +16,8 @@
 
 [5. Data Types and Operations on Data](./class_material/1.4TypesAndOperations.html)
 
+
+
 ## Chapter 2: Syntax and Semantics with Scheme
 
 ### Defining a Programming Language Bottom-up: Elements of Programming
@@ -42,6 +44,7 @@
 [7. Environment Model, L4 evaluation, let evaluation, visual notation of environments, using closures, closure-based compound data structures](./class_material/2.7EnvironmentModel.html)
 
 [8. Recursion and Mutation](./class_material/2.8RecursionMutation.md)
+
 
 
 ## Chapter 3: Type Checking and Type Inference
@@ -79,4 +82,33 @@
 * [Type Inference](https://github.com/bguppl/interpreters/blob/master/src/L5/L5-typeinference.ts): checkEqualType with unification, check-no-occurrence, typeofExp
 
 * [Type Inference Tests](https://github.com/bguppl/interpreters/blob/master/test/L5/L5-typeinference.test.ts)
+
+
+
+## Chapter 4: Control Structures
+
+* [Asynchronous Programming, Promises and Generators](./class_material/4.1AsyncProgramming.html)
+* [Continuation Passing Style](./class_material/4.2CPS.html)
+* [Lazy Lists and Generators in Scheme](./class_material/4.3Generators.html)
+* [From Recursion to Iteration in TypeScript through CPS](./class_material/4.4RecursionToIteration.html)
+
+### Code
+
+* [Asynchronous code examples in Node.js](https://github.com/bguppl/interpreters/blob/master/src/async/coroutine1.rkt): Promises and Generators
+* [coroutine1.rkt](https://github.com/bguppl/interpreters/blob/master/src/async/coroutine1.rkt) - Coroutines and Generators in Racket
+* [lzl.rkt](https://github.com/bguppl/interpreters/blob/master/src/async/lzl.rkt) - Lazy-lists in Racket
+
+#### Deriving an iterative interpreter for L5 using CPS and Registerization
+
+The following code relies on the files of the L5 interpreter from the previous chapter. Add the files to the same folder.
+
+* [sum.ts](https://github.com/bguppl/interpreters/blob/master/src/cps/sum.ts): Turning a recursive TypeScript function into iterative code in JavaScript - general method (CPS, concrete data structures for continuations, registerization, iteration).
+
+* [L6-eval.ts](https://github.com/bguppl/interpreters/blob/master/src/cps/L6-eval.ts): A CPS version of the L5 interpreter (same AST as L5).
+* [L6-eval.tests.ts](https://github.com/bguppl/interpreters/blob/master/test/cps/L6-eval.test.ts): Same tests as L5 using the L6 version.
+
+* [L7a-eval.ts](https://github.com/bguppl/interpreters/blob/master/src/cps/L7a-eval.ts): L6 CPS interpreter with explicit continuation ADT
+* [L7b-eval.ts](https://github.com/bguppl/interpreters/blob/master/src/cps/L7b-eval.ts): L6 CPS interpreter with concrete continuation data structures
+* [L7c-eval.ts](https://github.com/bguppl/interpreters/blob/master/src/cps/L7c-eval.ts): L6 CPS interpreter with registers and iterative interpreter.
+* [L7-tests.ts](https://github.com/bguppl/interpreters/blob/master/test/cps/L7.test.ts): Tests for L7c interpreter demonstrating that tail-recursive code is executed iteratively.
 
