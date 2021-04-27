@@ -58,9 +58,6 @@ Consider this program:
 when we compute the body of the inner-let the  variable **x** that was defined in E1 is hidden by the variable x that was defined in E2
 
 
-
-
-
 <h3><b>Q: Why do we use the closure environment and not the current environment when applying a closure to obtain lexical scoping? </b></h3>
 
 At every step of the computation of an expression, the evaluation function has access to a parameter env which represents the <b>current environment</b>.
