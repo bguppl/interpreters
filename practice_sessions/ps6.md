@@ -59,8 +59,6 @@ when we compute the body of the inner-let the  variable **x** that was defined i
 
 
 
-<b>NOTE</b>: The number of frames that must be traversed when we compute <code>applyEnv(env,var)</code> to resolve a <code>var-ref(var)</code>
-expression is related to the lexical address of var in the expression.  Work out the lexical address of the program above and show this relation.
 
 
 <h3><b>Q: Why do we use the closure environment and not the current environment when applying a closure to obtain lexical scoping? </b></h3>
