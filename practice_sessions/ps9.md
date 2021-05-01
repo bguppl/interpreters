@@ -370,7 +370,7 @@ function deleteStudentsWithLargeId(baseUrl: string) {
 }
 ```
 
-## Better promises. The `async`/`await` syntax
+## Better promises with the `async`/`await` syntax
 
 In newer version of Javascript you can use the `async` keyword to declare that a function that always return a promise
 and use the `await` keyword be for an expression that evaluates to a promise to indicate not to continue execution until that promise is resolved (similar to `Promise.prototype.then`).
@@ -447,4 +447,72 @@ async function createManyStudents2(baseUrl: string, names: string[]) {
 }
 ```
 
+
+## A few notes on iterator and Generator types
+
+
+In the lecture you saw generator function, that can used inside loops similarly to arrays (but can have custom logic, be infinite etc.,)
+
+```typescript
+function * count3() {
+    yield 1;
+    yield 2;
+    yield 3;
+}
+```
+
+we know that we can iterate over count3() 
+```typescript
+for (const n of count3()) {
+    console.log(n)
+}
+```
+
+But what exactly did count3() return?
+
+<br><br>
+
+To understand this we need the following two protocols:
+
+First, JavaScript defines the following very general **iterator protocol**:
+
+```typescript
+interface IteratorResult<T> {
+    value: T;
+    done: boolean;
+}
+interface Iterator<T> {
+    next(): IteratorResult<T>;
+}
+```
+
+The second protocol we need the **iterable protocol**. 
+In JavaScript any object can hook into the `for ... of` construct (and the `...` spread syntax)
+by adding a special function name `Symbol.iterator` that returns an iterator. This is called the iterable protocol:
+
+```typescript
+interface Iterable<T> {
+    [Symbol.iterator](): Iterator<T>;
+}
+```
+
+The generator functions that you saw in the lectures act in the same manner. 
+We can iterate over their return type because they return an iterable object, more specifically the return type of a generator is both an iterator and an iterable (that returns the same iterator)
+
+***Question:*** Can you write the return type of the `count3` function?
+
+
+<br><br><br><br><br>
+
+
+
+```typescript
+interface Generator<T> extends Iterator<T> {
+    [Symbol.iterator](): Generator<T>;
+}
+
+interface GeneratorFunction {
+    (...args: any[]): Generator;
+}
+```
 
