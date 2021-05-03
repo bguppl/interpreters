@@ -93,9 +93,9 @@ Note: See how we added type anotations to the lambda's params, and return value.
 
 |Expression               	    | Variable
 |-------------------------------|-----------------------------|
-((lambda (f x) (f x)) sqrt 4)	|T1 = [Tsqrt * Tnum4 -> T0]
-(lambda (f x) (f x))	        |T1 = [Tf * Tx -> T2]
-(f x)	                        |Tf = [Tx -> T2]
+((lambda (f x) (f x)) sqrt 4)	|T0
+(lambda (f x) (f x))	        |T1
+(f x)	                        |Tf
 f	                  |      Tf
 x	                        |Tx
 sqrt	                        |Tsqrt
