@@ -1,4 +1,4 @@
-# Type inference using type constraints
+﻿# Type inference using type constraints
 
 ## Definition (seen in class):
 
@@ -57,11 +57,11 @@ In case of an instance of the MGU type substitution, it is any type substitution
 
 All other unifiers are obtained from it by application of additional substitutions.  **Find the MGU**  for the following pairs of type-environments:
 
-|Substitutions	                                                     |MGU
+|Type expressions	            | MGU
 |-------------------------------|-----------------------------|
 |{x: T1}, {x: N}	            |{T1=N}  (a non-MGU unifier: {T1=N, T2=B})
 {x: [T1*[T1->T2]->T2]},  {x: [Number * [T3->T4]->T4]}	   |{T1=Number, T3=Number, T4=T2}
-{x: [T1*[T1->T2]->N]},   {x: [[T3->T4]*[T5->Number]->N]}  |{T1=[T3->T4], T5=[T3->T4], T2=Number}
+{x: [T1*[T1->T2]->N]},   {x: [[T3->T4] * [T5->Number]->N]}  |{T1=[T3->T4], T5=[T3->T4], T2=Number}
 {x: [T1*[T1->T2]->N]},   {x: [Number * [Symbol->T3]->N]}   |No unifier
 
 ## Type inference using type constraints
@@ -94,8 +94,8 @@ Note: See how we added type anotations to the lambda's params, and return value.
 |Expression               	    | Variable
 |-------------------------------|-----------------------------|
 ((lambda (f x) (f x)) sqrt 4)	|T0
-(lambda (f x) (f x))	        |T1
-(f x)	                        |Tf
+(lambda (f x) (f x))	        |T1 
+(f x)	                        |T2 
 f	                  |      Tf
 x	                        |Tx
 sqrt	                        |Tsqrt
@@ -142,7 +142,7 @@ sqrt	         |	Tsqrt = [Number -> Number]
 | 2. T1 = [Tf * Tx -> T2]	|  {T1 := [Tsqrt * Tnum4 -> T0]}
 | 3. Tf = [Tx -> T2]	|
 | 4. Tsqrt = [Number -> Number]|	
-| 5. Tnum4 = Numbe|
+| 5. Tnum4 = Number|
 
 **Step 2**:
 
@@ -167,7 +167,7 @@ Substitution = Substitution ○ (Tf = [Tx -> T2]).
 |Equation| Substitution
 |-------------------------------|-----------------------------|
 | 4. Tsqrt = [Number -> Number]	|    {T1 := [Tsqrt * Tnum4 -> T0],  Tf := [Tx -> T2]}
-| 5. Tnum4 = Number	| 
+| 5. Tnum4 = Number	|
 | 6. Tf = Tsqrt	|
 | 7. Tx = Tnum4 (or Tnum4 = Tx)	|
 | 8. T2 = T0|
@@ -512,14 +512,6 @@ We add them to the equations (6,7,8)  and remove equation 2.
 (Tf = [Tx -> T2]) ○ Substitution = (Tf = [Tx -> T2]) , type-sub.
 Substitution = Substitution ○ (Tf = [Tx -> T2]).
 
-|Equation |	                Substitution 
-|-------------------------------|-----------------------------|
-|4.Tnum4 = Number |	       {T1 := [Tnum4 * Tsqrt -> T0]
-|5.Tsqrt = [Number -> Number]	| Tf = [Tx -> T2]}
-|6.Tf = Tnum4	|
-|7.Tx = Tsqrt	|
-|8.T2 = T0	|
-
 |Equation| Substitution
 |-------------------------------|-----------------------------|
 |4. Tnum4 = Number	|  { &nbsp;&nbsp;&nbsp; T1 := [Tnum4 * Tsqrt -> T0], <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  **Tf = [Tx -> T2]** &nbsp;&nbsp;&nbsp;}
@@ -548,7 +540,7 @@ Substitution = Substitution ○ (Tsqrt = [Number -> Number]).
 
 |Equation| Substitution
 |-------------------------------|-----------------------------|
-|6.  Tf = Tnum4	|  { &nbsp;&nbsp;&nbsp; T1 :=[Number * **Number**-> T0], <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  Tf = [Tx -> T2], <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Tnum4 = Number <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  **Tsqrt := [Number->Number]** &nbsp;&nbsp;&nbsp;}
+|6.  Tf = Tnum4	|  { &nbsp;&nbsp;&nbsp; T1 :=[Number * **[Number -> Number]**-> T0], <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  Tf = [Tx -> T2], <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Tnum4 = Number <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  **Tsqrt := [Number->Number]** &nbsp;&nbsp;&nbsp;}
 |7.  Tx = Tsqrt|
 |8.  T2 = T0	|
 
