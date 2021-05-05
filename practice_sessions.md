@@ -42,6 +42,10 @@ All the code for the practice sessions can be found [here](https://github.com/bg
 
 * [PS #6: Environment Model](./practice_sessions/ps6.html)
 
+## Week 7
+
+* [PS #7: Type inference using type constraints](./practice_sessions/ps7.html)
+
 <!--
 ## Week 11
 
