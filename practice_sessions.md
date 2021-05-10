@@ -46,6 +46,10 @@ All the code for the practice sessions can be found [here](https://github.com/bg
 
 * [PS #7: Type inference using type constraints](./practice_sessions/ps7.html)
 
+## Week 8
+
+* [PS #8: Type Inference System](./practice_sessions/ps8.pdf)
+
 <!--
 ## Week 11
 
