@@ -50,6 +50,10 @@ All the code for the practice sessions can be found [here](https://github.com/bg
 
 * [PS #8: Type Inference System](./practice_sessions/ps8.pdf)
 
+## Week 9
+
+* [PS #9: Asynchronous Programming in TypeScript](./practice_sessions/ps9.html)
+
 <!--
 ## Week 11
 
