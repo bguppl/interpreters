@@ -54,6 +54,10 @@ All the code for the practice sessions can be found [here](https://github.com/bg
 
 * [PS #9: Asynchronous Programming in TypeScript](./practice_sessions/ps9.html)
 
+## Week 10
+
+* [PS #10: Lazy-Lists, Continuation Passing Style (CPS)](./practice_sessions/ps10.pdf)
+
 <!--
 ## Week 11
 
