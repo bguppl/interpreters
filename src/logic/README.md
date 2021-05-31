@@ -28,3 +28,5 @@ Prolog Interpreter in Scheme (Racket)
 * answer-query-test.rkt: answer query tests
 
 More details in [5.3 Logic Program Interpreter](https://bguppl.github.io/interpreters/class_material/5.3LPInterpreter.html) of the PPL Course Notes.
+
+![Architecture](./LP-interpreter-architecture-diagram.jpg)
