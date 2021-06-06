@@ -112,3 +112,44 @@ The following code relies on the files of the L5 interpreter from the previous c
 * [L7c-eval.ts](https://github.com/bguppl/interpreters/blob/master/src/cps/L7c-eval.ts): L6 CPS interpreter with registers and iterative interpreter.
 * [L7-tests.ts](https://github.com/bguppl/interpreters/blob/master/test/cps/L7.test.ts): Tests for L7c interpreter demonstrating that tail-recursive code is executed iteratively.
 
+
+
+## Chapter 5: Logic Programming
+
+* [Relational Logic Programming](./class_material/5.1RelationalLogicProgramming.html)
+* [Logic Programming](./class_material/5.2LogicProgramming.html)
+* [Logic Programming Interpreter in Scheme](./class_material/5.3LPInterpreter.html)
+
+### Code
+
+To install the full package of the Logic Programming system in Racket:
+
+Clone the code from [github](https://github.com/bguppl/interpreters/tree/master/src/logic)
+* Unzip it in a folder /ppl/src/logic
+* Launch DrRacket
+* Load the file "answer-query-test.rkt"
+* Run the tests - it should print
+```
+6 tests passed.
+5 tests passed.
+9 tests passed.
+```
+
+* [LP-ast.rkt](https://github.com/bguppl/interpreters/blob/master/src/logic/LP-ast.rkt): AST for Logic Programming
+* [LP-ast-tests.rkt](https://github.com/bguppl/interpreters/blob/master/src/logic/LP-ast-tests.rkt): AST tests and examples
+* [LP-rename.rkt](https://github.com/bguppl/interpreters/blob/master/src/logic/LP-rename.rkt): variable renaming
+* [substitution-ADT.rkt](https://github.com/bguppl/interpreters/blob/master/src/logic/substitution-ADT.rkt): Substitution ADT
+* [substitution-adt-tests.rkt](https://github.com/bguppl/interpreters/blob/master/src/logic/substitution-ADT-tests.rkt): Substitution tests
+* [lazy-tree-ADT.rkt](https://github.com/bguppl/interpreters/blob/master/src/logic/lazy-tree-ADT.rkt): Lazy tree ADT
+* [lazy-tree-ADT-tests.rkt](https://github.com/bguppl/interpreters/blob/master/src/logic/lazy-tree-ADT-tests.rkt): lazy tree tests
+* [auxiliary.rkt](https://github.com/bguppl/interpreters/blob/master/src/logic/auxiliary.rkt): auxiliary functions
+* [utils.rkt](https://github.com/bguppl/interpreters/blob/master/src/logic/utils.rkt): Utility functions
+* [unify.rkt](https://github.com/bguppl/interpreters/blob/master/src/logic/unify.rkt): unification algorithm
+* [term-equation-adt.rkt](https://github.com/bguppl/interpreters/blob/master/src/logic/term-equation-adt.rkt): term equation ADT (pair of terms)
+* [unify-tests.rkt](https://github.com/bguppl/interpreters/blob/master/src/logic/unify-tests.rkt): unification tests
+* [answer-query.rkt](https://github.com/bguppl/interpreters/blob/master/src/logic/answer-query.rkt): answer-query algorithm
+* [answer-query-test.rkt](https://github.com/bguppl/interpreters/blob/master/src/logic/answer-query-test.rkt): answer query tests
+
+
+
+
