@@ -58,14 +58,10 @@ All the code for the practice sessions can be found [here](https://github.com/bg
 
 * [PS #10: Lazy-Lists, Continuation Passing Style (CPS)](./practice_sessions/ps10.pdf)
 
-<!--
 ## Week 11
 
-* [PS #11: UPDATE](./practice_sessions/ps11.html)
--->
+* [PS #11: Logic Programming, Part 1](./practice_sessions/ps11.html)
 
-<!--
 ## Week 12
 
-* [PS #12: UPDATE](./practice_sessions/ps11.html)
--->
+* [PS #12: Logic Programming, Part 2](./practice_sessions/ps12.html)
