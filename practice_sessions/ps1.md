@@ -1,21 +1,21 @@
 # TypeScript: Complex Data Types, JSON, Map, Filter, Reduce
 
-## PPL 2021 - [Course Website](https://bguppl.github.io/interpreters/)
+## PPL 2022 - [Course Website](https://bguppl.github.io/interpreters/)
 ## Practical Session - Week #1
 
 ### How to Install Node.js and NPM on Windows
 
 Node.js is a JavaScript interpreter. NPM (Node Package Manager) let's you install software (libraries, plugins, frameworks and applications) used to build Node applications. Both are installed using the installer package avaiable from the Node.js web site. The isntallation is pretty straightforward: 
 
-1. Download the Windows installer from [nodejs.org](https://nodejs.org/en/)
+1. Download the LTS (version 16) Windows installer from [nodejs.org](https://nodejs.org/en/)
 2. Run the installer (the .msi file you downloaded in the previous step.)
 3. Follow the prompts in the installer (Accept the license agreement, click the NEXT button a bunch of times and accept the default installation settings).
 4. Restart your computer.
 
 #### Test the installation: 
 * Open the Windows Command Prompt (press the Win + R keys. Then, type `cmd` and press Enter).
-* To verify node is installed, type `node -v`, then press Enter. You should see a version number (e.g., v14.x or v15.x).
-* To verify NPM installation, type `npm -v` and press Enter. You should see a version number (e.g. v6.x or v7.x).
+* To verify node is installed, type `node -v`, then press Enter. You should see a version number (should start with 'v16.').
+* To verify NPM installation, type `npm -v` and press Enter. You should see a version number (should start with '8.').
 
 #### More information:
 For instructions on how to install other software that will be used throughout the course, please refer to the [useful links](https://bguppl.github.io/interpreters/useful_links.html) section in the course web site.  In particular, see instructions on how to install the TypeScript compiler `tsc` and the Visual Studio Code IDE.
