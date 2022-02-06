@@ -29,23 +29,24 @@ The instructions for installations are similar for Windows, Linux and MacOS (usi
 The full installation and configuration guide can be seen [here](https://youtu.be/tnn_a4hReKs) (the video shows older versions of VS Code and Node, but the setup should still be relevant).
 
 
-0. Download node.js from [https://nodejs.org](https://nodejs.org) and install.
+0. Download node.js from [https://nodejs.org](https://nodejs.org) and install the LTS version (16).
 0. Download VS Code from [https://code.visualstudio.com/](https://code.visualstudio.com/) and install.
 0. Open command prompt by clicking on Start and typing `cmd`.
-0. Make sure node is installed by running `node -v`. The expected output is either v14.x or v15.x.
+0. Make sure node is installed by running `node -v`. The expected output should start with 'v16.'.
 0. Globally install Typescript's compiler and REPL `npm i -g ts-node typescript`.
-0. Navigate to a directory you want to create your projects in (e.g., 'Desktop\ppl').
-0. Open VS Code in this foler using `code .`
-0. Open the "Extensions" panel (`ctrl-shift-x`) and search for "runner".
-0. Install the "Code Runner" extension.
-0. Open the "Explorer" panel (`ctrl-shift-E`) and select "New Folder" and name the new folder `hw`.
-0. Right-click on the new folder and select `open in the integrated terminal`.
-0. Initialize `npm` in this directory using `npm init -y` in the terminal (this will create a `package.json` file in the `hw` folder)
-0. Run `npm i ramda` to install the `ramda` library as a runtime dependency for this project.
-0. Run `npm i -D typescript @types/ramda` to install development/compiletime dependencies for this project.
-7. Right click `hw` and select "New File". Call it `hw1.ts`.
-6. In the newly created file, type `console.log("Hello, world");`, save using Ctrl+S, and run using Ctrl+Alt+N. You should see "Hello, world" on the screen.
-7. Check `ramda` is properly installed by adding to the top of your file the line `import { map } from "ramda";` and change your `console.log("Hello, world");` to `console.log(map(x => x * x, [1, 2, 3, 4]));`. Again, save using Ctrl+S, and run using Ctrl+Alt+N. You should see `[1, 4, 9, 16]` on the screen.
+1. Make sure Typescript is installed by running `tsc -v`. The expected output should start with '4.5'.
+2. Navigate to a directory you want to create your projects in (e.g., 'Desktop\ppl').
+3. Open VS Code in this foler using `code .`
+4. Open the "Extensions" panel (`ctrl-shift-x`) and search for "runner".
+5. Install the "Code Runner" extension.
+6. Open the "Explorer" panel (`ctrl-shift-E`) and select "New Folder" and name the new folder `hw`.
+7. Right-click on the new folder and select `open in the integrated terminal`.
+8. Initialize `npm` in this directory using `npm init -y` in the terminal (this will create a `package.json` file in the `hw` folder)
+9. Run `npm i ramda` to install the `ramda` library as a runtime dependency for this project.
+10. Run `npm i -D typescript @types/ramda` to install development/compiletime dependencies for this project.
+11. Right click `hw` and select "New File". Call it `hw1.ts`.
+12. In the newly created file, type `console.log("Hello, world");`, save using Ctrl+S, and run using Ctrl+Alt+N. You should see "Hello, world" on the screen.
+13. Check `ramda` is properly installed by adding to the top of your file the line `import { map } from "ramda";` and change your `console.log("Hello, world");` to `console.log(map(x => x * x, [1, 2, 3, 4]));`. Again, save using Ctrl+S, and run using Ctrl+Alt+N. You should see `[1, 4, 9, 16]` on the screen.
 
 **Note**: every assignment that has TypeScript coding in it will come with a predefined `package.json` which specifies the packages and package versions for the assignment. For every assignment, extract the files in a *new folder*, open a `cmd` in that folder, and run `npm i`. This will install all necessary packages for the assignment.
 
