@@ -7,7 +7,7 @@ All the code for the practice sessions can be found [here](https://github.com/bg
 ### Reading Material
 
 * [Programming Paradigms & Functional Programming with TypeScript](./practice_sessions/reading_material/programming_paradigms_fp_ts.html)
-<!-- 
+<!---
 * [Simple Loops with NumPy](./practice_sessions/reading_material/simple_loops_numpy.html)
 * [Loop with Accumulator and Vectorization](./practice_sessions/reading_material/vectorizing_loops.html)
 -->
