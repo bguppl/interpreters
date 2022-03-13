@@ -1,4 +1,4 @@
-import { filter, indexOf, map, contains, zip, KeyValuePair } from "ramda";
+import { filter, indexOf, map, includes, zip, KeyValuePair } from "ramda";
 import { CExp, ProcExp, VarDecl, VarRef } from "./L3-ast";
 import { isAppExp, isBoolExp, isIfExp, isLitExp, isNumExp, isPrimOp, isProcExp, isStrExp, isVarRef } from "./L3-ast";
 import { makeAppExp, makeIfExp, makeProcExp, makeVarDecl, makeVarRef } from "./L3-ast";
@@ -18,7 +18,7 @@ export const substitute = (body: CExp[], vars: string[], exps: CExp[]): CExp[] =
     const subProcExp = (e: ProcExp): ProcExp => {
         const argNames = map((x) => x.var, e.args);
         const subst = zip(vars, exps);
-        const freeSubst = filter((ve) => !contains(first(ve), argNames), subst);
+        const freeSubst = filter((ve) => !includes(first(ve), argNames), subst);
         return makeProcExp(e.args, substitute(e.body, map((x: KeyValuePair<string, CExp>) => x[0], freeSubst), map((x: KeyValuePair<string, CExp>) => x[1], freeSubst)));
     };
     
