@@ -8,6 +8,7 @@ describe('L3 Normal Eval', () => {
     it('evaluates atoms', () => {
         expect(evalNormalParse("1")).toEqual(makeOk(1));
         expect(evalNormalParse("#t")).toEqual(makeOk(true));
+        expect(evalNormalParse('"a"')).toEqual(makeOk("a"));
         expect(evalNormalParse("+")).toEqual(makeOk(makePrimOp("+")));
     });
 
@@ -16,6 +17,8 @@ describe('L3 Normal Eval', () => {
         expect(evalNormalParse("(< 1 2)")).toEqual(makeOk(true));
         expect(evalNormalParse("(not (> 1 2))")).toEqual(makeOk(true));
         expect(evalNormalParse("(+ (* 2 2) 3)")).toEqual(makeOk(7));
+        expect(evalNormalParse("(- 2 1)")).toEqual(makeOk(1));
+        expect(evalNormalParse("(/ 4 2)")).toEqual(makeOk(2));
     });
 
     it('evaluates L2 syntactic forms', () => {
@@ -46,6 +49,10 @@ describe('L3 Normal Eval', () => {
     it('evaluates procedures', () => {
         expect(bind(parseL3(`(L3 (define f (lambda (x) (* x x))) (f 3))`), evalNormalProgram)).toEqual(makeOk(9));
         expect(bind(parseL3(`(L3 (define f (lambda (x) (if (> x 0) x (- 0 x)))) (f -3))`), evalNormalProgram)).toEqual(makeOk(3));
+    });
+
+    it('evaluates closure', () => {
+        expect(bind(parseL3(`(L3 (define make-adder (lambda (c) (lambda (x) (* c c) (+ x x) (+ x c)))) (define a2 (make-adder 2)) (a2 7))`), evalNormalProgram)).toEqual(makeOk(9));
     });
 
     it('evaluates recursive procedures', () => {
@@ -130,9 +137,9 @@ describe('L3 Normal Eval', () => {
                 (try 0 (/ 1 0)))`), evalNormalProgram)).toEqual(makeOk(1));
     });
 
-    it('evaluates programs which would cause side-effects in applicative order, but not in normal order', () => {
+    it('evaluates programs which would cause side-effects (or failure) in applicative order, but not in normal order', () => {
         expect(bind(parseL3(`
-            (L3 (define f (lambda (x) (display x) (newline) (+ x 1)))
+            (L3 (define f (lambda (x) (display x) (+ x 1)))
                 (define g (lambda (x) 5))
                 (g (f 0)))`), evalNormalProgram)).toEqual(makeOk(5));
     });

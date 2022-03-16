@@ -1,4 +1,4 @@
-import { makeVarRef, parseL3Exp, Exp } from '../../src/L3/L3-ast';
+import { makeVarRef, parseL3Exp, Exp, parseL3 } from '../../src/L3/L3-ast';
 import { height, occursFree, referencedVars } from '../../src/L3/freeVars';
 import { Result, makeOk, bind } from "../../src/shared/result";
 import { parse as parseSexp } from "../../src/shared/parser";
@@ -9,6 +9,8 @@ describe('height', () => {
     it('calculates the height of the AST', () => {
         expect(bind(p("x"), e => makeOk(height(e)))).toEqual(makeOk(1));
         expect(bind(p("(lambda (x) (* x x))"), e => makeOk(height(e)))).toEqual(makeOk(2));
+        expect(bind(p("(define f (lambda (x) (if 1 'a (* x x))))"), e => makeOk(height(e)))).toEqual(makeOk(4));
+        expect(bind(parseL3("(L3 (let ((x 1)) x))"), e => makeOk(height(e)))).toEqual(makeOk(3));
     });
 });
 
@@ -46,6 +48,12 @@ describe('occursFree', () => {
         expect(bind(p("(+ 1 2)"), e => makeOk(occursFree("x", e)))).toEqual(makeOk(false));
     });
 
+    it('returns the correct result for define', () => {
+        expect(bind(p("(define x (+ 1 y))"), e => makeOk(occursFree("y", e)))).toEqual(makeOk(true));
+        expect(bind(p("(define x (+ 1 x))"), e => makeOk(occursFree("x", e)))).toEqual(makeOk(false));
+        expect(bind(p("(define x (+ 1 y))"), e => makeOk(occursFree("x", e)))).toEqual(makeOk(false));
+    });
+
     it.skip('returns the correct result for "let" expressions', () => {
         expect(bind(p("(let () x)"), e => makeOk(occursFree("x", e)))).toEqual(makeOk(true));
         expect(bind(p("(let ((x 1)) x)"), e => makeOk(occursFree("x", e)))).toEqual(makeOk(false));
@@ -62,7 +70,9 @@ describe('referencesVars', () => {
     it('returns referenced variables for a given expression', () => {
         expect(bind(p("(lambda (y) (lambda (z) x))"), e => makeOk(referencedVars(e)))).toEqual(makeOk([makeVarRef("x")]));
         expect(bind(p("(+ x y)"), e => makeOk(referencedVars(e)))).toEqual(makeOk([makeVarRef("x"), makeVarRef("y")]));
-        expect(bind(p("(if x 1 2)"), e => makeOk(referencedVars(e)))).toEqual(makeOk([makeVarRef("x")]));
-        expect(bind(p("(plus x 1)"), e => makeOk(referencedVars(e)))).toEqual(makeOk([makeVarRef("plus"), makeVarRef("x")]));
+        expect(bind(p("(if x #t 'a)"), e => makeOk(referencedVars(e)))).toEqual(makeOk([makeVarRef("x")]));
+        expect(bind(p('(plus x 1 "a")'), e => makeOk(referencedVars(e)))).toEqual(makeOk([makeVarRef("plus"), makeVarRef("x")]));
+        expect(bind(p("(define x (+ y 1))"), e => makeOk(referencedVars(e)))).toEqual(makeOk([makeVarRef("y")]));
+        expect(bind(parseL3("(L3 (define y 2) (define x (+ y 1)))"), e => makeOk(referencedVars(e)))).toEqual(makeOk([makeVarRef("y")]));
     });
 });

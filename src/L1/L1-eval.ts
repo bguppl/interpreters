@@ -55,14 +55,16 @@ const applyPrimitive = (proc: PrimOp, args: Value[]): Result<Value> =>
     proc.op === "+" ? makeOk(reduce((x, y) => x + y, 0, args)) :
     // This implementation is wrong - no type checking and no verification
     // of associativity: what should be (- 1 2 3): (- 1 (- 2 3)) i.e. 2 or (- (- 1 2) 3) i.e. -4
+    // proc.op === "-" ? makeOk(reduce((x, y) => x - y, 0, args)) :
     // @ts-ignore: the rhs of an arithmetic operation must be a number
-    proc.op === "-" ? makeOk(reduce((x, y) => x - y, 0, args)) :
+    proc.op === "-" ? makeOk(args[0] - args[1]) :
     // @ts-ignore: the rhs of an arithmetic operation must be a number
     proc.op === "*" ? makeOk(reduce((x, y) => x * y, 1, args)) :
     // This implementation is wrong - no type checking and no verification
     // of associativity: what should be (/ 1 2 3): (/ 1 (/ 2 3)) i.e. 1.5 or (/ (/ 1 2) 3) i.e. 1/6
+    // proc.op === "/" ? makeOk(reduce((x, y) => x / y, 1, args)) :
     // @ts-ignore: the rhs of an arithmetic operation must be a number
-    proc.op === "/" ? makeOk(reduce((x, y) => x / y, 1, args)) :
+    proc.op === "/" ? makeOk(args[0] / args[1]) :
     proc.op === ">" ? makeOk(args[0] > args[1]) :
     proc.op === "<" ? makeOk(args[0] < args[1]) :
     proc.op === "=" ? makeOk(args[0] === args[1]) :

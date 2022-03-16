@@ -78,10 +78,9 @@ const L3normalEvalSeq = (exps: CExp[], env: Env): Result<Value> => {
 Purpose: evaluate a program made up of a sequence of expressions. (Same as in L1)
 When def-exp expressions are executed, thread an updated env to the continuation.
 For other expressions (that have no side-effect), execute the expressions sequentially.
-Signature: L3normalEvalProgram(program)
-Type: [Program -> Value]
+Signature: evalNormalProgram(program)
 */
-export const L3normalEvalProgram = (program: Program): Result<Value> =>
+export const evalNormalProgram = (program: Program): Result<Value> =>
     evalExps(program.exps, makeEmptyEnv());
 
 // Evaluate a sequence of expressions (in a program)
@@ -102,9 +101,6 @@ const evalDefineExps = (def: Exp, exps: Exp[], env: Env): Result<Value> =>
     isDefineExp(def) ? bind(L3normalEval(def.val, env),
                             (rhs: Value) => evalExps(exps, makeEnv(def.var.var, rhs, env))) :
     makeFailure("Unexpected " + def);
-
-export const evalNormalProgram = (program: Program): Result<Value> =>
-    evalExps(program.exps, makeEmptyEnv());
 
 export const evalNormalParse = (s: string): Result<Value> =>
     bind(p(s),

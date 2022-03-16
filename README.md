@@ -21,4 +21,6 @@ Run `npm test` inside the `interpreters` folder.
 
 ## Code Coverage
 
-Run `npm run coverage` inside the `interpreters` folder. A new folder called `coverage` will be created. Open the `index.html` file inside it to see coverage statistics.
+Run `npm run coverage` inside the `interpreters` folder. A new folder called `coverage` will be created. 
+Open the `lcov-report/index.html` file inside it to see coverage statistics.  
+In each file of the tests, you can see which lines have been covered by a test.
