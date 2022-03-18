@@ -1,7 +1,7 @@
 import * as E from "fp-ts/Either";
 import { pipe } from "fp-ts/function";
 import { inferTypeOf, typeofExp } from "../../src/L5/L5-typeinference";
-import { parseL5Exp, Exp } from "../../src/L5/L5-ast";
+import { parseL5Exp } from "../../src/L5/L5-ast";
 import { makeExtendTEnv, makeEmptyTEnv } from "../../src/L5/TEnv";
 import { makeNumTExp } from "../../src/L5/TExp";
 import { verifyTeOfExprWithInference } from "../shared/test-helpers";

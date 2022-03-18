@@ -1,5 +1,4 @@
 import * as E from "fp-ts/Either";
-import { and } from "fp-ts/Predicate";
 import { pipe } from "fp-ts/function";
 import { isNumExp, parseL1Exp, isBoolExp, isVarRef, isDefineExp, isVarDecl, isAppExp, isProgram, parseL1 } from "../../src/L1/L1-ast";
 import { parse as p } from "../../src/shared/parser";

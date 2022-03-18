@@ -5,11 +5,11 @@ import * as E from "fp-ts/Either";
 import { map, replicate, zipWith } from "fp-ts/ReadonlyArray";
 import { pipe } from "fp-ts/function";
 import { isBoolExp, isCExp, isLitExp, isNumExp, isPrimOp, isStrExp, isVarRef, isSetExp,
-         isAppExp, isDefineExp, isIfExp, isLetrecExp, isLetExp, isProcExp, Binding, VarDecl, CExp, Exp, IfExp, LetrecExp, LetExp, ProcExp, Program, SetExp,
+         isAppExp, isDefineExp, isIfExp, isLetrecExp, isLetExp, isProcExp, CExp, Exp, IfExp, LetrecExp, LetExp, ProcExp, Program, SetExp,
          parseL4Exp, 
          DefineExp} from "./L4-ast";
 import { applyEnv, applyEnvBdg, globalEnvAddBinding, makeExtEnv, setFBinding,
-            theGlobalEnv, Env, FBinding } from "./L4-env-box";
+            theGlobalEnv, Env } from "./L4-env-box";
 import { isClosure, makeClosure, Closure, Value } from "./L4-value-box";
 import { applyPrimitive } from "./evalPrimitive-box";
 import { first, rest, isEmpty } from "../shared/list";

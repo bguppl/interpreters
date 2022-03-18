@@ -4,7 +4,7 @@ import * as E from "fp-ts/Either";
 import { map, replicate, zipWith } from "fp-ts/ReadonlyArray";
 import { pipe } from "fp-ts/function";
 import { AppExp, CExp, DefineExp, Exp, IfExp, LetrecExp, LetExp,
-         ProcExp, Program, SetExp, VarDecl } from '../L5/L5-ast';
+         ProcExp, Program, SetExp } from '../L5/L5-ast';
 import { isBoolExp, isLitExp, isNumExp, isPrimOp, isStrExp, isVarRef } from "../L5/L5-ast";
 import { parseL5Exp, unparse } from "../L5/L5-ast";
 import { isAppExp, isDefineExp, isIfExp, isLetrecExp, isLetExp,

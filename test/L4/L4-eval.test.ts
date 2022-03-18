@@ -1,5 +1,4 @@
 import * as E from "fp-ts/Either";
-import { and } from "fp-ts/Predicate";
 import { pipe } from "fp-ts/function";
 import { makeVarDecl, makeVarRef, parseL4 } from '../../src/L4/L4-ast';
 import { isEnv, makeEmptyEnv, makeExtEnv, applyEnv } from '../../src/L4/L4-env';

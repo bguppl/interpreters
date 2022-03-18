@@ -1,11 +1,10 @@
 import * as E from "fp-ts/Either";
 import { map, sort, zipWith } from "fp-ts/ReadonlyArray";
-import { and } from "fp-ts/Predicate";
 import { pipe } from "fp-ts/function";
 import * as S from "fp-ts/string";
-import { parseL5Exp, Exp } from '../../src/L5/L5-ast';
+import { parseL5Exp } from '../../src/L5/L5-ast';
 import { inferType } from '../../src/L5/L5-type-equations';
-import { unparseTExp, TExp, parseTE, makeTVar, equivalentTEs } from '../../src/L5/TExp';
+import { unparseTExp, parseTE, makeTVar, equivalentTEs } from '../../src/L5/TExp';
 import { typeofExp } from '../../src/L5/L5-typeinference';
 import { makeEmptyTEnv } from '../../src/L5/TEnv';
 import { makeSub, Sub} from '../../src/L5/L5-substitution-adt';

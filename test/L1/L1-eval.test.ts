@@ -1,6 +1,6 @@
 import * as E from "fp-ts/Either";
 import { pipe } from "fp-ts/function";
-import { parseL1, parseL1Exp, Exp, makePrimOp, makeBoolExp } from "../../src/L1/L1-ast";
+import { parseL1, parseL1Exp, Exp, makePrimOp } from "../../src/L1/L1-ast";
 import { evalL1program, makeEnv, makeEmptyEnv, evalSequence } from '../../src/L1/L1-eval';
 import { parse as p } from "../../src/shared/parser";
 

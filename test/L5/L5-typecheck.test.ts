@@ -1,6 +1,6 @@
 import * as E from "fp-ts/Either";
 import { pipe } from "fp-ts/function";
-import { parseL5Exp, Exp } from '../../src/L5/L5-ast';
+import { parseL5Exp } from '../../src/L5/L5-ast';
 import { typeofExp, L5typeof } from '../../src/L5/L5-typecheck';
 import { makeEmptyTEnv, makeExtendTEnv } from '../../src/L5/TEnv';
 import { makeBoolTExp, makeNumTExp, makeProcTExp, makeTVar, makeVoidTExp, parseTE, unparseTExp } from '../../src/L5/TExp';

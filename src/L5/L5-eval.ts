@@ -3,13 +3,12 @@ import * as E from "fp-ts/Either";
 import { map, replicate, zipWith } from "fp-ts/ReadonlyArray";
 import { pipe } from "fp-ts/function";
 import { CExp, Exp, IfExp, LetrecExp, LetExp, ProcExp, Program, SetExp, isCExp } from './L5-ast';
-import { Binding, VarDecl } from "./L5-ast";
 import { isBoolExp, isLitExp, isNumExp, isPrimOp, isStrExp, isVarRef } from "./L5-ast";
 import { parseL5Exp } from "./L5-ast";
 import { isAppExp, isDefineExp, isIfExp, isLetrecExp, isLetExp,
          isProcExp, isSetExp } from "./L5-ast";
 import { applyEnv, applyEnvBdg, globalEnvAddBinding, makeExtEnv, setFBinding,
-         theGlobalEnv, Env, FBinding } from "./L5-env";
+         theGlobalEnv, Env } from "./L5-env";
 import { isClosure, makeClosure, Closure, Value } from "./L5-value";
 import { isEmpty, first, rest } from '../shared/list';
 import { parse as p } from "../shared/parser";

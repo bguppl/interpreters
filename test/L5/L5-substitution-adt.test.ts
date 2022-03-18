@@ -1,5 +1,4 @@
 import * as E from "fp-ts/Either";
-import { and } from "fp-ts/Predicate";
 import { pipe } from "fp-ts/function";
 import * as S from "../../src/L5/L5-substitution-adt";
 import { makeTVar, parseTE, unparseTExp, TExp } from "../../src/L5/TExp";

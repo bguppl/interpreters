@@ -2,7 +2,7 @@ import { elem, filter, findIndex, map, unzip, zip } from "fp-ts/ReadonlyArray";
 import { match } from "fp-ts/Option";
 import { pipe } from "fp-ts/function";
 import * as S from "fp-ts/string";
-import { CExp, ProcExp, VarDecl, VarRef } from "./L3-ast";
+import { CExp, ProcExp, VarRef } from "./L3-ast";
 import { isAppExp, isBoolExp, isIfExp, isLitExp, isNumExp, isPrimOp, isProcExp, isStrExp, isVarRef } from "./L3-ast";
 import { makeAppExp, makeIfExp, makeProcExp, makeVarDecl, makeVarRef } from "./L3-ast";
 

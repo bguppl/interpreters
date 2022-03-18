@@ -7,7 +7,7 @@ import { map } from "fp-ts/ReadonlyArray";
 import { pipe } from "fp-ts/function";
 import { isBoolExp, isCExp, isLitExp, isNumExp, isPrimOp, isStrExp, isVarRef,
          isAppExp, isDefineExp, isIfExp, isLetrecExp, isLetExp, isProcExp,
-         Binding, VarDecl, CExp, Exp, IfExp, LetrecExp, LetExp, ProcExp, Program,
+         CExp, Exp, IfExp, LetrecExp, LetExp, ProcExp, Program,
          parseL4Exp, isSetExp, DefineExp} from "./L4-ast";
 import { applyEnv, makeEmptyEnv, makeExtEnv, makeRecEnv, Env } from "./L4-env";
 import { isClosure, makeClosure, Closure, Value } from "./L4-value";

@@ -3,7 +3,6 @@
 import * as E from "fp-ts/Either";
 import { map } from "fp-ts/ReadonlyArray";
 import { pipe } from "fp-ts/function";
-import { Sexp } from "s-expression";
 import { CExp, Exp, IfExp, Program, parseL3Exp } from "./L3-ast";
 import { isAppExp, isBoolExp, isCExp, isDefineExp, isIfExp, isLitExp, isNumExp,
          isPrimOp, isProcExp, isStrExp, isVarRef } from "./L3-ast";

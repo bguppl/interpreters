@@ -1,6 +1,6 @@
 import * as E from "fp-ts/Either";
 import { pipe } from "fp-ts/function";
-import { makeNumExp, parseL3Exp, unparseL3, parseL3, Exp } from '../../src/L3/L3-ast';
+import { makeNumExp, parseL3Exp, unparseL3, parseL3 } from '../../src/L3/L3-ast';
 import { makeVarDecl, makeVarRef } from '../../src/L3/L3-ast';
 import { isAppExp, isBoolExp, isCExp, isDefineExp, isIfExp, isLetExp, isLitExp, isNumExp, isPrimOp,
          isProcExp, isProgram, isStrExp, isVarDecl, isVarRef } from '../../src/L3/L3-ast';

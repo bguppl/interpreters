@@ -10,7 +10,7 @@ import { parseL5Exp, unparse } from "../L5/L5-ast";
 import { isAppExp, isDefineExp, isIfExp, isLetrecExp, isLetExp,
          isProcExp, isSetExp } from "../L5/L5-ast";
 import { applyEnv, applyEnvBdg, globalEnvAddBinding, makeExtEnv, setFBinding,
-         theGlobalEnv, Env, FBinding } from "../L5/L5-env";
+         theGlobalEnv, Env } from "../L5/L5-env";
 import { isClosure, makeClosure, Closure, Value } from "../L5/L5-value";
 import { applyPrimitive } from "../L5/evalPrimitive";
 import { isEmpty, first, rest } from '../shared/list';

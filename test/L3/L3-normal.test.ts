@@ -3,7 +3,7 @@ import { pipe } from "fp-ts/function";
 import { parseL3, makePrimOp } from '../../src/L3/L3-ast';
 import { listPrim } from "../../src/L3/evalPrimitive";
 import { evalNormalParse, evalNormalProgram } from '../../src/L3/L3-normal';
-import { isClosure, Value } from '../../src/L3/L3-value';
+import { isClosure } from '../../src/L3/L3-value';
 
 describe('L3 Normal Eval', () => {
     it('evaluates atoms', () => {
