@@ -1,7 +1,7 @@
 // ========================================================
 // Value type definition for L5
-
-import { append, join } from 'ramda';
+import { concat } from "fp-ts/ReadonlyArray";
+import { pipe } from "fp-ts/function";
 import { isPrimOp, CExp, PrimOp, VarDecl } from './L5-ast';
 import { Env } from './L5-env';
 import { isNumber, isArray, isString } from '../shared/type-predicates';
@@ -15,11 +15,11 @@ export const isFunctional = (x: any): x is Functional => isPrimOp(x) || isClosur
 // Closure for L5
 export interface Closure {
     tag: "Closure";
-    params: VarDecl[];
-    body: CExp[];
+    params: readonly VarDecl[];
+    body: readonly CExp[];
     env: Env;
 }
-export const makeClosure = (params: VarDecl[], body: CExp[], env: Env): Closure =>
+export const makeClosure = (params: readonly VarDecl[], body: readonly CExp[], env: Env): Closure =>
     ({tag: "Closure", params: params, body: body, env: env});
 export const isClosure = (x: any): x is Closure => x.tag === "Closure";
 
@@ -59,13 +59,13 @@ export const closureToString = (c: Closure): string =>
     // `<Closure ${c.params} ${L3unparse(c.body)}>`
     `<Closure ${c.params} ${c.body}>`
 
-export const compoundSExpToArray = (cs: CompoundSExp, res: string[]): string[] | { s1: string[], s2: string } =>
-    isEmptySExp(cs.val2) ? append(valueToString(cs.val1), res) :
-    isCompoundSExp(cs.val2) ? compoundSExpToArray(cs.val2, append(valueToString(cs.val1), res)) :
-    ({ s1: append(valueToString(cs.val1), res), s2: valueToString(cs.val2)})
+export const compoundSExpToArray = (cs: CompoundSExp, res: readonly string[]): readonly string[] | { s1: readonly string[], s2: string } =>
+    isEmptySExp(cs.val2) ? pipe(res, concat([valueToString(cs.val1)])) :
+    isCompoundSExp(cs.val2) ? compoundSExpToArray(cs.val2, pipe(res, concat([valueToString(cs.val1)]))) :
+    ({ s1: pipe(res, concat([valueToString(cs.val1)])), s2: valueToString(cs.val2)})
  
 export const compoundSExpToString = (cs: CompoundSExp, css = compoundSExpToArray(cs, [])): string => 
-    isArray(css) ? `(${join(' ', css)})` :
+    isArray(css) ? `(${css.join(' ')})` :
     `(${css.s1.join(' ')} . ${css.s2})`
 
 export const valueToString = (val: Value): string =>

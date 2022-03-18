@@ -1,7 +1,9 @@
 // ========================================================
 // L3 normal eval
+import * as E from "fp-ts/Either";
+import { map } from "fp-ts/ReadonlyArray";
+import { pipe } from "fp-ts/function";
 import { Sexp } from "s-expression";
-import { map } from "ramda";
 import { CExp, Exp, IfExp, Program, parseL3Exp } from "./L3-ast";
 import { isAppExp, isBoolExp, isCExp, isDefineExp, isIfExp, isLitExp, isNumExp,
          isPrimOp, isProcExp, isStrExp, isVarRef } from "./L3-ast";
@@ -11,7 +13,6 @@ import { applyPrimitive } from "./evalPrimitive";
 import { renameExps, substitute } from "./substitute";
 import { isClosure, makeClosure, Value } from "./L3-value";
 import { first, rest, isEmpty } from '../shared/list';
-import { Result, makeOk, makeFailure, bind, mapResult } from "../shared/result";
 import { parse as p } from "../shared/parser";
 
 /*
@@ -19,23 +20,23 @@ Purpose: Evaluate an L3 expression with normal-eval algorithm
 Signature: L3-normal-eval(exp,env)
 Type: CExp * Env => Value
 */
-export const L3normalEval = (exp: CExp, env: Env): Result<Value> =>
-    isBoolExp(exp) ? makeOk(exp.val) :
-    isNumExp(exp) ? makeOk(exp.val) :
-    isStrExp(exp) ? makeOk(exp.val) :
-    isPrimOp(exp) ? makeOk(exp) :
-    isLitExp(exp) ? makeOk(exp.val) :
+export const L3normalEval = (exp: CExp, env: Env): E.Either<string, Value> =>
+    isBoolExp(exp) ? E.of(exp.val) :
+    isNumExp(exp) ? E.of(exp.val) :
+    isStrExp(exp) ? E.of(exp.val) :
+    isPrimOp(exp) ? E.of(exp) :
+    isLitExp(exp) ? E.of(exp.val) :
     isVarRef(exp) ? applyEnv(env, exp.var) :
     isIfExp(exp) ? evalIf(exp, env) :
-    isProcExp(exp) ? makeOk(makeClosure(exp.args, exp.body)) :
+    isProcExp(exp) ? E.of(makeClosure(exp.args, exp.body)) :
     // This is the difference between applicative-eval and normal-eval
     // Substitute the arguments into the body without evaluating them first.
-    isAppExp(exp) ? bind(L3normalEval(exp.rator, env), proc => L3normalApplyProc(proc, exp.rands, env)) :
-    makeFailure(`Bad ast: ${exp}`);
+    isAppExp(exp) ? pipe(L3normalEval(exp.rator, env), E.chain(proc => L3normalApplyProc(proc, exp.rands, env))) :
+    E.left(`Bad ast: ${exp}`);
 
-const evalIf = (exp: IfExp, env: Env): Result<Value> =>
-    bind(L3normalEval(exp.test, env),
-         test => isTrueValue(test) ? L3normalEval(exp.then, env) : L3normalEval(exp.alt, env));
+const evalIf = (exp: IfExp, env: Env): E.Either<string, Value> =>
+    pipe(L3normalEval(exp.test, env),
+         E.chain(test => isTrueValue(test) ? L3normalEval(exp.then, env) : L3normalEval(exp.alt, env)));
 
 /*
 ===========================================================
@@ -45,17 +46,17 @@ Purpose: Apply a procedure to NON evaluated arguments.
 Signature: L3-normalApplyProcedure(proc, args)
 Pre-conditions: proc must be a prim-op or a closure value
 */
-const L3normalApplyProc = (proc: Value, args: CExp[], env: Env): Result<Value> => {
+const L3normalApplyProc = (proc: Value, args: readonly CExp[], env: Env): E.Either<string, Value> => {
     if (isPrimOp(proc)) {
-        const argVals: Result<Value[]> = mapResult((arg) => L3normalEval(arg, env), args);
-        return bind(argVals, (args: Value[]) => applyPrimitive(proc, args));
+        const argVals = pipe(args, E.traverseArray(arg => L3normalEval(arg, env)));
+        return pipe(argVals, E.chain((args: readonly Value[]) => applyPrimitive(proc, args)));
     } else if (isClosure(proc)) {
         // Substitute non-evaluated args into the body of the closure
-        const vars = map((p) => p.var, proc.params);
+        const vars = pipe(proc.params, map(p => p.var));
         const body = renameExps(proc.body);
         return L3normalEvalSeq(substitute(body, vars, args), env);
     } else {
-        return makeFailure(`Bad proc applied ${proc}`);
+        return E.left(`Bad proc applied ${proc}`);
     }
 };
 
@@ -65,7 +66,7 @@ Signature: L3-normal-eval-sequence(exps, env)
 Type: [List(CExp) * Env -> Value]
 Pre-conditions: exps is not empty
 */
-const L3normalEvalSeq = (exps: CExp[], env: Env): Result<Value> => {
+const L3normalEvalSeq = (exps: readonly CExp[], env: Env): E.Either<string, Value> => {
     if (isEmpty(rest(exps)))
         return L3normalEval(first(exps), env);
     else {
@@ -80,29 +81,31 @@ When def-exp expressions are executed, thread an updated env to the continuation
 For other expressions (that have no side-effect), execute the expressions sequentially.
 Signature: evalNormalProgram(program)
 */
-export const evalNormalProgram = (program: Program): Result<Value> =>
+export const evalNormalProgram = (program: Program): E.Either<string, Value> =>
     evalExps(program.exps, makeEmptyEnv());
 
 // Evaluate a sequence of expressions (in a program)
-export const evalExps = (exps: Exp[], env: Env): Result<Value> =>
-    isEmpty(exps) ? makeFailure("Empty program") :
+export const evalExps = (exps: readonly Exp[], env: Env): E.Either<string, Value> =>
+    isEmpty(exps) ? E.left("Empty program") :
     isDefineExp(first(exps)) ? evalDefineExps(first(exps), rest(exps), env) :
     evalCExps(first(exps), rest(exps), env);
     
-const evalCExps = (exp1: Exp, exps: Exp[], env: Env): Result<Value> =>
+const evalCExps = (exp1: Exp, exps: readonly Exp[], env: Env): E.Either<string, Value> =>
     isCExp(exp1) && isEmpty(exps) ? L3normalEval(exp1, env) :
-    isCExp(exp1) ? bind(L3normalEval(exp1, env), _ => evalExps(exps, env)) :
-    makeFailure("Never");
+    isCExp(exp1) ? pipe(L3normalEval(exp1, env), E.chain(_ => evalExps(exps, env))) :
+    E.left("Never");
     
 // Eval a sequence of expressions when the first exp is a Define.
 // Compute the rhs of the define, extend the env with the new binding
 // then compute the rest of the exps in the new env.
-const evalDefineExps = (def: Exp, exps: Exp[], env: Env): Result<Value> =>
-    isDefineExp(def) ? bind(L3normalEval(def.val, env),
-                            (rhs: Value) => evalExps(exps, makeEnv(def.var.var, rhs, env))) :
-    makeFailure("Unexpected " + def);
+const evalDefineExps = (def: Exp, exps: readonly Exp[], env: Env): E.Either<string, Value> =>
+    isDefineExp(def) ? pipe(L3normalEval(def.val, env),
+                            E.chain((rhs: Value) => evalExps(exps, makeEnv(def.var.var, rhs, env)))) :
+    E.left("Unexpected " + def);
 
-export const evalNormalParse = (s: string): Result<Value> =>
-    bind(p(s),
-         (parsed: Sexp) => bind(parseL3Exp(parsed),
-                                (exp: Exp) => evalExps([exp], makeEmptyEnv())));
+export const evalNormalParse = (s: string): E.Either<string, Value> =>
+    pipe(
+        p(s),
+        E.chain(parseL3Exp),
+        E.chain(exp => evalExps([exp], makeEmptyEnv()))
+    );

@@ -1,25 +1,35 @@
-import { filter, indexOf, map, includes, zip, KeyValuePair } from "ramda";
+import { elem, filter, findIndex, map, unzip, zip } from "fp-ts/ReadonlyArray";
+import { match } from "fp-ts/Option";
+import { pipe } from "fp-ts/function";
+import * as S from "fp-ts/string";
 import { CExp, ProcExp, VarDecl, VarRef } from "./L3-ast";
 import { isAppExp, isBoolExp, isIfExp, isLitExp, isNumExp, isPrimOp, isProcExp, isStrExp, isVarRef } from "./L3-ast";
 import { makeAppExp, makeIfExp, makeProcExp, makeVarDecl, makeVarRef } from "./L3-ast";
-import { first } from '../shared/list';
 
 // For applicative eval - the type of exps should be ValueExp[] | VarRef[];
 // where ValueExp is an expression which directly encodes a value:
 // export type ValueExp = LitExp | NumExp | BoolExp | StrExp | PrimOp;
 // In order to support normal eval as well - we generalize the types to CExp.
 // @Pre: vars and exps have the same length
-export const substitute = (body: CExp[], vars: string[], exps: CExp[]): CExp[] => {
+export const substitute = (body: readonly CExp[], vars: readonly string[], exps: readonly CExp[]): readonly CExp[] => {
     const subVarRef = (e: VarRef): CExp => {
-        const pos = indexOf(e.var, vars);
-        return ((pos > -1) ? exps[pos] : e);
+        const pos = findIndex(v => v === e.var)(vars);
+        return pipe(
+            pos,
+            match(
+                () => e,
+                i => exps[i]
+            )
+        );
     };
     
     const subProcExp = (e: ProcExp): ProcExp => {
-        const argNames = map((x) => x.var, e.args);
+        const argNames = pipe(e.args, map(x => x.var));
         const subst = zip(vars, exps);
-        const freeSubst = filter((ve) => !includes(first(ve), argNames), subst);
-        return makeProcExp(e.args, substitute(e.body, map((x: KeyValuePair<string, CExp>) => x[0], freeSubst), map((x: KeyValuePair<string, CExp>) => x[1], freeSubst)));
+        const includes = elem(S.Eq);
+        const freeSubst = pipe(subst, filter((ve) => !includes(ve[0], argNames)));
+        const [newVars, newExps] = unzip(freeSubst);
+        return makeProcExp(e.args, substitute(e.body, newVars, newExps));
     };
     
     const sub = (e: CExp): CExp => isNumExp(e) ? e :
@@ -30,10 +40,10 @@ export const substitute = (body: CExp[], vars: string[], exps: CExp[]): CExp[] =
         isVarRef(e) ? subVarRef(e) :
         isIfExp(e) ? makeIfExp(sub(e.test), sub(e.then), sub(e.alt)) :
         isProcExp(e) ? subProcExp(e) :
-        isAppExp(e) ? makeAppExp(sub(e.rator), map(sub, e.rands)) :
+        isAppExp(e) ? pipe(sub(e.rator), rator => pipe(e.rands, map(sub), rands => makeAppExp(rator, rands))) :
         e;
     
-    return map(sub, body);
+    return pipe(body, map(sub));
 };
 /*
     Purpose: create a generator of new symbols of the form v__n
@@ -50,22 +60,22 @@ export const makeVarGen = (): (v: string) => string => {
 Purpose: Consistently rename bound variables in 'exps' to fresh names.
          Start numbering at 1 for all new var names.
 */
-export const renameExps = (exps: CExp[]): CExp[] => {
+export const renameExps = (exps: readonly CExp[]): readonly CExp[] => {
     const varGen = makeVarGen();
     const replace = (e: CExp): CExp =>
         isIfExp(e) ? makeIfExp(replace(e.test), replace(e.then), replace(e.alt)) :
-        isAppExp(e) ? makeAppExp(replace(e.rator), map(replace, e.rands)) :
+        isAppExp(e) ?  pipe(replace(e.rator), rator => pipe(e.rands, map(replace), rands => makeAppExp(rator, rands))) :
         isProcExp(e) ? replaceProc(e) :
         e;
     
     // Rename the params and substitute old params with renamed ones.
     //  First recursively rename all ProcExps inside the body.
     const replaceProc = (e: ProcExp): ProcExp => {
-        const oldArgs = map((arg: VarDecl): string => arg.var, e.args);
-        const newArgs = map(varGen, oldArgs);
-        const newBody = map(replace, e.body);
-        return makeProcExp(map(makeVarDecl, newArgs), substitute(newBody, oldArgs, map(makeVarRef, newArgs)));
+        const oldArgs = pipe(e.args, map(arg => arg.var));
+        const newArgs = pipe(oldArgs, map(varGen));
+        const newBody = pipe(e.body, map(replace));
+        return makeProcExp(map(makeVarDecl)(newArgs), substitute(newBody, oldArgs, map(makeVarRef)(newArgs)));
     };
     
-    return map(replace, exps);
+    return pipe(exps, map(replace));
 };

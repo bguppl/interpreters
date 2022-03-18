@@ -1,7 +1,8 @@
 // L7c-eval: CPS version of L5 with concrete data-structure continuations
 // and registerization
-
-import { map, repeat, zipWith, join, identity } from "ramda";
+import * as E from "fp-ts/Either";
+import { map, replicate, zipWith } from "fp-ts/ReadonlyArray";
+import { identity, pipe } from "fp-ts/function";
 import { AppExp, CExp, DefineExp, Exp, IfExp, LetrecExp, LetExp,
          Program, SetExp, VarDecl, makeProgram } from '../L5/L5-ast';
 import { isBoolExp, isLitExp, isNumExp, isPrimOp, isStrExp, isVarRef } from "../L5/L5-ast";
@@ -13,7 +14,6 @@ import { applyEnv, applyEnvBdg, globalEnvAddBinding, makeExtEnv, setFBinding,
 import { valueToString } from '../L5/L5-value';
 import { isClosure, makeClosure, Value } from "../L5/L5-value";
 import { isEmpty, first, rest } from '../shared/list';
-import { Result, either, makeOk, bind, makeFailure } from "../shared/result";
 import { parse as p } from "../shared/parser";
 import { applyPrimitive } from "../L5/evalPrimitive";
 
@@ -38,8 +38,8 @@ export interface IfCont {tag: "IfCont", exp: IfExp, env: Env, cont: Cont}
 export const makeIfCont = (exp: IfExp, env: Env, cont: Cont): IfCont => ({tag: "IfCont", env: env, exp: exp, cont: cont});
 export const isIfCont = (x: any): x is IfCont => x.tag === "IfCont";
 
-export interface FirstCont {tag: "FirstCont", exps: Exp[], env: Env, cont: Cont}
-export const makeFirstCont = (exps: Exp[], env: Env, cont: Cont): FirstCont => ({tag: "FirstCont", env: env, exps: exps, cont: cont});
+export interface FirstCont {tag: "FirstCont", exps: readonly Exp[], env: Env, cont: Cont}
+export const makeFirstCont = (exps: readonly Exp[], env: Env, cont: Cont): FirstCont => ({tag: "FirstCont", env: env, exps: exps, cont: cont});
 export const isFirstCont = (x: any): x is FirstCont => x.tag === "FirstCont";
 
 export interface SetCont {tag: "SetCont", exp: SetExp, env: Env, cont: Cont}
@@ -50,8 +50,8 @@ export interface AppCont1 {tag: "AppCont1", exp: AppExp, env: Env, cont: Cont}
 export const makeAppCont1 = (exp: AppExp, env: Env, cont: Cont): AppCont1 => ({tag: "AppCont1", env: env, exp: exp, cont: cont});
 export const isAppCont1 = (x: any): x is AppCont1 => x.tag === "AppCont1";
 
-export interface ExpsCont1 {tag: "ExpsCont1", exps: Exp[], env: Env, cont: ContArray}
-export const makeExpsCont1 = (exps: Exp[], env: Env, cont: ContArray): ExpsCont1 => ({tag: "ExpsCont1", env: env, exps: exps, cont: cont});
+export interface ExpsCont1 {tag: "ExpsCont1", exps: readonly Exp[], env: Env, cont: ContArray}
+export const makeExpsCont1 = (exps: readonly Exp[], env: Env, cont: ContArray): ExpsCont1 => ({tag: "ExpsCont1", env: env, exps: exps, cont: cont});
 export const isExpsCont1 = (x: any): x is ExpsCont1 => x.tag === "ExpsCont1";
 
 export interface LetCont {tag: "LetCont", exp: LetExp, env: Env, cont: Cont}
@@ -62,16 +62,16 @@ export interface LetrecCont {tag: "LetrecCont", exp: LetrecExp, env: ExtEnv, con
 export const makeLetrecCont = (exp: LetrecExp, env: ExtEnv, cont: Cont): LetrecCont => ({tag: "LetrecCont", env: env, exp: exp, cont: cont});
 export const isLetrecCont = (x: any): x is LetrecCont => x.tag === "LetrecCont";
 
-export interface AppCont2 {tag: "AppCont2", proc: Result<Value>, env: Env, cont: Cont}
-export const makeAppCont2 = (proc: Result<Value>, env: Env, cont: Cont): AppCont2 => ({tag: "AppCont2", proc: proc, env: env, cont: cont});
+export interface AppCont2 {tag: "AppCont2", proc: E.Either<string, Value>, env: Env, cont: Cont}
+export const makeAppCont2 = (proc: E.Either<string, Value>, env: Env, cont: Cont): AppCont2 => ({tag: "AppCont2", proc: proc, env: env, cont: cont});
 export const isAppCont2 = (x: any): x is AppCont2 => x.tag === "AppCont2";
 
 export interface ExpsCont2 {tag: "ExpsCont2", firstVal: Value, cont: ContArray}
 export const makeExpsCont2 = (firstVal: Value, cont: ContArray): ExpsCont2 => ({tag: "ExpsCont2", firstVal: firstVal, cont: cont});
 export const isExpsCont2 = (x: any): x is ExpsCont2 => x.tag === "ExpsCont2";
 
-export interface DefCont {tag: "DefCont", exp: DefineExp, exps: Exp[], cont: Cont}
-export const makeDefCont = (exp: DefineExp, exps: Exp[], cont: Cont): DefCont => ({tag: "DefCont", exp: exp, exps: exps, cont: cont});
+export interface DefCont {tag: "DefCont", exp: DefineExp, exps: readonly Exp[], cont: Cont}
+export const makeDefCont = (exp: DefineExp, exps: readonly Exp[], cont: Cont): DefCont => ({tag: "DefCont", exp: exp, exps: exps, cont: cont});
 export const isDefCont = (x: any): x is DefCont => x.tag === "DefCont";
 
 export type InstructionSet =
@@ -91,10 +91,10 @@ export type InstructionSet =
 // involved in the interpreter.
 export let contREG: Cont;
 export let contArrayREG: ContArray | undefined;
-export let valREG: Result<Value> | undefined;
-export let valsREG: Result<Value[]> | undefined;
+export let valREG: E.Either<string, Value> | undefined;
+export let valsREG: E.Either<string, readonly Value[]> | undefined;
 export let expREG: Exp;
-export let expsREG: Exp[];
+export let expsREG: readonly Exp[];
 export let envREG: Env;
 export let pcREG: InstructionSet;
 
@@ -106,19 +106,19 @@ export let MAXCOUNT = 10000000;
 // taking into account undefined, Error and circular structures.
 
 const up = (exp: Exp | undefined): string =>
-    exp ? either(unparse(exp), identity, identity) : "undefined";
+    exp ? pipe(unparse(exp), E.fold(identity, identity)) : "undefined";
 
-const pes = (es: Exp[]): string =>
-    `[${join(", ", map(up, es))}]`;
+const pes = (es: readonly Exp[]): string =>
+    `[${map(up)(es).join(", ")}]`;
 
 const pc = (c: Cont | ContArray | undefined): string =>
     c === undefined ? "undefined" : c.tag;
 
-const pv = (v: Result<Value> | undefined): string =>
-    v ? either(v, valueToString, identity) : "undefined";
+const pv = (v: E.Either<string, Value> | undefined): string =>
+    v ? pipe(v, E.fold(identity, valueToString)) : "undefined";
 
-const pvs = (vs: Result<Value[]> | undefined): string =>
-    vs ? either(vs, values => `[${join(", ", map(pv, map(makeOk, values)))}]`, identity) : "undefined";
+const pvs = (vs: E.Either<string, readonly Value[]> | undefined): string =>
+    vs ? pipe(vs, E.fold(identity, values => `[${pipe(values, map(E.of), map(pv)).join(", ")}]`)) : "undefined";
 
 export const dumpREG = () => {
     if (TRACE) {
@@ -172,24 +172,28 @@ export const applyIfCont = (): void => {
     dumpREG();
     if (isIfCont(contREG)) {
         const cont = contREG;
-        either(valREG !== undefined ? valREG : makeOk(undefined),
-               val => {
-                   if (isTrueValue(val)) {
-                       expREG = cont.exp.then;
-                       envREG = cont.env;
-                       contREG = cont.cont;
-                       pcREG = "evalCont";
-                   } else {
-                       expREG = cont.exp.alt;
-                       envREG = cont.env;
-                       contREG = cont.cont;
-                       pcREG = 'evalCont';
-                   }
-               },
-               _ => {
-                   contREG = cont.cont;
-                   pcREG = "applyCont";
-               });
+        pipe(
+            valREG !== undefined ? valREG : E.of(undefined),
+            E.fold(
+                _ => {
+                    contREG = cont.cont;
+                    pcREG = "applyCont";
+                },
+                val => {
+                    if (isTrueValue(val)) {
+                        expREG = cont.exp.then;
+                        envREG = cont.env;
+                        contREG = cont.cont;
+                        pcREG = "evalCont";
+                    } else {
+                        expREG = cont.exp.alt;
+                        envREG = cont.env;
+                        contREG = cont.cont;
+                        pcREG = 'evalCont';
+                    }
+                }
+            )
+        );
     } else {
         console.error(`3 Unknown cont ${JSON.stringify(contREG)}`);
         pcREG = 'halt';
@@ -205,18 +209,22 @@ export const applyLetCont = (): void => {
             console.log(`Empty valsREG in applyLetCont`);
             return;
         }
-        either(valsREG,
-               vals => {
-                   expsREG = cont.exp.body;
-                   envREG = makeExtEnv(letVars(cont.exp), vals, cont.env);
-                   contREG = cont.cont;
-                   pcREG = "evalSequence";
-               },
-               message => {
-                   valREG = makeFailure(message);
-                   contREG = cont.cont;
-                   pcREG = "applyCont";
-               });
+        pipe(
+            valsREG,
+            E.fold(
+                message => {
+                    valREG = E.left(message);
+                    contREG = cont.cont;
+                    pcREG = "applyCont";
+                },
+                vals => {
+                    expsREG = cont.exp.body;
+                    envREG = makeExtEnv(letVars(cont.exp), vals, cont.env);
+                    contREG = cont.cont;
+                    pcREG = "evalSequence";
+                }
+            )
+        );
     } else {
         console.error(`Unknown cont ${JSON.stringify(contArrayREG)}`);
         pcREG = 'halt';
@@ -228,17 +236,21 @@ export const applyFirstCont = (): void => {
     dumpREG();
     if (isFirstCont(contREG)) {
         const cont = contREG;
-        either(valREG !== undefined ? valREG : makeOk(undefined),
-               () => {
-                   expsREG = cont.exps;
-                   envREG = cont.env;
-                   contREG = cont.cont;
-                   pcREG = "evalSequence";
-               },
-               _ => {
-                   contREG = cont.cont;
-                   pcREG = "applyCont";
-               });
+        pipe(
+            valREG !== undefined ? valREG : E.of(undefined),
+            E.fold(
+                _ => {
+                    contREG = cont.cont;
+                    pcREG = "applyCont";
+                },
+                _ => {
+                    expsREG = cont.exps;
+                    envREG = cont.env;
+                    contREG = cont.cont;
+                    pcREG = "evalSequence";
+                }
+            )
+        );
     } else {
         console.error(`Unknown cont ${JSON.stringify(contREG)}`);
         pcREG = 'halt';
@@ -255,19 +267,23 @@ export const applyLetrecCont = (): void => {
             return;
         }
 
-        either(valsREG,
-               vals => {
-                   zipWith((bdg, cval) => setFBinding(bdg, cval), cont.env.frame.fbindings, vals);
-                   expsREG = cont.exp.body;
-                   envREG = cont.env;
-                   contREG = cont.cont;
-                   pcREG = "evalSequence";
-               },
-               message => {
-                   valREG = makeFailure(message);
-                   contREG = cont.cont;
-                   pcREG = "applyCont";
-               });
+        pipe(
+            valsREG,
+            E.fold(
+                message => {
+                    valREG = E.left(message);
+                    contREG = cont.cont;
+                    pcREG = "applyCont";
+                },
+                vals => {
+                    zipWith(cont.env.frame.fbindings, vals, setFBinding);
+                    expsREG = cont.exp.body;
+                    envREG = cont.env;
+                    contREG = cont.cont;
+                    pcREG = "evalSequence";
+                }
+            )
+        );
     } else {
         console.error(`Unknown cont ${JSON.stringify(contArrayREG)}`);
         pcREG = 'halt';
@@ -279,27 +295,35 @@ export const applySetCont = (): void => {
     dumpREG();
     if (isSetCont(contREG)) {
         const cont = contREG;
-        either(valREG !== undefined ? valREG : makeOk(undefined),
-               val => {
-                   const v = cont.exp.var.var;
-                   const bdgResult = applyEnvBdg(cont.env, v);
-                   either(bdgResult,
-                          bdg => {
-                              setFBinding(bdg, val);
-                              valREG = undefined;
-                              contREG = cont.cont;
-                              pcREG = "applyCont";
-                          },
-                          _ => {
-                              valREG = makeFailure(`var not found: ${v}`);
-                              contREG = cont.cont;
-                              pcREG = "applyCont";
-                          });
-               },
-               _ => {
-                   contREG = cont.cont;
-                   pcREG = "applyCont";
-               });
+        pipe(
+            valREG !== undefined ? valREG : E.of(undefined),
+            E.fold(
+                _ => {
+                    contREG = cont.cont;
+                    pcREG = "applyCont";
+                },
+                val => {
+                    const v = cont.exp.var.var;
+                    const bdgResult = applyEnvBdg(cont.env, v);
+                    pipe(
+                        bdgResult,
+                        E.fold(
+                            _ => {
+                                valREG = E.left(`var not found: ${v}`);
+                                contREG = cont.cont;
+                                pcREG = "applyCont";
+                            },
+                            bdg => {
+                                setFBinding(bdg, val);
+                                valREG = undefined;
+                                contREG = cont.cont;
+                                pcREG = "applyCont";
+                            }
+                        )
+                    );
+                }
+            )
+        );
     } else {
         console.error(`Unknown cont ${JSON.stringify(contREG)}`);
         pcREG = 'halt';
@@ -342,18 +366,22 @@ export const applyExpsCont1 = (): void => {
     dumpREG();
     if (isExpsCont1(contREG)) {
         const cont = contREG;
-        either(valREG !== undefined ? valREG : makeOk(undefined),
-               val => {
-                   expsREG = cont.exps;
-                   envREG = cont.env;
-                   contArrayREG = makeExpsCont2(val, cont.cont);
-                   pcREG = "evalExps";
-               },
-               message => {
-                   contArrayREG = cont.cont;
-                   valsREG = makeFailure(message);
-                   pcREG = "applyContArray";
-               });
+        pipe(
+            valREG !== undefined ? valREG : E.of(undefined),
+            E.fold(
+                message => {
+                    contArrayREG = cont.cont;
+                    valsREG = E.left(message);
+                    pcREG = "applyContArray";
+                },
+                val => {
+                    expsREG = cont.exps;
+                    envREG = cont.env;
+                    contArrayREG = makeExpsCont2(val, cont.cont);
+                    pcREG = "evalExps";
+                }
+            )
+        );
     } else {
         console.error(`Unknown cont ${JSON.stringify(contREG)}`);
         pcREG = 'halt';
@@ -369,17 +397,21 @@ export const applyExpsCont2 = (): void => {
     }
     if (isExpsCont2(contArrayREG)) {
         const cont = contArrayREG;
-        either(valsREG,
-               vals => {
-                   valsREG = makeOk([cont.firstVal, ...vals]);
-                   contArrayREG = cont.cont;
-                   pcREG = "applyContArray";
-               },
-               message => {
-                   valsREG = makeFailure(message);
-                   contArrayREG = cont.cont;
-                   pcREG = "applyContArray";
-               });
+        pipe(
+            valsREG,
+            E.fold(
+                message => {
+                    valsREG = E.left(message);
+                    contArrayREG = cont.cont;
+                    pcREG = "applyContArray";
+                },
+                vals => {
+                    valsREG = E.of([cont.firstVal, ...vals]);
+                    contArrayREG = cont.cont;
+                    pcREG = "applyContArray";
+                }
+            )
+        );
     } else {
         console.error(`Unknown cont ${JSON.stringify(contArrayREG)}`);
         pcREG = 'halt';
@@ -391,18 +423,22 @@ export const applyDefCont = (): void => {
     dumpREG();
     if (isDefCont(contREG)) {
         const cont = contREG;
-        either(valREG !== undefined ? valREG : makeOk(undefined),
-               val => {
-                   globalEnvAddBinding(cont.exp.var.var, val);
-                   expsREG = cont.exps;
-                   envREG = theGlobalEnv;
-                   contREG = cont.cont;
-                   pcREG = "evalSequence";
-               },
-               _ => {
-                   contREG = cont.cont;
-                   pcREG = "applyCont";
-               });
+        pipe(
+            valREG !== undefined ? valREG : E.of(undefined),
+            E.fold(
+                _ => {
+                    contREG = cont.cont;
+                    pcREG = "applyCont";
+                },
+                val => {
+                    globalEnvAddBinding(cont.exp.var.var, val);
+                    expsREG = cont.exps;
+                    envREG = theGlobalEnv;
+                    contREG = cont.cont;
+                    pcREG = "evalSequence";
+                }
+            )
+        );
     } else {
         console.error(`Unknown cont ${JSON.stringify(contREG)}`);
         pcREG = 'halt';
@@ -416,22 +452,22 @@ export const applyDefCont = (): void => {
 export const evalCont = (): void => {
     dumpREG();
     if (isNumExp(expREG)) {
-        valREG = makeOk(expREG.val);
+        valREG = E.of(expREG.val);
         pcREG = 'applyCont';
     } else if (isBoolExp(expREG)) {
-        valREG = makeOk(expREG.val);
+        valREG = E.of(expREG.val);
         pcREG = 'applyCont';
     } else if (isStrExp(expREG)) {
-        valREG = makeOk(expREG.val);
+        valREG = E.of(expREG.val);
         pcREG = 'applyCont';
     } else if (isPrimOp(expREG)) {
-        valREG = makeOk(expREG);
+        valREG = E.of(expREG);
         pcREG = 'applyCont';
     } else if (isVarRef(expREG)) {
         valREG = applyEnv(envREG, expREG.var);
         pcREG = 'applyCont';
     } else if (isLitExp(expREG)) {
-        valREG = makeOk(expREG.val);
+        valREG = E.of(expREG.val);
         pcREG = 'applyCont';
     } else if (isIfExp(expREG)) {
         pcREG = 'evalIf';
@@ -446,7 +482,7 @@ export const evalCont = (): void => {
     } else if (isAppExp(expREG)) {
         pcREG = 'evalApp';
     } else {
-        valREG = makeFailure(`Bad L5 AST ${expREG}`);
+        valREG = E.left(`Bad L5 AST ${expREG}`);
         pcREG = 'applyCont';
     }
 }
@@ -462,7 +498,7 @@ export const evalIf = (): void => {
         expREG = expREG.test;
         pcREG = 'evalCont';
     } else {
-        valREG = makeFailure(`Bad expREG in evalIf ${expREG}`);
+        valREG = E.left(`Bad expREG in evalIf ${expREG}`);
         pcREG = 'halt';
     }
 }
@@ -471,21 +507,21 @@ export const evalIf = (): void => {
 export const evalProc = (): void => {
     dumpREG();
     if (isProcExp(expREG)) {
-        valREG = makeOk(makeClosure(expREG.args, expREG.body, envREG));
+        valREG = E.of(makeClosure(expREG.args, expREG.body, envREG));
         pcREG = 'applyCont';
     } else {
-        valREG = makeFailure(`Bad expREG in evalProc ${expREG}`);
+        valREG = E.left(`Bad expREG in evalProc ${expREG}`);
         pcREG = 'halt';
     }
 }
 
 // Return the vals (rhs) of the bindings of a let expression
-const letVals = (exp: LetExp | LetrecExp): CExp[] =>
-        map((b) => b.val, exp.bindings);
+const letVals = (exp: LetExp | LetrecExp): readonly CExp[] =>
+    pipe(exp.bindings, map(b => b.val));
 
 // Return the vars (lhs) of the bindings of a let expression
-const letVars = (exp: LetExp | LetrecExp): string[] =>
-        map((b) => b.var.var, exp.bindings);
+const letVars = (exp: LetExp | LetrecExp): readonly string[] =>
+    pipe(exp.bindings, map(b => b.var.var));
 
 // LET: Direct evaluation rule without syntax expansion
 // compute the values, extend the env, eval the body.
@@ -497,18 +533,18 @@ export const evalLet = (): void => {
         contArrayREG = makeLetCont(expREG, envREG, contREG);
         pcREG = 'evalExps';
     } else {
-        valREG = makeFailure(`Bad expREG in evalLet ${expREG}`);
+        valREG = E.left(`Bad expREG in evalLet ${expREG}`);
         pcREG = 'halt';
     }
 }
 
 // Evaluate an array of expressions in sequence - pass the result of the last element to cont
 // @Pre: exps is not empty
-// export const evalSequence = (exps: Exp[], env: Env, cont: Cont): Value | Error =>
+// export const evalSequence = (exps: readonly Exp[], env: Env, cont: Cont): Value | Error =>
 export const evalSequence = (): void => {
     dumpREG();
     if (isEmpty(expsREG)) {
-        valREG = makeFailure("Empty Sequence");
+        valREG = E.left("Empty Sequence");
         pcREG = 'applyCont';
     } else {
         expREG = first(expsREG);
@@ -517,7 +553,7 @@ export const evalSequence = (): void => {
     }
 }
 
-// const evalSequenceFR = (exp: Exp, exps: Exp[], env: Env, cont: Cont): Value | Error =>
+// const evalSequenceFR = (exp: Exp, exps: readonly Exp[], env: Env, cont: Cont): Value | Error =>
 const evalSequenceFR = (): void => {
     dumpREG();
     if (isDefineExp(expREG)) {
@@ -541,14 +577,14 @@ export const evalLetrec = (): void => {
     if (isLetrecExp(expREG)) {
         const vars = letVars(expREG);
         const vals = letVals(expREG);
-        const extEnv = makeExtEnv(vars, repeat(undefined, vars.length), envREG);
+        const extEnv = makeExtEnv(vars, replicate(vars.length, undefined), envREG);
         // Compute the vals in the extended env
         expsREG = vals;
         envREG = extEnv;
         contArrayREG = makeLetrecCont(expREG, extEnv, contREG);
         pcREG = 'evalExps';
     } else {
-        valREG = makeFailure(`Bad expREG in evalLetrec ${expREG}`);
+        valREG = E.left(`Bad expREG in evalLetrec ${expREG}`);
         pcREG = 'halt';
     }
 }
@@ -562,7 +598,7 @@ export const evalSet = (): void => {
         expREG = expREG.val;
         pcREG = 'evalCont';
     } else {
-        valREG = makeFailure(`Bad expREG in evalSet ${expREG}`);
+        valREG = E.left(`Bad expREG in evalSet ${expREG}`);
         pcREG = 'halt';
     }
 }
@@ -575,7 +611,7 @@ export const evalApp = (): void => {
         expREG = expREG.rator;
         pcREG = 'evalCont';
     } else {
-        valREG = makeFailure(`Bad expREG in evalApp ${expREG}`);
+        valREG = E.left(`Bad expREG in evalApp ${expREG}`);
         pcREG = 'halt';
     }
 }
@@ -589,76 +625,92 @@ export const applyProcedure = (): void => {
         return;
     }
 
-    either(valsREG,
-           vals => {
-               if (valREG === undefined) {
-                   valREG = makeFailure(`"undefined" procedure in applyProcedure`);
-                   pcREG = "applyCont";
-                   return;
-               }
-               either(valREG,
-                      val => {
-                          if (isPrimOp(val)) {
-                              valREG = applyPrimitive(val, vals);
-                              pcREG = "applyCont";
-                          } else if (isClosure(val)) {
-                              pcREG = "applyClosure";
-                          } else {
-                              valREG = makeFailure(`Bad procedure: ${JSON.stringify(val)}`);
-                              pcREG = "applyCont";
-                          }
-                      },
-                      _ => {
-                          pcREG = "applyCont";
-                      });
-           },
-           _ => {
-               valREG = makeFailure(`Bad argument: ${JSON.stringify(valsREG)}`);
-               pcREG = "applyCont";
-           });
+    pipe(
+        valsREG,
+        E.fold(
+            _ => {
+                valREG = E.left(`Bad argument: ${JSON.stringify(valsREG)}`);
+                pcREG = "applyCont";
+            },
+            vals => {
+                if (valREG === undefined) {
+                    valREG = E.left(`"undefined" procedure in applyProcedure`);
+                    pcREG = "applyCont";
+                    return;
+                }
+                pipe(
+                    valREG,
+                    E.fold(
+                        _ => {
+                            pcREG = "applyCont";
+                        },
+                        val => {
+                            if (isPrimOp(val)) {
+                                valREG = applyPrimitive(val, vals);
+                                pcREG = "applyCont";
+                            } else if (isClosure(val)) {
+                                pcREG = "applyClosure";
+                            } else {
+                                valREG = E.left(`Bad procedure: ${JSON.stringify(val)}`);
+                                pcREG = "applyCont";
+                            }
+                        }
+                    )
+                );
+            }
+        )
+    );
 }
 
-// export const applyClosure = (proc: Closure, args: Value[], cont: Cont): Value | Error => {
+// export const applyClosure = (proc: Closure, args: readonly Value[], cont: Cont): Value | Error => {
 // Parameters in proc = valREG, args = valsREG
 export const applyClosure = (): void => {
     dumpREG();
     if (valREG) {
-        either(valREG, 
-               value => {
-                   if (isClosure(value)) {
-                       const vars = map((v: VarDecl) => v.var, value.params);
-                       expsREG = value.body;
-                       if (valsREG === undefined) {
-                           console.error("Empty valsREG in applyClosure");
-                           return;
-                       }
-                       either(valsREG,
-                              vals => {
-                                  envREG = makeExtEnv(vars, vals, value.env);
-                                  pcREG = "evalSequence";
-                              },
-                              message => {
-                                  valREG = makeFailure(message);
-                                  pcREG = "applyCont";
-                              });
-                   }
-               },
-               _ => {
-                   valREG = makeFailure(`Bad expREG in evalApp ${expREG}`);
-                   pcREG = "halt";
-               });
+        pipe(
+            valREG,
+            E.fold(
+                _ => {
+                    valREG = E.left(`Bad expREG in evalApp ${expREG}`);
+                    pcREG = "halt";
+                },
+                value => {
+                    if (isClosure(value)) {
+                        const vars = pipe(value.params, map(v => v.var));
+                        expsREG = value.body;
+                        if (valsREG === undefined) {
+                            console.error("Empty valsREG in applyClosure");
+                            return;
+                        }
+                        pipe(
+                            valsREG,
+                            E.fold(
+                                message => {
+                                    valREG = E.left(message);
+                                    pcREG = "applyCont";
+                                },
+                                vals => {
+                                    envREG = makeExtEnv(vars, vals, value.env);
+                                    pcREG = "evalSequence";
+                                }
+                            )
+                        );
+                    }
+                }
+            )
+        );
     } else {
-        valREG = makeFailure(`valREG is undefined`)
+        valREG = E.left(`valREG is undefined`)
         pcREG = "halt";
     }
 }
 
 // Evaluate an array of expressions - pass the result as an array to the continuation
-// export const evalExps = (exps: Exp[], env: Env, cont: ContArray): Value | Error =>
+// export const evalExps = (exps: readonly Exp[], env: Env, cont: ContArray): Value | Error =>
 export const evalExps = (): void => {
     dumpREG();
     if (isEmpty(expsREG)) {
-        valsREG = makeOk([]);
+        valsREG = E.of([]);
         pcREG = 'applyContArray';
     } else {
         expREG = first(expsREG);
@@ -667,11 +719,11 @@ export const evalExps = (): void => {
     }
 }
 
-// const evalExpsFR = (exp: Exp, exps: Exp[], env: Env, cont: ContArray): Value | Error =>
+// const evalExpsFR = (exp: Exp, exps: readonly Exp[], env: Env, cont: ContArray): Value | Error =>
 const evalExpsFR = (): void => {
     dumpREG();
     if (isDefineExp(expREG)) {
-        valsREG = bind(unparse(expREG), e => makeFailure(`Unexpected define: ${e}`));
+        valsREG = pipe(unparse(expREG), E.chain(e => E.left(`Unexpected define: ${e}`)));
         pcREG = 'applyContArray';
     } else {
         if (contArrayREG === undefined) {
@@ -685,7 +737,7 @@ const evalExpsFR = (): void => {
 
 // define always updates theGlobalEnv
 // We only expect defineExps at the top level.
-// const evalDefineExps = (exp: DefineExp, exps: Exp[], cont: Cont): Value | Error =>
+// const evalDefineExps = (exp: DefineExp, exps: readonly Exp[], cont: Cont): Value | Error =>
 export const evalDefineExps = (): void => {
     dumpREG();
     if (isDefineExp(expREG)) {
@@ -694,14 +746,14 @@ export const evalDefineExps = (): void => {
         envREG = theGlobalEnv;
         pcREG = 'evalCont';
     } else {
-        valREG = makeFailure(`Bad expREG in evalDefine ${expREG}`);
+        valREG = E.left(`Bad expREG in evalDefine ${expREG}`);
         pcREG = 'halt';
     }
 }
 
 // Evaluate a program
 // Main program - EVALUATION LOOP of the Virtual Machine
-export const evalProgram = (program: Program): Result<Value> => {
+export const evalProgram = (program: Program): E.Either<string, Value> => {
     valREG = undefined;
     valsREG = undefined;
     expsREG = program.exps;
@@ -750,8 +802,12 @@ export const evalProgram = (program: Program): Result<Value> => {
             break;
         }
     }
-    return valREG ? valREG : makeOk(undefined);
+    return valREG ? valREG : E.of(undefined);
 }
 
-export const evalParse = (s: string): Result<Value> =>
-    bind(bind(p(s), parseL5Exp), (exp: Exp) => evalProgram(makeProgram([exp])));
+export const evalParse = (s: string): E.Either<string, Value> =>
+    pipe(
+        p(s),
+        E.chain(parseL5Exp),
+        E.chain(exp => evalProgram(makeProgram([exp])))
+    );

@@ -1,6 +1,6 @@
 // ========================================================
 // Type utilities
-export const isArray = Array.isArray;
+export const isArray = (x: any): x is readonly any[] => Array.isArray(x);
 export const isString = (x: any): x is string => typeof x === "string";
 export const isNumber = (x: any): x is number => typeof x === "number";
 export const isBoolean = (x: any): x is boolean => typeof x === "boolean";

@@ -1,24 +1,26 @@
-import { map } from 'ramda';
+import * as E from "fp-ts/Either";
+import { map } from "fp-ts/ReadonlyArray";
+import { pipe } from "fp-ts/function";
 import { makeNumExp, makeVarDecl, makeVarRef } from "../../src/L3/L3-ast";
 import * as LA from "../../src/L3/lexicalAddress";
-import { Result, makeOk, bind, isOkT } from "../../src/shared/result";
 import { Sexp } from "s-expression";
+import { isRightT } from "../shared/test-helpers";
 
 describe('parseLA', () => {
     it('parses lexical addresses', () => {
-        expect(LA.parseLA("1")).toEqual(makeOk(makeNumExp(1)));
-        expect(LA.parseLA("(if #t (+ 1 2) 'ok)")).toSatisfy(isOkT(LA.isIfExpLA));
-        expect(LA.parseLA("(lambda (x) x)")).toSatisfy(isOkT(LA.isProcExpLA));
+        expect(LA.parseLA("1")).toEqual(E.of(makeNumExp(1)));
+        expect(LA.parseLA("(if #t (+ 1 2) 'ok)")).toSatisfy(isRightT(LA.isIfExpLA));
+        expect(LA.parseLA("(lambda (x) x)")).toSatisfy(isRightT(LA.isProcExpLA));
     });
 });
 
 describe('unparseLA', () => {
     it('unparses lexical addresses', () => {
-        expect(bind(LA.parseLA("1"), cexpla => makeOk(LA.unparseLA(cexpla)))).toEqual(makeOk("1"));
-        expect(bind(LA.parseLA("#t"), cexpla => makeOk(LA.unparseLA(cexpla)))).toEqual(makeOk("#t"));
-        expect(bind(LA.parseLA("(if #t (+ 1 2) 'ok)"), cexpla => makeOk(LA.unparseLA(cexpla)))).toEqual(makeOk(["if", "#t", ["+", "1", "2"], ["quote", "ok"]]));
-        expect(bind(LA.parseLA("(lambda (x) x)"), cexpla => makeOk(LA.unparseLA(cexpla)))).toEqual(makeOk(["lambda", ["x"], "x"]));
-        expect(bind(LA.parseLA("(lambda (x) (* x x))"), cexpla => makeOk(LA.unparseLA(cexpla)))).toEqual(makeOk(["lambda", ["x"], ["*", "x", "x"]]));
+        expect(pipe(LA.parseLA("1"), E.map(LA.unparseLA))).toEqual(E.of("1"));
+        expect(pipe(LA.parseLA("#t"), E.map(LA.unparseLA))).toEqual(E.of("#t"));
+        expect(pipe(LA.parseLA("(if #t (+ 1 2) 'ok)"), E.map(LA.unparseLA))).toEqual(E.of(["if", "#t", ["+", "1", "2"], ["quote", "ok"]]));
+        expect(pipe(LA.parseLA("(lambda (x) x)"), E.map(LA.unparseLA))).toEqual(E.of(["lambda", ["x"], "x"]));
+        expect(pipe(LA.parseLA("(lambda (x) (* x x))"), E.map(LA.unparseLA))).toEqual(E.of(["lambda", ["x"], ["*", "x", "x"]]));
     });
 });
 
@@ -40,7 +42,7 @@ describe('getLexicalAddress', () => {
 
 describe('indexOfVar', () => {
     it('returns the pos of a variable in a declaration list', () => {
-        const vds = map(makeVarDecl, ["a", "b"]);
+        const vds = pipe(["a", "b"], map(makeVarDecl));
         expect(LA.indexOfVar(vds[1], vds)).toBe(1);
 
         expect(LA.indexOfVar(makeVarDecl("c"), vds)).toBe(-1);
@@ -49,7 +51,7 @@ describe('indexOfVar', () => {
 
 describe('crossContour', () => {
     it('works...', () => {
-        const vds = map(makeVarDecl, ["a", "b"]);
+        const vds = pipe(["a", "b"], map(makeVarDecl));
         const a00 = LA.makeLexicalAddress("a", 0, 0);
         const a10 = LA.makeLexicalAddress("a", 1, 0);
         const b01 = LA.makeLexicalAddress("b", 0, 1);
@@ -62,14 +64,20 @@ describe('crossContour', () => {
 
 describe('addLexicalAddress', () => {
     it('works...', () => {
-        const f = (s: string): Result<Sexp> =>
-            bind(LA.parseLA(s), cexpla => bind(LA.addLexicalAddresses(cexpla), cexpla => makeOk(LA.unparseLA(cexpla))));
-        expect(f("(lambda (x) x)")).toEqual(makeOk(["lambda", ["x"], ["x", ":", "0", "0"]]));
+        const f = (s: string): E.Either<string, Sexp> =>
+            pipe(
+                LA.parseLA(s),
+                E.chain(cexpla => pipe(
+                    LA.addLexicalAddresses(cexpla),
+                    E.map(LA.unparseLA)
+                ))
+            );
+        expect(f("(lambda (x) x)")).toEqual(E.of(["lambda", ["x"], ["x", ":", "0", "0"]]));
         expect(f("(lambda (x) (lambda (y) (+ x y)))")).toEqual(
-            makeOk(["lambda", ["x"], ["lambda", ["y"], [["+", "free"], ["x", ":", "1", "0"], ["y", ":", "0", "0"]]]])
+            E.of(["lambda", ["x"], ["lambda", ["y"], [["+", "free"], ["x", ":", "1", "0"], ["y", ":", "0", "0"]]]])
         );
         expect(f("((lambda (x) (* x x)) ((lambda (x) (+ x x)) 2))")).toEqual(
-            makeOk([["lambda", ["x"], [["*", "free"], ["x", ":", "0", "0"], ["x", ":", "0", "0"]]], [["lambda", ["x"], [["+", "free"], ["x", ":", "0", "0"], ["x", ":", "0", "0"]]], "2"]])
+            E.of([["lambda", ["x"], [["*", "free"], ["x", ":", "0", "0"], ["x", ":", "0", "0"]]], [["lambda", ["x"], [["+", "free"], ["x", ":", "0", "0"], ["x", ":", "0", "0"]]], "2"]])
         );
     });
 });

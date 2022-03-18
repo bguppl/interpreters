@@ -1,9 +1,9 @@
 // ========================================================
 // Value type definition for L3
-
+import { concat } from "fp-ts/ReadonlyArray";
+import { pipe } from "fp-ts/function";
 import { isPrimOp, CExp, PrimOp, VarDecl } from './L3-ast';
 import { isNumber, isArray, isString } from '../shared/type-predicates';
-import { append } from 'ramda';
 
 export type Value = SExpValue;
 
@@ -14,10 +14,10 @@ export const isFunctional = (x: any): x is Functional => isPrimOp(x) || isClosur
 // Closure for L3
 export interface Closure {
     tag: "Closure";
-    params: VarDecl[];
-    body: CExp[];
+    params: readonly VarDecl[];
+    body: readonly CExp[];
 }
-export const makeClosure = (params: VarDecl[], body: CExp[]): Closure =>
+export const makeClosure = (params: readonly VarDecl[], body: readonly CExp[]): Closure =>
     ({tag: "Closure", params: params, body: body});
 export const isClosure = (x: any): x is Closure => x.tag === "Closure";
 
@@ -61,10 +61,10 @@ export const closureToString = (c: Closure): string =>
     // `<Closure ${c.params} ${L3unparse(c.body)}>`
     `<Closure ${c.params} ${c.body}>`
 
-export const compoundSExpToArray = (cs: CompoundSExp, res: string[]): string[] | { s1: string[], s2: string } =>
-    isEmptySExp(cs.val2) ? append(valueToString(cs.val1), res) :
-    isCompoundSExp(cs.val2) ? compoundSExpToArray(cs.val2, append(valueToString(cs.val1), res)) :
-    ({ s1: append(valueToString(cs.val1), res), s2: valueToString(cs.val2)})
+export const compoundSExpToArray = (cs: CompoundSExp, res: readonly string[]): readonly string[] | { s1: readonly string[], s2: string } =>
+    isEmptySExp(cs.val2) ? pipe(res, concat([valueToString(cs.val1)])) :
+    isCompoundSExp(cs.val2) ? compoundSExpToArray(cs.val2, pipe(res, concat([valueToString(cs.val1)]))) :
+    ({ s1: pipe(res, concat([valueToString(cs.val1)])), s2: valueToString(cs.val2)})
  
 export const compoundSExpToString = (cs: CompoundSExp, css = compoundSExpToArray(cs, [])): string => 
     isArray(css) ? `(${css.join(' ')})` :

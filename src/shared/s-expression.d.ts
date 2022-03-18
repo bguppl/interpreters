@@ -1,7 +1,7 @@
 declare module 's-expression' {
     export type SexpString = String;
     export type Token = string | SexpString;
-    export type CompoundSexp = Sexp[];
+    export type CompoundSexp = readonly Sexp[];
     export type Sexp = Token | CompoundSexp;
 
     /*

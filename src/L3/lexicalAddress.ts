@@ -18,14 +18,15 @@
         |  ( <cexpLA> <cexpLA>* )               / AppExpLA(rator:cexpLA, rands:List(cexpLA))
         |  ( quote <sexp> )                     / LitExp(val:sexp)
 */
-import { concat, map } from 'ramda';
+import * as E from "fp-ts/Either";
+import { concat, map } from "fp-ts/ReadonlyArray";
+import { pipe } from "fp-ts/function";
 import { BoolExp, LitExp, NumExp, StrExp, VarDecl, VarRef } from './L3-ast';
 import { isBoolExp, isLitExp, isNumExp, isStrExp, isVarRef } from './L3-ast';
 import { makeBoolExp, makeNumExp, makeStrExp, makeVarDecl, makeVarRef } from './L3-ast';
 import { first, rest, isEmpty, allT, second, cons } from '../shared/list';
 import { isArray, isNumericString, isString } from "../shared/type-predicates";
 import { parseLitExp } from './L3-ast';
-import { Result, makeFailure, makeOk, bind, mapResult, safe3, safe2 } from '../shared/result';
 import { isToken } from "../shared/parser";
 
 export type CExpLA = NumExp | BoolExp | StrExp | LitExp | VarRef | LexAddress | ProcExpLA | IfExpLA | AppExpLA;
@@ -35,12 +36,12 @@ export const isCExpLA = (x: any): x is CExpLA =>
 
 export interface ProcExpLA {
     tag: "ProcExpLA";
-    params: VarDecl[];
-    body: CExpLA[];
+    params: readonly VarDecl[];
+    body: readonly CExpLA[];
 }
 export const isProcExpLA = (x: any): x is ProcExpLA =>
     (typeof(x) === 'object') && (x.tag === 'ProcExpLA');
-export const makeProcExpLA = (params: VarDecl[], body: CExpLA[]): ProcExpLA =>
+export const makeProcExpLA = (params: readonly VarDecl[], body: readonly CExpLA[]): ProcExpLA =>
     ({tag: "ProcExpLA", params: params, body: body});
 
 export interface IfExpLA {
@@ -57,11 +58,11 @@ export const makeIfExpLA = (test: CExpLA, then: CExpLA, alt: CExpLA): IfExpLA =>
 export interface AppExpLA {
     tag: "AppExpLA";
     rator: CExpLA;
-    rands: CExpLA[];
+    rands: readonly CExpLA[];
 }
 export const isAppExpLA = (x: any): x is AppExpLA =>
     (typeof(x) === 'object') && (x.tag === 'AppExpLA');
-export const makeAppExpLA = (rator: CExpLA, rands: CExpLA[]): AppExpLA =>
+export const makeAppExpLA = (rator: CExpLA, rands: readonly CExpLA[]): AppExpLA =>
     ({tag: "AppExpLA", rator: rator, rands: rands});
 
 /*
@@ -104,13 +105,16 @@ parseLA("(if #t (+ 1 2) 'ok)") -> '(IfExpLA (BoolExp true) (AppExpLA (VarRef +) 
 import { Sexp, Token } from "s-expression";
 import { parse as p } from "../shared/parser";
 
-export const parseLA = (x: string): Result<CExpLA> =>
-    bind(p(x), parseLASExp);
+export const parseLA = (x: string): E.Either<string, CExpLA> =>
+    pipe(
+        p(x),
+        E.chain(parseLASExp)
+    );
 
-export const parseLASExp = (sexp: Sexp): Result<CExpLA> =>
-    isEmpty(sexp) ? makeFailure("Parse: Unexpected empty") :
+export const parseLASExp = (sexp: Sexp): E.Either<string, CExpLA> =>
+    isEmpty(sexp) ? E.left("Parse: Unexpected empty") :
     isArray(sexp) ? parseLACompound(sexp) :
-    isToken(sexp) ? makeOk(parseLAAtomic(sexp)) :
+    isToken(sexp) ? E.of(parseLAAtomic(sexp)) :
     sexp;
 
 const parseLAAtomic = (sexp: Token): CExpLA =>
@@ -120,27 +124,36 @@ const parseLAAtomic = (sexp: Token): CExpLA =>
     isString(sexp) ? makeVarRef(sexp) :
     makeStrExp(sexp.toString());
 
-const parseLACompound = (sexps: Sexp[]): Result<CExpLA> =>
+const parseLACompound = (sexps: readonly Sexp[]): E.Either<string, CExpLA> =>
     first(sexps) === "if" ? parseIfExpLA(sexps) :
     first(sexps) === "lambda" ? parseProcExpLA(sexps) :
     first(sexps) === "quote" ? parseLitExp(second(sexps)) :
     parseAppExpLA(sexps);
 
-const parseAppExpLA = (sexps: Sexp[]): Result<AppExpLA> =>
-    bind(mapResult(parseLASExp, sexps),
-         (cexps: CExpLA[]) => makeOk(makeAppExpLA(first(cexps), rest(cexps))));
+const parseAppExpLA = (sexps: readonly Sexp[]): E.Either<string, AppExpLA> =>
+    pipe(
+        sexps,
+        E.traverseArray(parseLASExp),
+        E.map(([first, ...rest]) => makeAppExpLA(first, rest))
+    );
 
-const parseIfExpLA = (sexps: Sexp[]): Result<IfExpLA> =>
-    bind(mapResult(parseLASExp, rest(sexps)),
-        (cexps: CExpLA[]) => makeOk(makeIfExpLA(cexps[0], cexps[1], cexps[2])));
+const parseIfExpLA = (sexps: readonly Sexp[]): E.Either<string, IfExpLA> =>
+    pipe(
+        rest(sexps),
+        E.traverseArray(parseLASExp),
+        E.map(([test, then, alt]) => makeIfExpLA(test, then, alt))
+    );
 
-const parseProcExpLA = (sexps: Sexp[]): Result<ProcExpLA> => {
+const parseProcExpLA = (sexps: readonly Sexp[]): E.Either<string, ProcExpLA> => {
     const vars = sexps[1];
     if (isArray(vars) && allT(isString, vars)) {
-        return bind(mapResult(parseLASExp, rest(rest(sexps))),
-                    (body: CExpLA[]) => makeOk(makeProcExpLA(map(makeVarDecl, vars), body)));
+        return pipe(
+            rest(rest(sexps)),
+            E.traverseArray(parseLASExp),
+            E.map(body => makeProcExpLA(map(makeVarDecl)(vars), body))
+        );
     } else {
-        return makeFailure("Invalid vars for ProcExp");
+        return E.left("Invalid vars for ProcExp");
     }
 }
 
@@ -161,9 +174,9 @@ export const unparseLA = (exp: CExpLA): Sexp =>
     isStrExp(exp) ? exp.val :
     isLitExp(exp) ? unparseLitExp(exp) :
     isVarRef(exp) ? exp.var :
-    isProcExpLA(exp) ? cons("lambda", cons(map((p) => p.var, exp.params), map(unparseLA, exp.body))) :
+    isProcExpLA(exp) ? cons<Sexp>("lambda", cons(map((p: VarDecl) => p.var)(exp.params), map(unparseLA)(exp.body))) :
     isIfExpLA(exp) ? ["if", unparseLA(exp.test), unparseLA(exp.then), unparseLA(exp.alt)] :
-    isAppExpLA(exp) ? cons(unparseLA(exp.rator), map(unparseLA, exp.rands)) :
+    isAppExpLA(exp) ? cons(unparseLA(exp.rator), map(unparseLA)(exp.rands)) :
     isFreeVar(exp) ? [exp.var, "free"] :
     isLexicalAddress(exp) ? [exp.var, ":", `${exp.depth}`, `${exp.pos}`] :
     exp;
@@ -204,8 +217,8 @@ getLexicalAddress((var-ref c), [[lex-addr a 0 0], [lex-addr b 0 1]])
 getLexicalAddress((var-ref a), [[lex-addr a 0 0], [lex-addr b 0 1], [lex-add a 1 1]])
 => [LexAddr a 0 0]
 */
-export const getLexicalAddress = (v: VarRef, lexAddresses: LexicalAddress[]): LexAddress => {
-    const loop = (addresses: LexicalAddress[]): LexAddress =>
+export const getLexicalAddress = (v: VarRef, lexAddresses: readonly LexicalAddress[]): LexAddress => {
+    const loop = (addresses: readonly LexicalAddress[]): LexAddress =>
         isEmpty(addresses) ? makeFreeVar(v.var) :
         v.var === first(addresses).var ? first(addresses) :
         loop(rest(addresses));
@@ -215,13 +228,13 @@ export const getLexicalAddress = (v: VarRef, lexAddresses: LexicalAddress[]): Le
 /*
 Purpose: get the pos of a variable in a declaration list (parameters from a lambda-exp)
 Signature: indexOfVar(var, parameters)
-Type: [VarDecl * VarDecl[]) => number ]
+Type: [VarDecl * readonly VarDecl[]) => number ]
 Examples:
 indexOfVar((VarDecl b), [[VarDecl a], [VarDecl b]]) => 1
 indexOfVar((VarDecl c), [[VarDecl a], [VarDecl b]]) => -1
 */
-export const indexOfVar = (v: VarDecl, decls: VarDecl[]): number => {
-    const loop = (decls: VarDecl[], index: number): number =>
+export const indexOfVar = (v: VarDecl, decls: readonly VarDecl[]): number => {
+    const loop = (decls: readonly VarDecl[], index: number): number =>
         isEmpty(decls) ? -1 :
         first(decls).var === v.var ? index :
         loop(rest(decls), index + 1);
@@ -235,24 +248,23 @@ Purpose: create a new view of the accessible variables when a declaration
          variables previously visible are now a depth + 1
          the new variables appear first in the new addresses
 Signature: crossContour(decls, addresses)
-Type: [VarDecl[] * LexicalAddress[]) => LexicalAddress[]
+Type: [readonly VarDecl[] * readonly LexicalAddress[]) => readonly LexicalAddress[]
 Example:
 crossContour([[VarDecl a], [VarDecl b]], [[LexAddr a 0 0], [LexAddr c 0 1]]) =>
 [[LexAddr a 0 0], [LexAddr b 0 1], [LexAddr a 1 0], [LexAddr c 1 1]]
 This corresponds to the visible variables from the body of the inner lambda in:
 '(lambda (a c) (lambda (a b) <here>))
 */
-export const crossContour = (decls: VarDecl[], addresses: LexicalAddress[]): LexicalAddress[] =>
-    concat(makeBoundAddresses(decls), map(makeDeeperLexicalAddress, addresses));
+export const crossContour = (decls: readonly VarDecl[], addresses: readonly LexicalAddress[]): readonly LexicalAddress[] =>
+    concat(map(makeDeeperLexicalAddress)(addresses))(makeBoundAddresses(decls));
 /*
 Signature: makeBoundAddresses(decls)
-Type: VarDecl[] => LexicalAddress[]
+Type: readonly VarDecl[] => readonly LexicalAddress[]
 Example:
 makeBoundAddresses([[VarDecl a], [VarDecl b]]) => [[LexAddr a 0 0], [lexAddr c 0 1]]
 */
-const makeBoundAddresses = (decls: VarDecl[]): LexicalAddress[] =>
-    map((decl) => makeLexicalAddress(decl.var, 0, indexOfVar(decl, decls)),
-        decls);
+const makeBoundAddresses = (decls: readonly VarDecl[]): readonly LexicalAddress[] =>
+    pipe(decls, map(decl => makeLexicalAddress(decl.var, 0, indexOfVar(decl, decls))));
 
 /*
 Purpose: Main function - map all variable reference expressions to their lexical address inside exp.
@@ -270,25 +282,42 @@ unparseLA(addLexicalAddresses(parseLA(`
 (lambda (a b c)
   (if ((eq? free) (b : 0 1) (c : 0 2))
 */
-export const addLexicalAddresses = (exp: CExpLA): Result<CExpLA> => {
-    const visitProc = (proc: ProcExpLA, addresses: LexicalAddress[]): Result<ProcExpLA> => {
+export const addLexicalAddresses = (exp: CExpLA): E.Either<string, CExpLA> => {
+    const visitProc = (proc: ProcExpLA, addresses: readonly LexicalAddress[]): E.Either<string, ProcExpLA> => {
         const newAddresses = crossContour(proc.params, addresses);
-        return bind(mapResult(b => visit(b, newAddresses), proc.body),
-                    (bs: CExpLA[]) => makeOk(makeProcExpLA(proc.params, bs)));
+        return pipe(
+            proc.body,
+            E.traverseArray(b => visit(b, newAddresses)),
+            E.map(bs => makeProcExpLA(proc.params, bs))
+        );
     };
-    const visit = (exp: CExpLA, addresses: LexicalAddress[]): Result<CExpLA> =>
-        isBoolExp(exp) ? makeOk(exp) :
-        isNumExp(exp) ? makeOk(exp) :
-        isStrExp(exp) ? makeOk(exp) :
-        isVarRef(exp) ? makeOk(getLexicalAddress(exp, addresses)) :
-        isFreeVar(exp) ? makeFailure(`unexpected LA ${exp}`) :
-        isLexicalAddress(exp) ? makeFailure(`unexpected LA ${exp}`) :
-        isLitExp(exp) ? makeOk(exp) :
-        isIfExpLA(exp) ? safe3((test: CExpLA, then: CExpLA, alt: CExpLA) => makeOk(makeIfExpLA(test, then, alt)))
-                            (visit(exp.test, addresses), visit(exp.then, addresses), visit(exp.alt, addresses)) :
+    const visit = (exp: CExpLA, addresses: readonly LexicalAddress[]): E.Either<string, CExpLA> =>
+        isBoolExp(exp) ? E.of(exp) :
+        isNumExp(exp) ? E.of(exp) :
+        isStrExp(exp) ? E.of(exp) :
+        isVarRef(exp) ? E.of(getLexicalAddress(exp, addresses)) :
+        isFreeVar(exp) ? E.left(`unexpected LA ${exp}`) :
+        isLexicalAddress(exp) ? E.left(`unexpected LA ${exp}`) :
+        isLitExp(exp) ? E.of(exp) :
+        isIfExpLA(exp) ? pipe(
+            visit(exp.test, addresses),
+            E.chain(test => pipe(
+                visit(exp.then, addresses),
+                E.chain(then => pipe(
+                    visit(exp.alt, addresses),
+                    E.map(alt => makeIfExpLA(test, then, alt))
+                ))
+            ))
+        ) :
         isProcExpLA(exp) ? visitProc(exp, addresses) :
-        isAppExpLA(exp) ? safe2((rator: CExpLA, rands: CExpLA[]) => makeOk(makeAppExpLA(rator, rands)))
-                            (visit(exp.rator, addresses), mapResult(rand => visit(rand, addresses), exp.rands)) :
+        isAppExpLA(exp) ? pipe(
+            visit(exp.rator, addresses),
+            E.chain(rator => pipe(
+                exp.rands,
+                E.traverseArray(rand => visit(rand, addresses)),
+                E.map(rands => makeAppExpLA(rator, rands))
+            ))
+        ) :
         exp;
     return visit(exp, []);
 };

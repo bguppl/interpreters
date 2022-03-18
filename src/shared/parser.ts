@@ -1,7 +1,7 @@
 /// <reference path="s-expression.d.ts" />
 
 import p, { Sexp, SexpString, Token, CompoundSexp } from "s-expression";
-import { makeFailure, makeOk, Result } from "./result";
+import * as E from "fp-ts/Either";
 import { isString, isArray, isError } from "./type-predicates";
 import { allT } from "./list";
 
@@ -16,7 +16,7 @@ export const isSexp = (x: any): x is Sexp => isToken(x) || isCompoundSexp(x);
 export const isToken = (x: any): x is Token => isString(x) || isSexpString(x);
 export const isCompoundSexp = (x: any): x is CompoundSexp => isArray(x) && allT(isSexp, x);
 
-export const parse = (x: string): Result<Sexp> => {
+export const parse = (x: string): E.Either<string, Sexp> => {
     const parsed = p(x);
-    return isError(parsed) ? makeFailure(parsed.message) : makeOk(parsed);
+    return isError(parsed) ? E.left(parsed.message) : E.of(parsed);
 }

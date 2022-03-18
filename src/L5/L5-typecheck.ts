@@ -1,6 +1,9 @@
 // L5-typecheck
 // ========================================================
-import { equals, map, zipWith } from 'ramda';
+import _ from "lodash";
+import * as E from "fp-ts/Either";
+import { map, zipWith } from "fp-ts/ReadonlyArray";
+import { pipe } from "fp-ts/function";
 import { isAppExp, isBoolExp, isDefineExp, isIfExp, isLetrecExp, isLetExp, isNumExp,
          isPrimOp, isProcExp, isProgram, isStrExp, isVarRef, parseL5Exp, unparse,
          AppExp, BoolExp, DefineExp, Exp, IfExp, LetrecExp, LetExp, NumExp,
@@ -10,17 +13,26 @@ import { isProcTExp, makeBoolTExp, makeNumTExp, makeProcTExp, makeStrTExp, makeV
          parseTE, unparseTExp,
          BoolTExp, NumTExp, StrTExp, TExp, VoidTExp } from "./TExp";
 import { isEmpty, allT, first, rest } from '../shared/list';
-import { Result, makeFailure, bind, makeOk, safe3, safe2, zipWithResult } from '../shared/result';
 import { parse as p } from "../shared/parser";
 
 // Purpose: Check that type expressions are equivalent
 // as part of a fully-annotated type check process of exp.
 // Return an error if the types are different - true otherwise.
 // Exp is only passed for documentation purposes.
-const checkEqualType = (te1: TExp, te2: TExp, exp: Exp): Result<true> =>
-  equals(te1, te2) ? makeOk(true) :
-  safe3((te1: string, te2: string, exp: string) => makeFailure<true>(`Incompatible types: ${te1} and ${te2} in ${exp}`))
-    (unparseTExp(te1), unparseTExp(te2), unparse(exp));
+const checkEqualType = (te1: TExp, te2: TExp, exp: Exp): E.Either<string, true> => 
+    _.isEqual(te1, te2) ? E.of(true) :
+    pipe(
+        unparseTExp(te1),
+        E.chain(
+            te1 => pipe(
+                unparseTExp(te2),
+                E.chain(te2 => pipe(
+                    unparse(exp),
+                    E.chain(exp => E.left(`Incompatible types: ${te1} and ${te2} in ${exp}`))
+                ))
+            )
+        )
+    );
 
 // Compute the type of L5 AST exps to TE
 // ===============================================
@@ -28,17 +40,23 @@ const checkEqualType = (te1: TExp, te2: TExp, exp: Exp): Result<true> =>
 // of its structure and the annotations it contains.
 
 // Purpose: Compute the type of a concrete fully-typed expression
-export const L5typeof = (concreteExp: string): Result<string> =>
-    bind(bind(p(concreteExp), parseL5Exp),
-         (e: Exp) => bind(typeofExp(e, makeEmptyTEnv()), unparseTExp));
+export const L5typeof = (concreteExp: string): E.Either<string, string> =>
+    pipe(
+        p(concreteExp),
+        E.chain(parseL5Exp),
+        E.chain(e => pipe(
+            typeofExp(e, makeEmptyTEnv()),
+            E.chain(unparseTExp)
+        ))
+    );
 
 // Purpose: Compute the type of an expression
 // Traverse the AST and check the type according to the exp type.
 // We assume that all variables and procedures have been explicitly typed in the program.
-export const typeofExp = (exp: Parsed, tenv: TEnv): Result<TExp> =>
-    isNumExp(exp) ? makeOk(typeofNum(exp)) :
-    isBoolExp(exp) ? makeOk(typeofBool(exp)) :
-    isStrExp(exp) ? makeOk(typeofStr(exp)) :
+export const typeofExp = (exp: Parsed, tenv: TEnv): E.Either<string, TExp> =>
+    isNumExp(exp) ? E.of(typeofNum(exp)) :
+    isBoolExp(exp) ? E.of(typeofBool(exp)) :
+    isStrExp(exp) ? E.of(typeofStr(exp)) :
     isPrimOp(exp) ? typeofPrim(exp) :
     isVarRef(exp) ? applyTEnv(tenv, exp.var) :
     isIfExp(exp) ? typeofIf(exp, tenv) :
@@ -49,14 +67,14 @@ export const typeofExp = (exp: Parsed, tenv: TEnv): Result<TExp> =>
     isDefineExp(exp) ? typeofDefine(exp, tenv) :
     isProgram(exp) ? typeofProgram(exp, tenv) :
     // TODO: isSetExp(exp) isLitExp(exp)
-    makeFailure("Unknown type");
+    E.left("Unknown type");
 
 // Purpose: Compute the type of a sequence of expressions
 // Check all the exps in a sequence - return type of last.
 // Pre-conditions: exps is not empty.
-export const typeofExps = (exps: Exp[], tenv: TEnv): Result<TExp> =>
+export const typeofExps = (exps: readonly Exp[], tenv: TEnv): E.Either<string, TExp> =>
     isEmpty(rest(exps)) ? typeofExp(first(exps), tenv) :
-    bind(typeofExp(first(exps), tenv), _ => typeofExps(rest(exps), tenv));
+    pipe(typeofExp(first(exps), tenv), E.chain(_ => typeofExps(rest(exps), tenv)));
 
 // a number literal has type num-te
 export const typeofNum = (n: NumExp): NumTExp => makeNumTExp();
@@ -73,7 +91,7 @@ const numCompTExp = parseTE('(number * number -> boolean)');
 const boolOpTExp = parseTE('(boolean * boolean -> boolean)');
 
 // Todo: cons, car, cdr, list
-export const typeofPrim = (p: PrimOp): Result<TExp> =>
+export const typeofPrim = (p: PrimOp): E.Either<string, TExp> =>
     (p.op === '+') ? numOpTExp :
     (p.op === '-') ? numOpTExp :
     (p.op === '*') ? numOpTExp :
@@ -95,7 +113,7 @@ export const typeofPrim = (p: PrimOp): Result<TExp> =>
     (p.op === 'string=?') ? parseTE('(T1 * T2 -> boolean)') :
     (p.op === 'display') ? parseTE('(T -> void)') :
     (p.op === 'newline') ? parseTE('(Empty -> void)') :
-    makeFailure(`Primitive not yet implemented: ${p.op}`);
+    E.left(`Primitive not yet implemented: ${p.op}`);
 
 // Purpose: compute the type of an if-exp
 // Typing rule:
@@ -103,25 +121,39 @@ export const typeofPrim = (p: PrimOp): Result<TExp> =>
 //      type<then>(tenv) = t1
 //      type<else>(tenv) = t1
 // then type<(if test then else)>(tenv) = t1
-export const typeofIf = (ifExp: IfExp, tenv: TEnv): Result<TExp> => {
+export const typeofIf = (ifExp: IfExp, tenv: TEnv): E.Either<string, TExp> => {
     const testTE = typeofExp(ifExp.test, tenv);
     const thenTE = typeofExp(ifExp.then, tenv);
     const altTE = typeofExp(ifExp.alt, tenv);
-    const constraint1 = bind(testTE, testTE => checkEqualType(testTE, makeBoolTExp(), ifExp));
-    const constraint2 = safe2((thenTE: TExp, altTE: TExp) => checkEqualType(thenTE, altTE, ifExp))(thenTE, altTE);
-    return safe2((_c1: true, _c2: true) => thenTE)(constraint1, constraint2);
+    const constraint1 = pipe(testTE, E.chain(testTE => checkEqualType(testTE, makeBoolTExp(), ifExp)));    
+    const constraint2 = pipe(
+        thenTE,
+        E.chain(thenTE => pipe(
+            altTE,
+            E.chain(altTE => checkEqualType(thenTE, altTE, ifExp))
+        ))
+    );
+    return pipe(
+        constraint1,
+        E.chain(_ => pipe(
+            constraint2,
+            E.chain(_ => thenTE)
+        ))
+    );
 };
 
 // Purpose: compute the type of a proc-exp
 // Typing rule:
 // If   type<body>(extend-tenv(x1=t1,...,xn=tn; tenv)) = t
 // then type<lambda (x1:t1,...,xn:tn) : t exp)>(tenv) = (t1 * ... * tn -> t)
-export const typeofProc = (proc: ProcExp, tenv: TEnv): Result<TExp> => {
-    const argsTEs = map((vd) => vd.texp, proc.args);
-    const extTEnv = makeExtendTEnv(map((vd) => vd.var, proc.args), argsTEs, tenv);
-    const constraint1 = bind(typeofExps(proc.body, extTEnv),
-                             (body: TExp) => checkEqualType(body, proc.returnTE, proc));
-    return bind(constraint1, _ => makeOk(makeProcTExp(argsTEs, proc.returnTE)));
+export const typeofProc = (proc: ProcExp, tenv: TEnv): E.Either<string, TExp> => {
+    const argsTEs = pipe(proc.args, map(vd => vd.texp));
+    const extTEnv = makeExtendTEnv(pipe(proc.args, map(vd => vd.var)), argsTEs, tenv);
+    return pipe(
+        typeofExps(proc.body, extTEnv),
+        E.chain(body => checkEqualType(body, proc.returnTE, proc)),
+        E.map(_ => makeProcTExp(argsTEs, proc.returnTE))
+    );
 };
 
 // Purpose: compute the type of an app-exp
@@ -132,20 +164,32 @@ export const typeofProc = (proc: ProcExp, tenv: TEnv): Result<TExp> => {
 //      type<randn>(tenv) = tn
 // then type<(rator rand1...randn)>(tenv) = t
 // We also check the correct number of arguments is passed.
-export const typeofApp = (app: AppExp, tenv: TEnv): Result<TExp> =>
-    bind(typeofExp(app.rator, tenv), (ratorTE: TExp) => {
-        if (! isProcTExp(ratorTE)) {
-            return safe2((rator: string, exp: string) => makeFailure<TExp>(`Application of non-procedure: ${rator} in ${exp}`))
-                    (unparseTExp(ratorTE), unparse(app));
-        }
-        if (app.rands.length !== ratorTE.paramTEs.length) {
-            return bind(unparse(app), (exp: string) => makeFailure<TExp>(`Wrong parameter numbers passed to proc: ${exp}`));
-        }
-        const constraints = zipWithResult((rand, trand) => bind(typeofExp(rand, tenv),
-                                                                (typeOfRand: TExp) => checkEqualType(typeOfRand, trand, app)),
-                                          app.rands, ratorTE.paramTEs);
-        return bind(constraints, _ => makeOk(ratorTE.returnTE));
-    });
+export const typeofApp = (app: AppExp, tenv: TEnv): E.Either<string, TExp> =>
+    pipe(
+        typeofExp(app.rator, tenv),
+        E.chain(ratorTE => {
+            if (!isProcTExp(ratorTE)) {
+                return pipe(
+                    unparseTExp(ratorTE),
+                    E.chain(rator => pipe(
+                        unparse(app),
+                        E.chain(exp => E.left(`Application of non-procedure: ${rator} in ${exp}`))
+                    ))
+                )
+            }
+            if (app.rands.length !== ratorTE.paramTEs.length) {
+                return pipe(unparse(app), E.chain(exp => E.left(`Wrong parameter numbers passed to proc: ${exp}`)))
+            }
+            return pipe(
+                zipWith(app.rands, ratorTE.paramTEs, (rand, trand) => pipe(
+                    typeofExp(rand, tenv),
+                    E.chain(typeOfRand => checkEqualType(typeOfRand, trand, app))
+                )),
+                E.sequenceArray,
+                E.map(_ => ratorTE.returnTE)
+            )
+        })
+    );
 
 // Purpose: compute the type of a let-exp
 // Typing rule:
@@ -154,14 +198,18 @@ export const typeofApp = (app: AppExp, tenv: TEnv): Result<TExp> =>
 //      type<valn>(tenv) = tn
 //      type<body>(extend-tenv(var1=t1,..,varn=tn; tenv)) = t
 // then type<let ((var1 val1) .. (varn valn)) body>(tenv) = t
-export const typeofLet = (exp: LetExp, tenv: TEnv): Result<TExp> => {
-    const vars = map((b) => b.var.var, exp.bindings);
-    const vals = map((b) => b.val, exp.bindings);
-    const varTEs = map((b) => b.var.texp, exp.bindings);
-    const constraints = zipWithResult((varTE, val) => bind(typeofExp(val, tenv),
-                                                           (typeOfVal: TExp) => checkEqualType(varTE, typeOfVal, exp)),
-                                      varTEs, vals);
-    return bind(constraints, _ => typeofExps(exp.body, makeExtendTEnv(vars, varTEs, tenv)));
+export const typeofLet = (exp: LetExp, tenv: TEnv): E.Either<string, TExp> => {
+    const vars = pipe(exp.bindings, map(b => b.var.var));
+    const vals = pipe(exp.bindings, map(b => b.val));
+    const varTEs = pipe(exp.bindings, map(b => b.var.texp));
+    return pipe(
+        zipWith(varTEs, vals, (varTE, val) => pipe(
+            typeofExp(val, tenv),
+            E.chain(typeOfVal => checkEqualType(varTE, typeOfVal, exp))
+        )),
+        E.sequenceArray,
+        E.chain(_ => typeofExps(exp.body, makeExtendTEnv(vars, varTEs, tenv)))
+    );
 };
 
 // Purpose: compute the type of a letrec-exp
@@ -175,21 +223,27 @@ export const typeofLet = (exp: LetExp, tenv: TEnv): Result<TExp> => {
 //      type<bodyn>(tenvn) = tn
 //      type<body>(tenv-body) = t
 // then type<(letrec((p1 (lambda (x11 ... x1n1) body1)) ...) body)>(tenv-body) = t
-export const typeofLetrec = (exp: LetrecExp, tenv: TEnv): Result<TExp> => {
-    const ps = map((b) => b.var.var, exp.bindings);
-    const procs = map((b) => b.val, exp.bindings);
-    if (! allT(isProcExp, procs))
-        return makeFailure(`letrec - only support binding of procedures - ${exp}`);
-    const paramss = map((p) => p.args, procs);
-    const bodies = map((p) => p.body, procs);
-    const tijs = map((params) => map((p) => p.texp, params), paramss);
-    const tis = map((proc) => proc.returnTE, procs);
-    const tenvBody = makeExtendTEnv(ps, zipWith((tij, ti) => makeProcTExp(tij, ti), tijs, tis), tenv);
-    const tenvIs = zipWith((params, tij) => makeExtendTEnv(map((p) => p.var, params), tij, tenvBody),
-                           paramss, tijs);
-    const types = zipWithResult((bodyI, tenvI) => typeofExps(bodyI, tenvI), bodies, tenvIs)
-    const constraints = bind(types, (types: TExp[]) => zipWithResult((typeI, ti) => checkEqualType(typeI, ti, exp), types, tis));
-    return bind(constraints, _ => typeofExps(exp.body, tenvBody));
+export const typeofLetrec = (exp: LetrecExp, tenv: TEnv): E.Either<string, TExp> => {
+    const ps = pipe(exp.bindings, map(b => b.var.var));
+    const procs = pipe(exp.bindings, map(b => b.val));
+    if (!allT(isProcExp, procs)) {
+        return E.left(`letrec - only support binding of procedures - ${exp}`)
+    }
+    const paramss = pipe(procs, map(p => p.args));
+    const bodies = pipe(procs, map(p => p.body));
+    const tijs = pipe(paramss, map(params => pipe(params, map(p => p.texp))));
+    const tis = pipe(procs, map(p => p.returnTE));
+    const tenvBody = makeExtendTEnv(ps, zipWith(tijs, tis, (tij, ti) => makeProcTExp(tij, ti)), tenv);
+    const tenvIs = zipWith(paramss, tijs, (params, tij) => makeExtendTEnv(pipe(params, map(p => p.var)), tij, tenvBody));
+    return pipe(
+        zipWith(bodies, tenvIs, typeofExps),
+        E.sequenceArray,
+        E.chain(types => pipe(
+            zipWith(types, tis, (typeI, ti) => checkEqualType(typeI, ti, exp)),
+            E.sequenceArray
+        )),
+        E.chain(_ => typeofExps(exp.body, tenvBody))
+    );
 };
 
 // Typecheck a full program
@@ -199,13 +253,13 @@ export const typeofLetrec = (exp: LetrecExp, tenv: TEnv): Result<TExp> => {
 // Typing rule:
 //   (define (var : texp) val)
 // TODO - write the true definition
-export const typeofDefine = (exp: DefineExp, tenv: TEnv): Result<VoidTExp> => {
+export const typeofDefine = (exp: DefineExp, tenv: TEnv): E.Either<string, VoidTExp> => {
     // return Error("TODO");
-    return makeOk(makeVoidTExp());
+    return E.of(makeVoidTExp());
 };
 
 // Purpose: compute the type of a program
 // Typing rule:
 // TODO - write the true definition
-export const typeofProgram = (exp: Program, tenv: TEnv): Result<TExp> =>
-    makeFailure("TODO");
+export const typeofProgram = (exp: Program, tenv: TEnv): E.Either<string, TExp> =>
+    E.left("TODO");

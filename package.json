@@ -11,13 +11,14 @@
   "author": "Michael Elhadad",
   "license": "MIT",
   "dependencies": {
-    "ramda": "^0.28.0",
+    "fp-ts": "^2.11.9",
+    "lodash": "^4.17.21",
     "s-expression": "^3.1.1"
   },
   "devDependencies": {
     "@types/jest": "^27.4.1",
+    "@types/lodash": "^4.14.180",
     "@types/node": "^17.0.21",
-    "@types/ramda": "^0.28.1",
     "jest": "^27.5.1",
     "jest-extended": "^2.0.0",
     "ts-jest": "^27.1.3",

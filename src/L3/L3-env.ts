@@ -1,7 +1,7 @@
 // ========================================================
 // Environment data type for L3
+import * as E from "fp-ts/Either";
 import { Value } from './L3-value';
-import { Result, makeFailure, makeOk } from '../shared/result';
 
 export type Env = EmptyEnv | NonEmptyEnv;
 export interface EmptyEnv {tag: "EmptyEnv" }
@@ -18,8 +18,8 @@ export const isEmptyEnv = (x: any): x is EmptyEnv => x.tag === "EmptyEnv";
 export const isNonEmptyEnv = (x: any): x is NonEmptyEnv => x.tag === "Env";
 export const isEnv = (x: any): x is Env => isEmptyEnv(x) || isNonEmptyEnv(x);
 
-export const applyEnv = (env: Env, v: string): Result<Value> =>
-    isEmptyEnv(env) ? makeFailure("var not found " + v) :
-    env.var === v ? makeOk(env.val) :
+export const applyEnv = (env: Env, v: string): E.Either<string, Value> =>
+    isEmptyEnv(env) ? E.left("var not found " + v) :
+    env.var === v ? E.of(env.val) :
     applyEnv(env.nextEnv, v);
 

@@ -4,7 +4,8 @@
 // 1. refer to env-box in Closure
 // 2. introduce void value type
 
-import { append, map } from 'ramda';
+import { concat, map } from "fp-ts/ReadonlyArray";
+import { pipe } from "fp-ts/function";
 import { isArray, isNumber, isString } from '../shared/type-predicates';
 import { CExp, isPrimOp, PrimOp, VarDecl, unparse } from './L4-ast';
 import { Env } from './L4-env-box';
@@ -19,11 +20,11 @@ export const isFunctional = (x: any): x is Functional => isPrimOp(x) || isClosur
 // Closure for L4
 export interface Closure {
     tag: "Closure";
-    params: VarDecl[];
-    body: CExp[];
+    params: readonly VarDecl[];
+    body: readonly CExp[];
     env: Env;
 }
-export const makeClosure = (params: VarDecl[], body: CExp[], env: Env): Closure =>
+export const makeClosure = (params: readonly VarDecl[], body: readonly CExp[], env: Env): Closure =>
     ({tag: "Closure", params, body, env});
 export const isClosure = (x: any): x is Closure => x.tag === "Closure";
 
@@ -67,12 +68,12 @@ export type LitSExp = number | boolean | string | SymbolSExp | EmptySExp | Compo
 
 // Printable form for values
 export const closureToString = (c: Closure): string =>
-    `<Closure ${c.params} ${map(unparse, c.body)}>`
+    `<Closure ${c.params} ${map(unparse)(c.body)}>`
 
-export const compoundSExpToArray = (cs: CompoundSExp, res: string[]): string[] | { s1: string[], s2: string } =>
-    isEmptySExp(cs.val2) ? append(valueToString(cs.val1), res) :
-    isCompoundSExp(cs.val2) ? compoundSExpToArray(cs.val2, append(valueToString(cs.val1), res)) :
-    ({ s1: append(valueToString(cs.val1), res), s2: valueToString(cs.val2)})
+export const compoundSExpToArray = (cs: CompoundSExp, res: readonly string[]): readonly string[] | { s1: readonly string[], s2: string } =>
+    isEmptySExp(cs.val2) ? pipe(res, concat([valueToString(cs.val1)])) :
+    isCompoundSExp(cs.val2) ? compoundSExpToArray(cs.val2, pipe(res, concat([valueToString(cs.val1)]))) :
+    ({ s1: pipe(res, concat([valueToString(cs.val1)])), s2: valueToString(cs.val2)})
  
 export const compoundSExpToString = (cs: CompoundSExp, css = compoundSExpToArray(cs, [])): string => 
     isArray(css) ? `(${css.join(' ')})` :
