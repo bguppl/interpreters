@@ -106,7 +106,7 @@ export let MAXCOUNT = 10000000;
 // taking into account undefined, Error and circular structures.
 
 const up = (exp: Exp | undefined): string =>
-    exp ? pipe(unparse(exp), E.fold(identity, identity)) : "undefined";
+    exp ? pipe(unparse(exp), E.match(identity, identity)) : "undefined";
 
 const pes = (es: readonly Exp[]): string =>
     `[${map(up)(es).join(", ")}]`;
@@ -115,10 +115,10 @@ const pc = (c: Cont | ContArray | undefined): string =>
     c === undefined ? "undefined" : c.tag;
 
 const pv = (v: E.Either<string, Value> | undefined): string =>
-    v ? pipe(v, E.fold(identity, valueToString)) : "undefined";
+    v ? pipe(v, E.match(identity, valueToString)) : "undefined";
 
 const pvs = (vs: E.Either<string, readonly Value[]> | undefined): string =>
-    vs ? pipe(vs, E.fold(identity, values => `[${pipe(values, map(E.of), map(pv)).join(", ")}]`)) : "undefined";
+    vs ? pipe(vs, E.match(identity, values => `[${pipe(values, map(E.of), map(pv)).join(", ")}]`)) : "undefined";
 
 export const dumpREG = () => {
     if (TRACE) {
@@ -174,7 +174,7 @@ export const applyIfCont = (): void => {
         const cont = contREG;
         pipe(
             valREG !== undefined ? valREG : E.of(undefined),
-            E.fold(
+            E.match(
                 _ => {
                     contREG = cont.cont;
                     pcREG = "applyCont";
@@ -211,7 +211,7 @@ export const applyLetCont = (): void => {
         }
         pipe(
             valsREG,
-            E.fold(
+            E.match(
                 message => {
                     valREG = E.left(message);
                     contREG = cont.cont;
@@ -238,7 +238,7 @@ export const applyFirstCont = (): void => {
         const cont = contREG;
         pipe(
             valREG !== undefined ? valREG : E.of(undefined),
-            E.fold(
+            E.match(
                 _ => {
                     contREG = cont.cont;
                     pcREG = "applyCont";
@@ -269,7 +269,7 @@ export const applyLetrecCont = (): void => {
 
         pipe(
             valsREG,
-            E.fold(
+            E.match(
                 message => {
                     valREG = E.left(message);
                     contREG = cont.cont;
@@ -297,7 +297,7 @@ export const applySetCont = (): void => {
         const cont = contREG;
         pipe(
             valREG !== undefined ? valREG : E.of(undefined),
-            E.fold(
+            E.match(
                 _ => {
                     contREG = cont.cont;
                     pcREG = "applyCont";
@@ -307,7 +307,7 @@ export const applySetCont = (): void => {
                     const bdgResult = applyEnvBdg(cont.env, v);
                     pipe(
                         bdgResult,
-                        E.fold(
+                        E.match(
                             _ => {
                                 valREG = E.left(`var not found: ${v}`);
                                 contREG = cont.cont;
@@ -368,7 +368,7 @@ export const applyExpsCont1 = (): void => {
         const cont = contREG;
         pipe(
             valREG !== undefined ? valREG : E.of(undefined),
-            E.fold(
+            E.match(
                 message => {
                     contArrayREG = cont.cont;
                     valsREG = E.left(message);
@@ -399,7 +399,7 @@ export const applyExpsCont2 = (): void => {
         const cont = contArrayREG;
         pipe(
             valsREG,
-            E.fold(
+            E.match(
                 message => {
                     valsREG = E.left(message);
                     contArrayREG = cont.cont;
@@ -425,7 +425,7 @@ export const applyDefCont = (): void => {
         const cont = contREG;
         pipe(
             valREG !== undefined ? valREG : E.of(undefined),
-            E.fold(
+            E.match(
                 _ => {
                     contREG = cont.cont;
                     pcREG = "applyCont";
@@ -627,7 +627,7 @@ export const applyProcedure = (): void => {
 
     pipe(
         valsREG,
-        E.fold(
+        E.match(
             _ => {
                 valREG = E.left(`Bad argument: ${JSON.stringify(valsREG)}`);
                 pcREG = "applyCont";
@@ -640,7 +640,7 @@ export const applyProcedure = (): void => {
                 }
                 pipe(
                     valREG,
-                    E.fold(
+                    E.match(
                         _ => {
                             pcREG = "applyCont";
                         },
@@ -669,7 +669,7 @@ export const applyClosure = (): void => {
     if (valREG) {
         pipe(
             valREG,
-            E.fold(
+            E.match(
                 _ => {
                     valREG = E.left(`Bad expREG in evalApp ${expREG}`);
                     pcREG = "halt";
@@ -684,7 +684,7 @@ export const applyClosure = (): void => {
                         }
                         pipe(
                             valsREG,
-                            E.fold(
+                            E.match(
                                 message => {
                                     valREG = E.left(message);
                                     pcREG = "applyCont";

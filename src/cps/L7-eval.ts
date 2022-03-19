@@ -186,7 +186,7 @@ const applyClosure = (proc: Closure, args: readonly Value[], cont: Cont): E.Eith
 
 // Final continuation
 export const topCont: Cont = (val) => {
-    pipe(val, E.fold(console.error, v => console.log(valueToString(v))));
+    pipe(val, E.match(console.error, v => console.log(valueToString(v))));
     return val;
 }
 

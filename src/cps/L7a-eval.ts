@@ -197,7 +197,7 @@ export const applyClosure = (proc: Closure, args: readonly Value[], cont: Cont):
 
 // Final continuation
 export const topCont: Cont = (val: E.Either<string, Value>) => { 
-    pipe(val, E.fold(console.error, v => console.log(valueToString(v))));
+    pipe(val, E.match(console.error, v => console.log(valueToString(v))));
     return val;
 }
 

@@ -119,7 +119,7 @@ export const ExtEnvVals = (env: ExtEnv): readonly Value[] =>
     map(getFBindingVal)(env.frame.fbindings);
 
 const applyExtEnvBdg = (env: ExtEnv, v: string): E.Either<string, FBinding> =>
-    pipe(applyFrame(env.frame, v), E.fold(_ => applyEnvBdg(env.env, v), E.of));
+    pipe(applyFrame(env.frame, v), E.match(_ => applyEnvBdg(env.env, v), E.of));
 
 // ========================================================
 // GlobalEnv

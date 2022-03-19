@@ -91,7 +91,7 @@ const applyContArray = (cont: ContArray, val: E.Either<string, readonly Value[]>
     cont;
 
 const applyTopCont = (cont: TopCont, val: E.Either<string, Value>): E.Either<string, Value> => {
-    pipe(val, E.fold(console.error, v => console.log(valueToString(v))));
+    pipe(val, E.match(console.error, v => console.log(valueToString(v))));
     return val;
 }
 
