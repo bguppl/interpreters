@@ -92,7 +92,9 @@ s; // => { name: 'avi', cs: true, age: 22 }
 
 ### Named Type Expressions
 
-Type expressions can be given names. For example, a map type expression can be named using the interface construct:
+Type expressions can be given names. 
+
+Map type (aka object type) expression can be named using the interface construct:
 
 ```typescript
 interface <typeName> {
@@ -101,7 +103,7 @@ interface <typeName> {
 }
 ```
 
-Other types (not map types) can be named using the construct:
+Additionally, Typescript has a more general purpose type alias construct that can assign a name to any type annotation:
 
 ```typescript
 type <typeName> = <typeAnnotation>;
