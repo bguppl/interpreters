@@ -578,11 +578,12 @@ square(10); // ==> 100
 
 The **value** of `square` is a closure.
 
-The **type** of `square` is: `(x: number) => number`.
-
-We infer that the `x` variable must be of type `number` because it appears as an argument of the `*` operator which works on numbers.
+The **type** of `square` is: `(x: any) => number`.
 
 We infer that the return type of the function is `number` because the value of the function is that which is returned when computing its body; the body is an expression of the form `x * x` and the primitive operator `*` returns a `number`.
+
+In scheme we would also infer that the `x` variable must be of type `number` because it appears as an argument of the `*` operator which works on numbers.
+(We cannot do the same in JavaScript, why?)
 
 ### 2. Generic Type Function
 
