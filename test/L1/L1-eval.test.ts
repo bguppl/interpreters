@@ -14,6 +14,7 @@ describe('L1 Eval', () => {
         expect(bind(parseL1(`(L1 (- 6 3))`), evalL1program)).toEqual(makeOk(3));
         expect(bind(parseL1(`(L1 (/ 6 3))`), evalL1program)).toEqual(makeOk(2));
         expect(bind(parseL1(`(L1 (+ 6 3))`), evalL1program)).toEqual(makeOk(9));
+        expect(bind(parseL1(`(L1 (+ -1 1))`), evalL1program)).toEqual(makeOk(0));
         expect(bind(parseL1(`(L1 (* 6 3))`), evalL1program)).toEqual(makeOk(18));
     });
 
