@@ -1,7 +1,7 @@
 import { partial, map, prop } from 'ramda';
 import { eqTVar, isAtomicTExp, isProcTExp, isTVar, makeProcTExp, unparseTExp, TExp, TVar } from "./TExp";
 import { cons, isEmpty, first, rest } from "../shared/list";
-import { Result, makeOk, makeFailure, mapResult, bind, zipWithResult } from '../shared/result';
+import { Result, makeOk, makeFailure, mapResult, bind, zipWithResult, mapv } from '../shared/result';
 
 // Implementation of the Substitution ADT
 // ========================================================
@@ -26,7 +26,7 @@ export const isSub = (x: any): x is Sub => x.tag === "Sub";
 // Pre-condition: (length variables) = (length tes)
 //                variables has no repetitions (set)
 export const makeSub = (vars: TVar[], tes: TExp[]): Result<Sub> =>
-    bind(zipWithResult(checkNoOccurrence, vars, tes), _ => makeOk({ tag: "Sub", vars: vars, tes: tes }));
+    mapv(zipWithResult(checkNoOccurrence, vars, tes), _ => ({ tag: "Sub", vars: vars, tes: tes }));
 
 export const makeEmptySub = (): Sub => ({tag: "Sub", vars: [], tes: []});
 

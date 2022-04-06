@@ -11,10 +11,11 @@ import { applyEnv, makeEmptyEnv, makeEnv, Env } from "./L3-env";
 import { isClosure, makeClosure, Closure, Value } from "./L3-value";
 import { first, rest, isEmpty } from '../shared/list';
 import { isBoolean, isNumber, isString } from "../shared/type-predicates";
-import { Result, makeOk, makeFailure, bind, safe2, mapResult } from "../shared/result";
+import { Result, makeOk, makeFailure, bind, mapResult, mapv } from "../shared/result";
 import { renameExps, substitute } from "./substitute";
 import { applyPrimitive } from "./evalPrimitive";
 import { parse as p } from "../shared/parser";
+import { Sexp } from "s-expression";
 
 // ========================================================
 // Eval functions
@@ -28,8 +29,9 @@ const L3applicativeEval = (exp: CExp, env: Env): Result<Value> =>
     isLitExp(exp) ? makeOk(exp.val) :
     isIfExp(exp) ? evalIf(exp, env) :
     isProcExp(exp) ? evalProc(exp, env) :
-    isAppExp(exp) ? safe2((rator: Value, rands: Value[]) => L3applyProcedure(rator, rands, env))
-        (L3applicativeEval(exp.rator, env), mapResult(rand => L3applicativeEval(rand, env), exp.rands)) :
+    isAppExp(exp) ? bind(L3applicativeEval(exp.rator, env), (rator: Value) =>
+                        bind(mapResult(param => L3applicativeEval(param, env), exp.rands), (rands: Value[]) =>
+                            L3applyProcedure(rator, rands, env))) :
     isLetExp(exp) ? makeFailure('"let" not supported (yet)') :
     exp;
 
@@ -37,8 +39,9 @@ export const isTrueValue = (x: Value): boolean =>
     ! (x === false);
 
 const evalIf = (exp: IfExp, env: Env): Result<Value> =>
-    bind(L3applicativeEval(exp.test, env),
-         (test: Value) => isTrueValue(test) ? L3applicativeEval(exp.then, env) : L3applicativeEval(exp.alt, env));
+    bind(L3applicativeEval(exp.test, env), (test: Value) => 
+        isTrueValue(test) ? L3applicativeEval(exp.then, env) : 
+        L3applicativeEval(exp.alt, env));
 
 const evalProc = (exp: ProcExp, env: Env): Result<Closure> =>
     makeOk(makeClosure(exp.args, exp.body));
@@ -75,15 +78,16 @@ export const evalSequence = (seq: Exp[], env: Env): Result<Value> =>
 
 const evalCExps = (first: Exp, rest: Exp[], env: Env): Result<Value> =>
     isCExp(first) && isEmpty(rest) ? L3applicativeEval(first, env) :
-    isCExp(first) ? bind(L3applicativeEval(first, env), _ => evalSequence(rest, env)) :
+    isCExp(first) ? bind(L3applicativeEval(first, env), _ => 
+                            evalSequence(rest, env)) :
     makeFailure("Never");
 
 // Eval a sequence of expressions when the first exp is a Define.
 // Compute the rhs of the define, extend the env with the new binding
 // then compute the rest of the exps in the new env.
 const evalDefineExps = (def: Exp, exps: Exp[], env: Env): Result<Value> =>
-    isDefineExp(def) ? bind(L3applicativeEval(def.val, env),
-                            (rhs: Value) => evalSequence(exps, makeEnv(def.var.var, rhs, env))) :
+    isDefineExp(def) ? bind(L3applicativeEval(def.val, env), (rhs: Value) => 
+                                evalSequence(exps, makeEnv(def.var.var, rhs, env))) :
     makeFailure("Unexpected " + def);
 
 // Main program
@@ -91,4 +95,6 @@ export const evalL3program = (program: Program): Result<Value> =>
     evalSequence(program.exps, makeEmptyEnv());
 
 export const evalParse = (s: string): Result<Value> =>
-    bind(bind(p(s), parseL3Exp), (exp: Exp) => evalSequence([exp], makeEmptyEnv()));
+    bind(p(s), (sexp: Sexp) => 
+        bind(parseL3Exp(sexp), (exp: Exp) =>
+            evalSequence([exp], makeEmptyEnv())));

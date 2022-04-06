@@ -58,7 +58,7 @@ const reducePoolVarDecls = (fun: (e: A.VarDecl, pool: Pool) => Pool, vds: A.VarD
 // Purpose: Traverse the abstract syntax tree L5-exp
 //          and collect all sub-expressions into a Pool of fresh type variables.
 // Example:
-// bind(bind(p('(+ x 1)'), parseL5Exp), e => makeOk(TE.expToPool(e))) =>
+// bind(p('(+ x 1)'), (s) => mapv(parseL5Exp(s), (e) => TE.expToPool(e))) =>
 // Ok([[AppExp(PrimOp(+), [VarRef(x), NumExp(1)]), TVar(16)],
 //     [NumExp(1), TVar(15)],
 //     [VarRef(x), TVar(14)],
@@ -100,8 +100,8 @@ export const flatten = <T>(listOfLists: readonly T[][]): T[] => R.chain(R.identi
 export const poolToEquations = (pool: Pool): Opt.Optional<Equation[]> => {
     // VarRef generate no equations beyond that of var-decl - remove them.
     const poolWithoutVars: Pool = R.filter(R.propSatisfies(R.complement(A.isVarRef), 'e'), pool);
-    return Opt.bind(Opt.mapOptional((e: A.Exp) => makeEquationsFromExp(e, pool), R.map(R.prop('e'), poolWithoutVars)),
-                    (eqns: Equation[][]) => Opt.makeSome(flatten(eqns)));
+    return Opt.mapv(Opt.mapOptional((e: A.Exp) => makeEquationsFromExp(e, pool), R.map(R.prop('e'), poolWithoutVars)), (eqns: Equation[][]) => 
+                flatten(eqns));
 };
 
 // Signature: make-equation-from-exp(exp, pool)
@@ -111,24 +111,28 @@ export const makeEquationsFromExp = (exp: A.Exp, pool: Pool): Opt.Optional<Equat
     // An application must respect the type of its operator
     // Type(Operator) = [T1 * .. * Tn -> Te]
     // Type(Application) = Te
-    A.isAppExp(exp) ? Opt.safe3((rator: T.TExp, rands: T.TExp[], e: T.TExp) => Opt.makeSome([makeEquation(rator, T.makeProcTExp(rands, e))]))
-                        (inPool(pool, exp.rator), Opt.mapOptional((e) => inPool(pool, e), exp.rands), inPool(pool, exp)) :
+    A.isAppExp(exp) ? Opt.bind(inPool(pool, exp.rator), (rator: T.TExp) =>
+                        Opt.bind(Opt.mapOptional((e) => inPool(pool, e), exp.rands), (rands: T.TExp[]) =>
+                            Opt.mapv(inPool(pool, exp), (e: T.TExp) => 
+                                [makeEquation(rator, T.makeProcTExp(rands, e))]))) :
     // The type of procedure is (T1 * ... * Tn -> Te)
     // where Te is the type of the last exp in the body of the proc.
     // and   Ti is the type of each of the parameters.
     // No need to traverse the other body expressions - they will be
     // traversed by the overall loop of pool->equations
-    A.isProcExp(exp) ? Opt.safe2((left: T.TExp, ret: T.TExp) => Opt.makeSome([makeEquation(left, T.makeProcTExp(R.map((vd) => vd. texp, exp.args), ret))]))
-                        (inPool(pool, exp), Opt.bind(safeLast(exp.body), (last: A.CExp) => inPool(pool, last))) :
+    A.isProcExp(exp) ? Opt.bind(inPool(pool, exp), (left: T.TExp) =>
+                            Opt.mapv(Opt.bind(safeLast(exp.body), (last: A.CExp) => inPool(pool, last)), (ret: T.TExp) =>
+                                [makeEquation(left, T.makeProcTExp(R.map((vd) => vd. texp, exp.args), ret))])) :
     // The type of a number is Number
-    A.isNumExp(exp) ? Opt.bind(inPool(pool, exp), (left: T.TExp) => Opt.makeSome([makeEquation(left, T.makeNumTExp())])) :
+    A.isNumExp(exp) ? Opt.mapv(inPool(pool, exp), (left: T.TExp) => [makeEquation(left, T.makeNumTExp())]) :
     // The type of a boolean is Boolean
-    A.isBoolExp(exp) ? Opt.bind(inPool(pool, exp), (left: T.TExp) => Opt.makeSome([makeEquation(left, T.makeBoolTExp())])) :
+    A.isBoolExp(exp) ? Opt.mapv(inPool(pool, exp), (left: T.TExp) => [makeEquation(left, T.makeBoolTExp())]) :
     // The type of a string is String
-    A.isStrExp(exp) ? Opt.bind(inPool(pool, exp), (left: T.TExp) => Opt.makeSome([makeEquation(left, T.makeStrTExp())])) :
+    A.isStrExp(exp) ? Opt.mapv(inPool(pool, exp), (left: T.TExp) => [makeEquation(left, T.makeStrTExp())]) :
     // The type of a primitive procedure is given by the primitive.
-    A.isPrimOp(exp) ? Opt.safe2((left: T.TExp, right: T.TExp) => Opt.makeSome([makeEquation(left, right)]))
-                        (inPool(pool, exp), Res.resultToOptional(TC.typeofPrim(exp))) :
+    A.isPrimOp(exp) ? Opt.bind(inPool(pool, exp), (left: T.TExp) =>
+                            Opt.mapv(Res.resultToOptional(TC.typeofPrim(exp)), (right: T.TExp) =>
+                                [makeEquation(left, right)])) :
     // Todo: define, let, letrec, set 
     Opt.makeNone();
 
@@ -150,16 +154,19 @@ export const inferType = (exp: A.Exp): Opt.Optional<T.TExp> => {
     const texp = inPool(pool, exp);
     // console.log(`TExp = ${JSON.stringify(bindResult(optionalToResult(texp, "TExp is None"), T.unparseTExp))}`);
     // Replace all TVars in the computed type by their type expression
-    return Opt.safe2((sub: S.Sub, texp: T.TExp) => Opt.makeSome(T.isTVar(texp) ? S.subGet(sub, texp) : texp))(sub, texp);
+    return Opt.bind(sub, (sub: S.Sub) =>
+                Opt.mapv(texp, (texp: T.TExp) =>
+                    T.isTVar(texp) ? S.subGet(sub, texp) : texp))
 };
 
 // Type: [Concrete-Exp -> Concrete-TExp]
 // End to end processing: parse, infer type, unparse.
 export const infer = (exp: string): Res.Result<string> =>
-    Res.bind(Res.bind(p(exp), A.parseL5Exp),
-             (exp: A.Exp) => Opt.maybe(inferType(exp),
-                                       (te: T.TExp) => T.unparseTExp(te),
-                                       () => Res.makeFailure("Infer type failed")));
+    Res.bind(p(exp), (x) =>
+        Res.bind(A.parseL5Exp(x), (exp: A.Exp) => 
+            Opt.maybe(inferType(exp),
+                (te: T.TExp) => T.unparseTExp(te),
+                () => Res.makeFailure("Infer type failed"))));
 
 // ========================================================
 // type equation solving

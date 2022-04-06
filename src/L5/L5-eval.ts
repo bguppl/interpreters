@@ -11,7 +11,7 @@ import { applyEnv, applyEnvBdg, globalEnvAddBinding, makeExtEnv, setFBinding,
          theGlobalEnv, Env, FBinding } from "./L5-env";
 import { isClosure, makeClosure, Closure, Value } from "./L5-value";
 import { isEmpty, first, rest } from '../shared/list';
-import { Result, makeOk, makeFailure, mapResult, safe2, bind } from "../shared/result";
+import { Result, makeOk, makeFailure, mapResult, bind, mapv } from "../shared/result";
 import { parse as p } from "../shared/parser";
 import { applyPrimitive } from "./evalPrimitive";
 
@@ -30,17 +30,18 @@ export const applicativeEval = (exp: CExp, env: Env): Result<Value> =>
     isLetExp(exp) ? evalLet(exp, env) :
     isLetrecExp(exp) ? evalLetrec(exp, env) :
     isSetExp(exp) ? evalSet(exp, env) :
-    isAppExp(exp) ? safe2((proc: Value, args: Value[]) => applyProcedure(proc, args))
-                        (applicativeEval(exp.rator, env), mapResult(rand => applicativeEval(rand, env), exp.rands)) :
+    isAppExp(exp) ? bind(applicativeEval(exp.rator, env), (proc: Value) =>
+                        bind(mapResult(rand => applicativeEval(rand, env), exp.rands), (args: Value[]) =>
+                            applyProcedure(proc, args))) :
     exp;
 
 export const isTrueValue = (x: Value): boolean =>
     ! (x === false);
 
 const evalIf = (exp: IfExp, env: Env): Result<Value> =>
-    bind(applicativeEval(exp.test, env),
-         (test: Value) => isTrueValue(test) ? applicativeEval(exp.then, env) : 
-                          applicativeEval(exp.alt, env));
+    bind(applicativeEval(exp.test, env), (test: Value) => 
+        isTrueValue(test) ? applicativeEval(exp.then, env) : 
+        applicativeEval(exp.alt, env));
 
 const evalProc = (exp: ProcExp, env: Env): Result<Closure> =>
     makeOk(makeClosure(exp.args, exp.body, env));
@@ -74,9 +75,10 @@ const evalCExps = (first: Exp, rest: Exp[], env: Env): Result<Value> =>
 // Compute the rhs of the define, extend the env with the new binding
 // then compute the rest of the exps in the new env.
 const evalDefineExps = (def: Exp, exps: Exp[]): Result<Value> =>
-    isDefineExp(def) ? bind(applicativeEval(def.val, theGlobalEnv),
-                            (rhs: Value) => { globalEnvAddBinding(def.var.var, rhs);
-                                              return evalSequence(exps, theGlobalEnv); }) :
+    isDefineExp(def) ? bind(applicativeEval(def.val, theGlobalEnv), (rhs: Value) => { 
+                            globalEnvAddBinding(def.var.var, rhs);
+                            return evalSequence(exps, theGlobalEnv); 
+                        }) :
     makeFailure("Unexpected " + def);
 
 // Main program
@@ -84,7 +86,9 @@ export const evalProgram = (program: Program): Result<Value> =>
     evalSequence(program.exps, theGlobalEnv);
 
 export const evalParse = (s: string): Result<Value> =>
-    bind(bind(p(s), parseL5Exp), (exp: Exp) => evalSequence([exp], theGlobalEnv));
+    bind(p(s), (x) => 
+        bind(parseL5Exp(x), (exp: Exp) => 
+            evalSequence([exp], theGlobalEnv)));
 
 // LET: Direct evaluation rule without syntax expansion
 // compute the values, extend the env, eval the body.
@@ -105,12 +109,13 @@ const evalLetrec = (exp: LetrecExp, env: Env): Result<Value> => {
     const extEnv = makeExtEnv(vars, repeat(undefined, vars.length), env);
     // @@ Compute the vals in the extended env
     const cvalsResult = mapResult((v: CExp) => applicativeEval(v, extEnv), vals);
-    const result = bind(cvalsResult,
-                        (cvals: Value[]) => makeOk(zipWith((bdg, cval) => setFBinding(bdg, cval), extEnv.frame.fbindings, cvals)));
+    const result = mapv(cvalsResult, (cvals: Value[]) => 
+                            zipWith((bdg, cval) => setFBinding(bdg, cval), extEnv.frame.fbindings, cvals));
     return bind(result, _ => evalSequence(exp.body, extEnv));
 };
 
 // L4-eval-box: Handling of mutation with set!
 const evalSet = (exp: SetExp, env: Env): Result<void> =>
-    safe2((val: Value, bdg: FBinding) => makeOk(setFBinding(bdg, val)))
-        (applicativeEval(exp.val, env), applyEnvBdg(env, exp.var.var));
+    bind(applicativeEval(exp.val, env), (val: Value) =>
+        mapv(applyEnvBdg(env, exp.var.var), (bdg: FBinding) =>
+            setFBinding(bdg, val)));

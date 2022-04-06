@@ -32,7 +32,7 @@
 
 import { map, zipWith } from "ramda";
 import { Value } from './L4-value-box';
-import { Result, makeFailure, makeOk, bind, either } from "../shared/result";
+import { Result, makeFailure, makeOk, bind, either, mapv } from "../shared/result";
 import { cons } from "../shared/list";
 
 // ========================================================
@@ -78,8 +78,7 @@ const applyFrame = (frame: Frame, v: string): Result<FBinding> => {
     return (pos > -1) ? makeOk(frame.fbindings[pos]) : makeFailure(`Var not found: ${v}`);
 };
 export const setVarFrame = (frame: Frame, v: string, val: Value): Result<void> =>
-    bind(applyFrame(frame, v),
-         (bdg: FBinding) => makeOk(setFBinding(bdg, val)));
+    mapv(applyFrame(frame, v), (bdg: FBinding) => setFBinding(bdg, val));
 
 // ========================================================
 // Environment data type
@@ -102,7 +101,7 @@ Signature: applyEnv(env, var)
 Type: [Env * string -> Result<Value>]
 */
 export const applyEnv = (env: Env, v: string): Result<Value> =>
-    bind(applyEnvBdg(env, v), (bdg: FBinding) => makeOk(getFBindingVal(bdg)));
+    mapv(applyEnvBdg(env, v), (bdg: FBinding) => getFBindingVal(bdg));
 
 // ========================================================
 // ExtEnv

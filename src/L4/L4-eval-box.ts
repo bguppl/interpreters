@@ -12,7 +12,7 @@ import { applyEnv, applyEnvBdg, globalEnvAddBinding, makeExtEnv, setFBinding,
 import { isClosure, makeClosure, Closure, Value } from "./L4-value-box";
 import { applyPrimitive } from "./evalPrimitive-box";
 import { first, rest, isEmpty } from "../shared/list";
-import { Result, bind, safe2, mapResult, makeFailure, makeOk } from "../shared/result";
+import { Result, bind, mapv, mapResult, makeFailure, makeOk } from "../shared/result";
 import { parse as p } from "../shared/parser";
 
 // ========================================================
@@ -30,16 +30,18 @@ const applicativeEval = (exp: CExp, env: Env): Result<Value> =>
     isLetExp(exp) ? evalLet(exp, env) :
     isLetrecExp(exp) ? evalLetrec(exp, env) :
     isSetExp(exp) ? evalSet(exp, env) :
-    isAppExp(exp) ? safe2((proc: Value, args: Value[]) => applyProcedure(proc, args))
-                        (applicativeEval(exp.rator, env), mapResult((rand: CExp) => applicativeEval(rand, env), exp.rands)) :
+    isAppExp(exp) ? bind(applicativeEval(exp.rator, env), (proc: Value) =>
+                        bind(mapResult((rand: CExp) => applicativeEval(rand, env), exp.rands), (args: Value[]) =>
+                            applyProcedure(proc, args))) :
     exp;
 
 export const isTrueValue = (x: Value): boolean =>
     ! (x === false);
 
 const evalIf = (exp: IfExp, env: Env): Result<Value> =>
-    bind(applicativeEval(exp.test, env),
-         (test: Value) => isTrueValue(test) ? applicativeEval(exp.then, env) : applicativeEval(exp.alt, env));
+    bind(applicativeEval(exp.test, env), (test: Value) => 
+        isTrueValue(test) ? applicativeEval(exp.then, env) : 
+        applicativeEval(exp.alt, env));
 
 const evalProc = (exp: ProcExp, env: Env): Result<Closure> =>
     makeOk(makeClosure(exp.args, exp.body, env));
@@ -74,9 +76,10 @@ const evalCExps = (first: Exp, rest: Exp[], env: Env): Result<Value> =>
 // define always updates theGlobalEnv
 // We also only expect defineExps at the top level.
 const evalDefineExps = (def: DefineExp, exps: Exp[]): Result<Value> =>
-    bind(applicativeEval(def.val, theGlobalEnv),
-            (rhs: Value) => { globalEnvAddBinding(def.var.var, rhs);
-                                return evalSequence(exps, theGlobalEnv); });
+    bind(applicativeEval(def.val, theGlobalEnv), (rhs: Value) => { 
+            globalEnvAddBinding(def.var.var, rhs);
+            return evalSequence(exps, theGlobalEnv); 
+        });
 
 // Main program
 // L4-BOX @@ Use GE instead of empty-env
@@ -84,7 +87,9 @@ export const evalProgram = (program: Program): Result<Value> =>
     evalSequence(program.exps, theGlobalEnv);
 
 export const evalParse = (s: string): Result<Value> =>
-    bind(bind(p(s), parseL4Exp), (exp: Exp) => evalSequence([exp], theGlobalEnv));
+    bind(p(s), (x) =>
+            bind(parseL4Exp(x), (exp: Exp) =>
+                evalSequence([exp], theGlobalEnv)));
 
 // LET: Direct evaluation rule without syntax expansion
 // compute the values, extend the env, eval the body.
@@ -106,12 +111,13 @@ const evalLetrec = (exp: LetrecExp, env: Env): Result<Value> => {
     const extEnv = makeExtEnv(vars, repeat(undefined, vars.length), env);
     // @@ Compute the vals in the extended env
     const cvalsResult = mapResult((v: CExp) => applicativeEval(v, extEnv), vals);
-    const result = bind(cvalsResult,
-                        (cvals: Value[]) => makeOk(zipWith((bdg, cval) => setFBinding(bdg, cval), extEnv.frame.fbindings, cvals)));
+    const result = mapv(cvalsResult, (cvals: Value[]) => 
+                        zipWith((bdg, cval) => setFBinding(bdg, cval), extEnv.frame.fbindings, cvals));
     return bind(result, _ => evalSequence(exp.body, extEnv));
 };
 
 // L4-eval-box: Handling of mutation with set!
 const evalSet = (exp: SetExp, env: Env): Result<void> =>
-    safe2((val: Value, bdg: FBinding) => makeOk(setFBinding(bdg, val)))
-        (applicativeEval(exp.val, env), applyEnvBdg(env, exp.var.var));
+    bind(applicativeEval(exp.val, env), (val: Value) =>
+        mapv(applyEnvBdg(env, exp.var.var), (bdg: FBinding) =>
+            setFBinding(bdg, val)));

@@ -79,6 +79,7 @@ export const evalSequence = (seq: Exp[], env: Env): Result<Value> =>
 const evalSequenceFirst = (first: Exp, rest: Exp[], env: Env): Result<Value> =>
     isDefineExp(first) ? evalDefineExps(first, rest, env) :
     isEmpty(rest) ? L1applicativeEval(first, env) :
+    // _ is a don't care parameter
     bind(L1applicativeEval(first, env), _ => evalSequence(rest, env));
 
 // Eval a sequence of expressions when the first exp is a Define.

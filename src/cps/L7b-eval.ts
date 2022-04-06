@@ -12,7 +12,7 @@ import { applyEnv, applyEnvBdg, globalEnvAddBinding, makeExtEnv, setFBinding,
 import { isClosure, isCompoundSExp, makeClosure, makeCompoundSExp,
          Closure, CompoundSExp, Value, valueToString } from "../L5/L5-value";
 import { isEmpty, allT, first, rest } from '../shared/list';
-import { Result, makeOk, makeFailure, bind, either, safe2 } from "../shared/result";
+import { Result, makeOk, makeFailure, bind, either } from "../shared/result";
 import { applyPrimitive } from "../L5/evalPrimitive";
 import { parse as p } from "../shared/parser";
 
@@ -119,13 +119,17 @@ export const applyAppCont1 = (cont: AppCont1, proc: Result<Value>): Result<Value
     evalExps(cont.exp.rands, cont.env, makeAppCont2(proc, cont.env, cont.cont));
 
 export const applyAppCont2 = (cont: AppCont2, args: Result<Value[]>): Result<Value> =>
-    safe2((proc: Value, args: Value[]) => applyProcedure(proc, args, cont.cont))(cont.proc, args);
+    bind(cont.proc, (proc: Value) =>
+        bind(args, (args: Value[]) =>
+            applyProcedure(proc, args, cont.cont)));
 
 export const applyExpsCont1 = (cont: ExpsCont1, firstVal: Result<Value>): Result<Value> =>
     evalExps(cont.exps, cont.env, makeExpsCont2(firstVal, cont.cont));
 
 export const applyExpsCont2 = (cont: ExpsCont2, restVals: Result<Value[]>): Result<Value> =>
-    safe2((first: Value, rest: Value[]) => applyContArray(cont.cont, makeOk([first, ...rest])))(cont.firstVal, restVals);
+    bind(cont.firstVal, (first: Value) =>
+        bind(restVals, (rest: Value[]) =>
+            applyContArray(cont.cont, makeOk([first, ...rest]))));
 
 export const applyDefCont = (cont: DefCont, rhsVal: Result<Value>): Result<Value> =>
     bind(rhsVal, (rhs: Value) => { globalEnvAddBinding(cont.exp.var.var, rhs);

@@ -9,7 +9,7 @@ import { applyEnv, makeEmptyEnv, makeEnv, Env } from './L3-env';
 import { isTrueValue } from "./L3-eval";
 import { applyPrimitive } from "./evalPrimitive";
 import { renameExps, substitute } from "./substitute";
-import { isClosure, makeClosure, Value } from "./L3-value";
+import { isClosure, makeClosure, SExpValue, Value } from "./L3-value";
 import { first, rest, isEmpty } from '../shared/list';
 import { Result, makeOk, makeFailure, bind, mapResult } from "../shared/result";
 import { parse as p } from "../shared/parser";
@@ -34,8 +34,9 @@ export const L3normalEval = (exp: CExp, env: Env): Result<Value> =>
     makeFailure(`Bad ast: ${exp}`);
 
 const evalIf = (exp: IfExp, env: Env): Result<Value> =>
-    bind(L3normalEval(exp.test, env),
-         test => isTrueValue(test) ? L3normalEval(exp.then, env) : L3normalEval(exp.alt, env));
+    bind(L3normalEval(exp.test, env), (test: SExpValue) => 
+            isTrueValue(test) ? L3normalEval(exp.then, env) : 
+            L3normalEval(exp.alt, env));
 
 /*
 ===========================================================
@@ -98,11 +99,11 @@ const evalCExps = (exp1: Exp, exps: Exp[], env: Env): Result<Value> =>
 // Compute the rhs of the define, extend the env with the new binding
 // then compute the rest of the exps in the new env.
 const evalDefineExps = (def: Exp, exps: Exp[], env: Env): Result<Value> =>
-    isDefineExp(def) ? bind(L3normalEval(def.val, env),
-                            (rhs: Value) => evalExps(exps, makeEnv(def.var.var, rhs, env))) :
+    isDefineExp(def) ? bind(L3normalEval(def.val, env), (rhs: Value) => 
+                                evalExps(exps, makeEnv(def.var.var, rhs, env))) :
     makeFailure("Unexpected " + def);
 
 export const evalNormalParse = (s: string): Result<Value> =>
-    bind(p(s),
-         (parsed: Sexp) => bind(parseL3Exp(parsed),
-                                (exp: Exp) => evalExps([exp], makeEmptyEnv())));
+    bind(p(s), (parsed: Sexp) => 
+        bind(parseL3Exp(parsed), (exp: Exp) => 
+            evalExps([exp], makeEmptyEnv())));

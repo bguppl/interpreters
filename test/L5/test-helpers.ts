@@ -1,11 +1,11 @@
-import { map } from 'ramda';
+import { bind, map } from 'ramda';
 import { parseL5Exp, Exp } from '../../src/L5/L5-ast';
 import { inferType } from '../../src/L5/L5-type-equations';
 import { unparseTExp, TExp, parseTE, makeTVar, equivalentTEs } from '../../src/L5/TExp';
 import { typeofExp } from '../../src/L5/L5-typeinference';
 import { makeEmptyTEnv } from '../../src/L5/TEnv';
 import { makeSub, Sub} from '../../src/L5/L5-substitution-adt';
-import { Result, bind as bindResult, mapResult, zipWithResult, makeOk, safe2 } from '../../src/shared/result';
+import { Result, bind as bindResult, mapResult, zipWithResult, makeOk, mapv } from '../../src/shared/result';
 import { optionalToResult } from "../../src/shared/optional";
 import { parse as p } from "../../src/shared/parser";
 
@@ -22,12 +22,16 @@ export const verifyTeOfExprWithEquations = (exp: string, texp: string): Result<b
     const e = bindResult(p(exp), parseL5Exp);
     const expectedType = parseTE(texp);
     const computedType = bindResult(e, (exp: Exp) => optionalToResult(inferType(exp), "Could not infer type"));
-    return safe2((ct: TExp, et: TExp) => makeOk(equivalentTEs(ct, et)))(computedType, expectedType);
+    return bindResult(computedType, (ct: TExp) =>
+                mapv(expectedType, (et: TExp) => 
+                    equivalentTEs(ct, et)));
 };
 
 export const verifyTeOfExprWithInference = (exp: string, texp: string): Result<boolean> => {
     const e = bindResult(p(exp), parseL5Exp);
     const expectedType = parseTE(texp);
     const computedType = bindResult(e, (exp: Exp) => typeofExp(exp, makeEmptyTEnv()));
-    return safe2((ct: TExp, et: TExp) => makeOk(equivalentTEs(ct, et)))(computedType, expectedType);
+    return bindResult(computedType, (ct: TExp) =>
+                mapv(expectedType, (et: TExp) =>
+                    equivalentTEs(ct, et)));
 };

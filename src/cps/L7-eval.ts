@@ -12,7 +12,7 @@ import { applyEnv, applyEnvBdg, globalEnvAddBinding, makeExtEnv, setFBinding,
 import { isClosure, makeClosure, Closure, Value, valueToString } from "../L5/L5-value";
 import { isEmpty, first, rest } from '../shared/list';
 import { applyPrimitive } from "../L5/evalPrimitive";
-import { Result, makeOk, makeFailure, bind, safe2, either } from "../shared/result";
+import { Result, makeOk, makeFailure, bind, either } from "../shared/result";
 import { parse as p } from "../shared/parser";
 
 // ========================================================
@@ -148,10 +148,11 @@ const evalApp = (exp: AppExp, env: Env, cont: Cont): Result<Value> =>
                     (args) => applyProcedure(proc, args, cont)));
 
 const applyProcedure = (proc: Result<Value>, args: Result<Value[]>, cont: Cont): Result<Value> =>
-    safe2((proc: Value, args: Value[]) => isPrimOp(proc) ? applyCont(cont, applyPrimitive(proc, args)) :
-                                          isClosure(proc) ? applyClosure(proc, args, cont) :
-                                          applyCont(cont, makeFailure(`Bad procedure: ${JSON.stringify(proc)}`)))
-        (proc, args);
+    bind(proc, (proc: Value) =>
+        bind(args, (args: Value[]) =>
+            isPrimOp(proc) ? applyCont(cont, applyPrimitive(proc, args)) :
+            isClosure(proc) ? applyClosure(proc, args, cont) :
+            applyCont(cont, makeFailure(`Bad procedure: ${JSON.stringify(proc)}`))));
 
 const applyClosure = (proc: Closure, args: Value[], cont: Cont): Result<Value> => {
     const vars = map((v: VarDecl) => v.var, proc.params);

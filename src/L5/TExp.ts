@@ -35,7 +35,7 @@ import { isEmpty } from "../shared/list";
 import { isArray, isBoolean, isString } from '../shared/type-predicates';
 import { makeBox, setBox, unbox, Box } from '../shared/box';
 import { cons, first, rest } from '../shared/list';
-import { Result, bind, makeOk, makeFailure, safe2, mapResult } from "../shared/result";
+import { Result, bind, makeOk, makeFailure, mapResult, mapv } from "../shared/result";
 import { parse as p } from "../shared/parser";
 
 export type TExp =  AtomicTExp | CompoundTExp | TVar;
@@ -168,8 +168,9 @@ const parseCompoundTExp = (texps: Sexp[]): Result<ProcTExp> => {
            (pos === 0) ? makeFailure(`No param types in proc texp - ${texps}`) :
            (pos === texps.length - 1) ? makeFailure(`No return type in proc texp - ${texps}`) :
            (texps.slice(pos + 1).indexOf('->') > -1) ? makeFailure(`Only one -> allowed in a procexp - ${texps}`) :
-           safe2((args: TExp[], returnTE: TExp) => makeOk(makeProcTExp(args, returnTE)))
-                (parseTupleTExp(texps.slice(0, pos)), parseTExp(texps[pos + 1]));
+           bind(parseTupleTExp(texps.slice(0, pos)), (args: TExp[]) =>
+               mapv(parseTExp(texps[pos + 1]), (returnTE: TExp) =>
+                    makeProcTExp(args, returnTE)));
 };
 
 /*
@@ -184,10 +185,10 @@ const parseTupleTExp = (texps: Sexp[]): Result<TExp[]> => {
         isEmpty(texps) ? makeOk([]) :
         isEmpty(rest(texps)) ? makeOk(texps) :
         texps[1] !== '*' ? makeFailure(`Parameters of procedure type must be separated by '*': ${texps}`) :
-        bind(splitEvenOdds(texps.slice(2)), (sexps: Sexp[]) => makeOk([texps[0], ...sexps]));
+        mapv(splitEvenOdds(texps.slice(2)), (sexps: Sexp[]) => [texps[0], ...sexps]);
 
-    return isEmptyTuple(texps) ? makeOk([]) : bind(splitEvenOdds(texps),
-                                                   (argTEs: Sexp[]) => mapResult(parseTExp, argTEs));
+    return isEmptyTuple(texps) ? makeOk([]) : bind(splitEvenOdds(texps), (argTEs: Sexp[]) => 
+                                                    mapResult(parseTExp, argTEs));
 }
 
 /*
@@ -196,8 +197,9 @@ const parseTupleTExp = (texps: Sexp[]): Result<TExp[]> => {
 export const unparseTExp = (te: TExp): Result<string> => {
     const unparseTuple = (paramTes: TExp[]): Result<string[]> =>
         isEmpty(paramTes) ? makeOk(["Empty"]) :
-        safe2((paramTE: string, paramTEs: string[]) => makeOk(cons(paramTE, chain(te => ['*', te], paramTEs))))
-            (unparseTExp(first(paramTes)), mapResult(unparseTExp, rest(paramTes)));
+        bind(unparseTExp(first(paramTes)), (paramTE: string) =>
+            mapv(mapResult(unparseTExp, rest(paramTes)), (paramTEs: string[]) =>
+                cons(paramTE, chain(te => ['*', te], paramTEs))));
     const up = (x?: TExp): Result<string | string[]> =>
         isNumTExp(x) ? makeOk('number') :
         isBoolTExp(x) ? makeOk('boolean') :
@@ -205,17 +207,18 @@ export const unparseTExp = (te: TExp): Result<string> => {
         isVoidTExp(x) ? makeOk('void') :
         isEmptyTVar(x) ? makeOk(x.var) :
         isTVar(x) ? up(tvarContents(x)) :
-        isProcTExp(x) ? safe2((paramTEs: string[], returnTE: string) => makeOk([...paramTEs, '->', returnTE]))
-                            (unparseTuple(x.paramTEs), unparseTExp(x.returnTE)) :
+        isProcTExp(x) ? bind(unparseTuple(x.paramTEs), (paramTEs: string[]) =>
+                            mapv(unparseTExp(x.returnTE), (returnTE: string) =>
+                                [...paramTEs, '->', returnTE])) :
         isEmptyTupleTExp(x) ? makeOk("Empty") :
         isNonEmptyTupleTExp(x) ? unparseTuple(x.TEs) :
         x === undefined ? makeFailure("Undefined TVar") :
         x;
 
     const unparsed = up(te);
-    return bind(unparsed,
-                (x: string | string[]) => isString(x) ? makeOk(x) :
-                                          isArray(x) ? makeOk(`(${x.join(' ')})`) :
+    return mapv(unparsed,
+                (x: string | string[]) => isString(x) ? x :
+                                          isArray(x) ? `(${x.join(' ')})` :
                                           x);
 }
 

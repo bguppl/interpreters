@@ -25,7 +25,7 @@ import { makeBoolExp, makeNumExp, makeStrExp, makeVarDecl, makeVarRef } from './
 import { first, rest, isEmpty, allT, second, cons } from '../shared/list';
 import { isArray, isNumericString, isString } from "../shared/type-predicates";
 import { parseLitExp } from './L3-ast';
-import { Result, makeFailure, makeOk, bind, mapResult, safe3, safe2 } from '../shared/result';
+import { Result, makeFailure, makeOk, bind, mapResult, mapv } from '../shared/result';
 import { isToken } from "../shared/parser";
 
 export type CExpLA = NumExp | BoolExp | StrExp | LitExp | VarRef | LexAddress | ProcExpLA | IfExpLA | AppExpLA;
@@ -127,18 +127,18 @@ const parseLACompound = (sexps: Sexp[]): Result<CExpLA> =>
     parseAppExpLA(sexps);
 
 const parseAppExpLA = (sexps: Sexp[]): Result<AppExpLA> =>
-    bind(mapResult(parseLASExp, sexps),
-         (cexps: CExpLA[]) => makeOk(makeAppExpLA(first(cexps), rest(cexps))));
+    mapv(mapResult(parseLASExp, sexps), (cexps: CExpLA[]) => 
+            makeAppExpLA(first(cexps), rest(cexps)));
 
 const parseIfExpLA = (sexps: Sexp[]): Result<IfExpLA> =>
-    bind(mapResult(parseLASExp, rest(sexps)),
-        (cexps: CExpLA[]) => makeOk(makeIfExpLA(cexps[0], cexps[1], cexps[2])));
+    mapv(mapResult(parseLASExp, rest(sexps)), (cexps: CExpLA[]) => 
+            makeIfExpLA(cexps[0], cexps[1], cexps[2]));
 
 const parseProcExpLA = (sexps: Sexp[]): Result<ProcExpLA> => {
     const vars = sexps[1];
     if (isArray(vars) && allT(isString, vars)) {
-        return bind(mapResult(parseLASExp, rest(rest(sexps))),
-                    (body: CExpLA[]) => makeOk(makeProcExpLA(map(makeVarDecl, vars), body)));
+        return mapv(mapResult(parseLASExp, rest(rest(sexps))), (body: CExpLA[]) => 
+                        makeProcExpLA(map(makeVarDecl, vars), body));
     } else {
         return makeFailure("Invalid vars for ProcExp");
     }
@@ -273,8 +273,8 @@ unparseLA(addLexicalAddresses(parseLA(`
 export const addLexicalAddresses = (exp: CExpLA): Result<CExpLA> => {
     const visitProc = (proc: ProcExpLA, addresses: LexicalAddress[]): Result<ProcExpLA> => {
         const newAddresses = crossContour(proc.params, addresses);
-        return bind(mapResult(b => visit(b, newAddresses), proc.body),
-                    (bs: CExpLA[]) => makeOk(makeProcExpLA(proc.params, bs)));
+        return mapv(mapResult(b => visit(b, newAddresses), proc.body), (bs: CExpLA[]) => 
+                        makeProcExpLA(proc.params, bs));
     };
     const visit = (exp: CExpLA, addresses: LexicalAddress[]): Result<CExpLA> =>
         isBoolExp(exp) ? makeOk(exp) :
@@ -284,11 +284,14 @@ export const addLexicalAddresses = (exp: CExpLA): Result<CExpLA> => {
         isFreeVar(exp) ? makeFailure(`unexpected LA ${exp}`) :
         isLexicalAddress(exp) ? makeFailure(`unexpected LA ${exp}`) :
         isLitExp(exp) ? makeOk(exp) :
-        isIfExpLA(exp) ? safe3((test: CExpLA, then: CExpLA, alt: CExpLA) => makeOk(makeIfExpLA(test, then, alt)))
-                            (visit(exp.test, addresses), visit(exp.then, addresses), visit(exp.alt, addresses)) :
+        isIfExpLA(exp) ? bind(visit(exp.test, addresses), (test: CExpLA) =>
+                                bind(visit(exp.then, addresses), (then: CExpLA) =>
+                                    mapv(visit(exp.alt, addresses), (alt: CExpLA) =>
+                                        makeIfExpLA(test, then, alt)))) :
         isProcExpLA(exp) ? visitProc(exp, addresses) :
-        isAppExpLA(exp) ? safe2((rator: CExpLA, rands: CExpLA[]) => makeOk(makeAppExpLA(rator, rands)))
-                            (visit(exp.rator, addresses), mapResult(rand => visit(rand, addresses), exp.rands)) :
+        isAppExpLA(exp) ? bind(visit(exp.rator, addresses), (rator: CExpLA) =>
+                            mapv(mapResult(rand => visit(rand, addresses), exp.rands), (rands: CExpLA[]) =>
+                                makeAppExpLA(rator, rands))) :
         exp;
     return visit(exp, []);
 };

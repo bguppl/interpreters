@@ -10,7 +10,7 @@ import { isProcTExp, makeBoolTExp, makeNumTExp, makeProcTExp, makeStrTExp, makeV
          parseTE, unparseTExp,
          BoolTExp, NumTExp, StrTExp, TExp, VoidTExp } from "./TExp";
 import { isEmpty, allT, first, rest } from '../shared/list';
-import { Result, makeFailure, bind, makeOk, safe3, safe2, zipWithResult } from '../shared/result';
+import { Result, makeFailure, bind, makeOk, zipWithResult } from '../shared/result';
 import { parse as p } from "../shared/parser";
 
 // Purpose: Check that type expressions are equivalent
@@ -19,8 +19,10 @@ import { parse as p } from "../shared/parser";
 // Exp is only passed for documentation purposes.
 const checkEqualType = (te1: TExp, te2: TExp, exp: Exp): Result<true> =>
   equals(te1, te2) ? makeOk(true) :
-  safe3((te1: string, te2: string, exp: string) => makeFailure<true>(`Incompatible types: ${te1} and ${te2} in ${exp}`))
-    (unparseTExp(te1), unparseTExp(te2), unparse(exp));
+  bind(unparseTExp(te1), (te1: string) =>
+    bind(unparseTExp(te2), (te2: string) =>
+        bind(unparse(exp), (exp: string) => 
+            makeFailure<true>(`Incompatible types: ${te1} and ${te2} in ${exp}`))));
 
 // Compute the type of L5 AST exps to TE
 // ===============================================
@@ -29,8 +31,9 @@ const checkEqualType = (te1: TExp, te2: TExp, exp: Exp): Result<true> =>
 
 // Purpose: Compute the type of a concrete fully-typed expression
 export const L5typeof = (concreteExp: string): Result<string> =>
-    bind(bind(p(concreteExp), parseL5Exp),
-         (e: Exp) => bind(typeofExp(e, makeEmptyTEnv()), unparseTExp));
+    bind(p(concreteExp), (x) =>
+        bind(parseL5Exp(x), (e: Exp) => 
+            bind(typeofExp(e, makeEmptyTEnv()), unparseTExp)));
 
 // Purpose: Compute the type of an expression
 // Traverse the AST and check the type according to the exp type.
@@ -108,8 +111,12 @@ export const typeofIf = (ifExp: IfExp, tenv: TEnv): Result<TExp> => {
     const thenTE = typeofExp(ifExp.then, tenv);
     const altTE = typeofExp(ifExp.alt, tenv);
     const constraint1 = bind(testTE, testTE => checkEqualType(testTE, makeBoolTExp(), ifExp));
-    const constraint2 = safe2((thenTE: TExp, altTE: TExp) => checkEqualType(thenTE, altTE, ifExp))(thenTE, altTE);
-    return safe2((_c1: true, _c2: true) => thenTE)(constraint1, constraint2);
+    const constraint2 = bind(thenTE, (thenTE: TExp) =>
+                            bind(altTE, (altTE: TExp) =>
+                                checkEqualType(thenTE, altTE, ifExp)));
+    return bind(constraint1, (_c1: true) =>
+                bind(constraint2, (_c2: true) =>
+                    thenTE));
 };
 
 // Purpose: compute the type of a proc-exp
@@ -119,8 +126,8 @@ export const typeofIf = (ifExp: IfExp, tenv: TEnv): Result<TExp> => {
 export const typeofProc = (proc: ProcExp, tenv: TEnv): Result<TExp> => {
     const argsTEs = map((vd) => vd.texp, proc.args);
     const extTEnv = makeExtendTEnv(map((vd) => vd.var, proc.args), argsTEs, tenv);
-    const constraint1 = bind(typeofExps(proc.body, extTEnv),
-                             (body: TExp) => checkEqualType(body, proc.returnTE, proc));
+    const constraint1 = bind(typeofExps(proc.body, extTEnv), (body: TExp) => 
+                            checkEqualType(body, proc.returnTE, proc));
     return bind(constraint1, _ => makeOk(makeProcTExp(argsTEs, proc.returnTE)));
 };
 
@@ -135,14 +142,15 @@ export const typeofProc = (proc: ProcExp, tenv: TEnv): Result<TExp> => {
 export const typeofApp = (app: AppExp, tenv: TEnv): Result<TExp> =>
     bind(typeofExp(app.rator, tenv), (ratorTE: TExp) => {
         if (! isProcTExp(ratorTE)) {
-            return safe2((rator: string, exp: string) => makeFailure<TExp>(`Application of non-procedure: ${rator} in ${exp}`))
-                    (unparseTExp(ratorTE), unparse(app));
+            return bind(unparseTExp(ratorTE), (rator: string) =>
+                        bind(unparse(app), (exp: string) =>
+                            makeFailure<TExp>(`Application of non-procedure: ${rator} in ${exp}`)));
         }
         if (app.rands.length !== ratorTE.paramTEs.length) {
             return bind(unparse(app), (exp: string) => makeFailure<TExp>(`Wrong parameter numbers passed to proc: ${exp}`));
         }
-        const constraints = zipWithResult((rand, trand) => bind(typeofExp(rand, tenv),
-                                                                (typeOfRand: TExp) => checkEqualType(typeOfRand, trand, app)),
+        const constraints = zipWithResult((rand, trand) => bind(typeofExp(rand, tenv), (typeOfRand: TExp) => 
+                                                                checkEqualType(typeOfRand, trand, app)),
                                           app.rands, ratorTE.paramTEs);
         return bind(constraints, _ => makeOk(ratorTE.returnTE));
     });
@@ -158,8 +166,8 @@ export const typeofLet = (exp: LetExp, tenv: TEnv): Result<TExp> => {
     const vars = map((b) => b.var.var, exp.bindings);
     const vals = map((b) => b.val, exp.bindings);
     const varTEs = map((b) => b.var.texp, exp.bindings);
-    const constraints = zipWithResult((varTE, val) => bind(typeofExp(val, tenv),
-                                                           (typeOfVal: TExp) => checkEqualType(varTE, typeOfVal, exp)),
+    const constraints = zipWithResult((varTE, val) => bind(typeofExp(val, tenv), (typeOfVal: TExp) => 
+                                                            checkEqualType(varTE, typeOfVal, exp)),
                                       varTEs, vals);
     return bind(constraints, _ => typeofExps(exp.body, makeExtendTEnv(vars, varTEs, tenv)));
 };
@@ -188,7 +196,8 @@ export const typeofLetrec = (exp: LetrecExp, tenv: TEnv): Result<TExp> => {
     const tenvIs = zipWith((params, tij) => makeExtendTEnv(map((p) => p.var, params), tij, tenvBody),
                            paramss, tijs);
     const types = zipWithResult((bodyI, tenvI) => typeofExps(bodyI, tenvI), bodies, tenvIs)
-    const constraints = bind(types, (types: TExp[]) => zipWithResult((typeI, ti) => checkEqualType(typeI, ti, exp), types, tis));
+    const constraints = bind(types, (types: TExp[]) => 
+                            zipWithResult((typeI, ti) => checkEqualType(typeI, ti, exp), types, tis));
     return bind(constraints, _ => typeofExps(exp.body, tenvBody));
 };
 

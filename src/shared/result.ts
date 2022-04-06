@@ -25,9 +25,24 @@ export const isOk = <T>(r: Result<T>): r is Ok<T> =>
 export const isFailure = <T>(r: Result<T>): r is Failure =>
     r.tag === "Failure";
 
+// bind a result value into a happy path function that could fail
 export const bind = <T, U>(r: Result<T>, f: (x: T) => Result<U>): Result<U> =>
     isOk(r) ? f(r.value) : r;
 
+// bind a result value into a happy path function that could fail
+export const mapv = <T, U>(r: Result<T>, f: (x: T) => U): Result<U> =>
+    isOk(r) ? makeOk(f(r.value)) : r;
+
+// Traditional Result.bind(f) from diagonal T->R<U> to R<T>->R<U>
+// Also known as flatmap
+export const rbind = <T, U>(f: (x: T) => Result<U>): ((r: Result<T>) => Result<U>) =>
+    (r) => isOk(r) ? f(r.value) : r;
+
+// Traditional Result.map(f) from T->U to R<T>->R<U>
+export const rmap = <T, U>(f: (x: T) => U): ((r: Result<T>) => Result<U>) =>
+    (r) => isOk(r) ? makeOk(f(r.value)) : r;
+
+// Traditionally called Result.fold(result, onOk, onFailure)
 export const either = <T, U>(r: Result<T>, ifOk: (value: T) => U, ifFailure: (message: string) => U): U =>
     isOk(r) ? ifOk(r.value) : ifFailure(r.message);
 
@@ -60,10 +75,6 @@ export const zipWithResult = <T1, T2, T3>(f: (x: T1, y: T2) => Result<T3>, xs: T
 export const safe2 = <T1, T2, T3>(f: (x: T1, y: T2) => Result<T3>): (xr: Result<T1>, yr: Result<T2>) => Result<T3> =>
     (xr: Result<T1>, yr: Result<T2>) =>
         bind(xr, (x: T1) => bind(yr, (y: T2) => f(x, y)));
-
-export const safe3 = <T1, T2, T3, T4>(f: (x: T1, y: T2, z: T3) => Result<T4>): (xr: Result<T1>, yr: Result<T2>, zr: Result<T3>) => Result<T4> =>
-    (xr: Result<T1>, yr: Result<T2>, zr: Result<T3>) =>
-        bind(xr, (x: T1) => bind(yr, (y: T2) => bind(zr, (z: T3) => f(x, y, z))));
 
 export const resultToOptional = <T>(r: Result<T>): Optional<T> =>
     either(r, makeSome, _ => makeNone());

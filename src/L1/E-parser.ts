@@ -5,7 +5,7 @@ import { parse } from "../shared/parser";
 // We adopt the functional Result<T> pattern for Error handling.
 // Because parse can fail on ill-formed expressions, 
 // parse returns a Result<E> value (which is a disjoint union Ok<E> or Failure).
-import { Result, safe2, makeOk, makeFailure, bind } from "../shared/result";
+import { Result, makeOk, makeFailure, bind } from "../shared/result";
 
 // Import the lexical rules predicates.
 import { isNumericString, isString, isArray } from "../shared/type-predicates";
@@ -66,10 +66,9 @@ const parseEAtomic = (sexp: string): Result<E> =>
 // This procedure is recursive since the left and right sides can be embedded compound expressions.
 const parseECompound = (sexps: Sexp[]): Result<E> =>
     (sexps.length !== 3) ? makeFailure("Wrong length") :
-    // safe2 is used to handle Failure cases: We write the code for the happy path (good E values) in f(arg1, arg2)
-    // and safe2(f(arg1, arg2)) processes errors properly - return Failure if one of them is error else call f.
-    isString(sexps[1]) ? safe2((arg1: E, arg2: E) => parseE3(sexps[1], arg1, arg2))
-                            (parseESexp(sexps[0]), parseESexp(sexps[2])) :
+    isString(sexps[1]) ? bind(parseESexp(sexps[0]), (arg1: E) =>
+                          bind(parseESexp(sexps[2]), (arg2: E) =>
+                            parseE3(sexps[1], arg1, arg2))) :
     makeFailure("Expected operator, got compound expression");
 
 const parseE3 = (op: Sexp, arg1: E, arg2: E): Result<E> =>

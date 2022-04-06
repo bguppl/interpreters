@@ -1,6 +1,6 @@
 import * as S from "../../src/L5/L5-substitution-adt";
 import { makeTVar, parseTE, unparseTExp, TExp } from "../../src/L5/TExp";
-import { bind, isFailure, safe2, makeOk, safe3 } from '../../src/shared/result';
+import { bind, isFailure, makeOk, safe2 } from '../../src/shared/result';
 import { sub, subToStr } from './test-helpers';
 
 describe('L5 Substitution ADT', () => {
@@ -16,7 +16,9 @@ describe('L5 Substitution ADT', () => {
         it('applies a substitution on a type expression', () => {
             const sub1 = sub(["T1", "T2"], ["number", "boolean"]);
             const te1 = parseTE("(T1 * T2 -> T1)");
-            const unparsed = safe2((sub: S.Sub, te: TExp) => unparseTExp(S.applySub(sub, te)))(sub1, te1);
+            const unparsed = bind(sub1, (sub: S.Sub) =>
+                                bind(te1, (te: TExp) =>
+                                    unparseTExp(S.applySub(sub, te))));
             expect(unparsed).toEqual(makeOk("(number * boolean -> number)"));
         });
     });
@@ -98,8 +100,10 @@ describe('L5 Substitution ADT', () => {
             const v2 = makeTVar("S1");
             const t2 = parseTE("(T21 -> (number * T23 -> T22))");
             const expected = bind(sub(["T1", "T2", "T3", "S1"], ["(T21 -> (number * T23 -> T22))", "((T21 -> (number * T23 -> T22)) -> number)", "boolean", "(T21 -> (number * T23 -> T22))"]), subToStr);
-            const res = bind(safe3(S.extendSub)(sub1, makeOk(v2), t2), subToStr);
-            expect(res).toEqual(expected);
+            const res = bind(sub1, sub1 =>
+                            bind(t2, t2 =>
+                                S.extendSub(sub1, v2, t2)));
+            expect(bind(res, subToStr)).toEqual(expected);
         });
     });
 });

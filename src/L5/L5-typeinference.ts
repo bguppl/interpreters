@@ -6,7 +6,7 @@ import * as TC from "./L5-typecheck";
 import * as E from "./TEnv";
 import * as T from "./TExp";
 import { allT, first, rest, isEmpty } from "../shared/list";
-import { Result, makeFailure, makeOk, bind, safe2, zipWithResult, mapResult } from "../shared/result";
+import { Result, makeFailure, makeOk, bind, zipWithResult, mapResult, mapv } from "../shared/result";
 import { parse as p } from "../shared/parser";
 
 // Purpose: Make type expressions equivalent by deriving a unifier
@@ -19,11 +19,13 @@ const checkEqualType = (te1: T.TExp | undefined, te2: T.TExp, exp: A.Exp): Resul
     T.isTVar(te1) ? checkTVarEqualTypes(te1, te2, exp) :
     T.isTVar(te2) ? checkTVarEqualTypes(te2, te1, exp) :
     T.isAtomicTExp(te1) && T.isAtomicTExp(te2) ?
-        T.eqAtomicTExp(te1, te2) ? makeOk(true) : safe2((te1: string, te2: string) => makeFailure<true>(`Incompatible atomic types ${te1} - ${te2}`))
-                                                    (T.unparseTExp(te1), T.unparseTExp(te2)) :
+        T.eqAtomicTExp(te1, te2) ? makeOk(true) : bind(T.unparseTExp(te1), (te1: string) =>
+                                                    bind(T.unparseTExp(te2), (te2: string) =>
+                                                        makeFailure<true>(`Incompatible atomic types ${te1} - ${te2}`))) :
     T.isProcTExp(te1) && T.isProcTExp(te2) ? checkProcEqualTypes(te1, te2, exp) :
-    safe2((te1: string, te2: string) => makeFailure<true>(`Incompatible types structure: ${te1} - ${te2}`))
-        (T.unparseTExp(te1), T.unparseTExp(te2));
+    bind(T.unparseTExp(te1), (te1: string) =>
+        bind(T.unparseTExp(te2), (te2: string) =>
+            makeFailure<true>(`Incompatible types structure: ${te1} - ${te2}`)));
 
 // Purpose: make two lists of equal length of type expressions equal
 // Return an error if one of the pair of TExps are not compatible - true otherwise.
@@ -34,8 +36,9 @@ const checkEqualTypes = (tes1: T.TExp[], tes2: T.TExp[], exp: A.Exp): Result<tru
 }
 
 const checkProcEqualTypes = (te1: T.ProcTExp, te2: T.ProcTExp, exp: A.Exp): Result<true> =>
-    te1.paramTEs.length !== te2.paramTEs.length ? safe2((te1: string, te2: string) => makeFailure<true>(`Wrong number of args ${te1} - ${te2}`))
-                                                    (T.unparseTExp(te1), T.unparseTExp(te2)) :
+    te1.paramTEs.length !== te2.paramTEs.length ? bind(T.unparseTExp(te1), (te1: string) =>
+                                                    bind(T.unparseTExp(te2), (te2: string) =>
+                                                        makeFailure<true>(`Wrong number of args ${te1} - ${te2}`))) :
     checkEqualTypes(T.procTExpComponents(te1), T.procTExpComponents(te2), exp);
 
 // Purpose: check that a type variable matches a type expression
@@ -43,7 +46,7 @@ const checkProcEqualTypes = (te1: T.ProcTExp, te2: T.ProcTExp, exp: A.Exp): Resu
 // Exp is only passed for documentation purposes.
 const checkTVarEqualTypes = (tvar: T.TVar, te: T.TExp, exp: A.Exp): Result<true> =>
     T.tvarIsNonEmpty(tvar) ? checkEqualType(T.tvarContents(tvar), te, exp) :
-    bind(checkNoOccurrence(tvar, te, exp), _ => { T.tvarSetContents(tvar, te); return makeOk(true); });
+    mapv(checkNoOccurrence(tvar, te, exp), _ => { T.tvarSetContents(tvar, te); return true; });
 
 // Purpose: when attempting to bind tvar to te - check whether tvar occurs in te.
 // Throws error if a circular reference is found.
@@ -51,12 +54,14 @@ const checkTVarEqualTypes = (tvar: T.TVar, te: T.TExp, exp: A.Exp): Result<true>
 // Pre-conditions: Tvar is not bound
 const checkNoOccurrence = (tvar: T.TVar, te: T.TExp, exp: A.Exp): Result<true> => {
     const checkList = (tes: T.TExp[]): Result<true> =>
-        bind(mapResult(loop, tes), _ => makeOk(true));
+        mapv(mapResult(loop, tes), _ => true);
 
     const loop = (te1: T.TExp): Result<true> =>
         T.isAtomicTExp(te1) ? makeOk(true) :
         T.isProcTExp(te1) ? checkList(T.procTExpComponents(te1)) :
-        T.isTVar(te1) ? (T.eqTVar(te1, tvar) ? bind(A.unparse(exp), (exp: string) => makeFailure(`Occur check error - ${te1.var} - ${tvar.var} in ${exp}`)) : makeOk(true)) :
+        T.isTVar(te1) ? 
+            (T.eqTVar(te1, tvar) ? bind(A.unparse(exp), (exp: string) => makeFailure(`Occur check error - ${te1.var} - ${tvar.var} in ${exp}`)) : 
+             makeOk(true)) :
         bind(A.unparse(exp), (exp: string) => makeFailure(`Bad type expression - ${JSON.stringify(te1)} in ${exp}`));
 
     return loop(te);
@@ -67,8 +72,10 @@ const checkNoOccurrence = (tvar: T.TVar, te: T.TExp, exp: A.Exp): Result<true> =
 // Compute a Typed-AST exp to a Texp on the basis of its structure and the annotations it contains.
 
 // Purpose: Compute the type of a concrete fully-typed expression
-export const inferTypeOf = (conceteExp: string): Result<string> =>
-    bind(bind(bind(p(conceteExp), A.parseL5Exp), (exp: A.Exp) => typeofExp(exp, E.makeEmptyTEnv())), T.unparseTExp);
+export const inferTypeOf = (concreteExp: string): Result<string> =>
+    bind(p(concreteExp), (x) =>
+        bind(A.parseL5Exp(x), (exp: A.Exp) =>
+            bind(typeofExp(exp, E.makeEmptyTEnv()), T.unparseTExp)));
 
 // Purpose: Compute the type of an expression
 // Traverse the AST and check the type according to the exp type.
@@ -108,8 +115,11 @@ const typeofIf = (ifExp: A.IfExp, tenv: E.TEnv): Result<T.TExp> => {
     const thenTE = typeofExp(ifExp.then, tenv);
     const altTE = typeofExp(ifExp.alt, tenv);
     const constraint1 = bind(testTE, (testTE: T.TExp) => checkEqualType(testTE, T.makeBoolTExp(), ifExp));
-    const constraint2 = safe2((thenTE: T.TExp, altTE: T.TExp) => checkEqualType(thenTE, altTE, ifExp))(thenTE, altTE);
-    return safe2((_c1: true, _c2: true) => thenTE)(constraint1, constraint2);
+    const constraint2 = bind(thenTE, (thenTE: T.TExp) => 
+                            bind(altTE, (altTE: T.TExp) => 
+                                checkEqualType(thenTE, altTE, ifExp)));
+    return bind(constraint1, (_c1: true) =>
+                bind(constraint2, (_c2: true) => thenTE));
 };
 
 // Purpose: compute the type of a proc-exp
@@ -120,7 +130,7 @@ export const typeofProc = (proc: A.ProcExp, tenv: E.TEnv): Result<T.TExp> => {
     const argsTEs = R.map((vd) => vd.texp, proc.args);
     const extTEnv = E.makeExtendTEnv(R.map((vd) => vd.var, proc.args), argsTEs, tenv);
     const constraint1 = bind(typeofExps(proc.body, extTEnv), (bodyTE: T.TExp) => checkEqualType(bodyTE, proc.returnTE, proc));
-    return bind(constraint1, _ => makeOk(T.makeProcTExp(argsTEs, proc.returnTE)));
+    return mapv(constraint1, _ => T.makeProcTExp(argsTEs, proc.returnTE));
 };
 
 
@@ -136,7 +146,9 @@ export const typeofApp = (app: A.AppExp, tenv: E.TEnv): Result<T.TExp> => {
     const ratorTE = typeofExp(app.rator, tenv);
     const randsTE = mapResult((rand) => typeofExp(rand, tenv), app.rands);
     const returnTE = T.makeFreshTVar();
-    const constraint = safe2((ratorTE: T.TExp, randsTE: T.TExp[]) => checkEqualType(ratorTE, T.makeProcTExp(randsTE, returnTE), app))(ratorTE, randsTE);
+    const constraint = bind(ratorTE, (ratorTE: T.TExp) =>
+                            bind(randsTE, (randsTE: T.TExp[]) =>
+                                checkEqualType(ratorTE, T.makeProcTExp(randsTE, returnTE), app)));
     return bind(constraint, _ => makeOk(returnTE));
 };
 
@@ -151,8 +163,8 @@ export const typeofLet = (exp: A.LetExp, tenv: E.TEnv): Result<T.TExp> => {
     const vars = R.map((b) => b.var.var, exp.bindings);
     const vals = R.map((b) => b.val, exp.bindings);
     const varTEs = R.map((b) => b.var.texp, exp.bindings);
-    const constraints = zipWithResult((varTE, val) => bind(typeofExp(val, tenv),
-                                                           (valTE: T.TExp) => checkEqualType(varTE, valTE, exp)),
+    const constraints = zipWithResult((varTE, val) => bind(typeofExp(val, tenv), (valTE: T.TExp) =>
+                                                            checkEqualType(varTE, valTE, exp)),
                                       varTEs, vals);
     return bind(constraints, _ => typeofExps(exp.body, E.makeExtendTEnv(vars, varTEs, tenv)));
 };
@@ -172,7 +184,8 @@ export const typeofLetrec = (exp: A.LetrecExp, tenv: E.TEnv): Result<T.TExp> => 
     const ps = R.map((b) => b.var.var, exp.bindings);
     const procs = R.map((b) => b.val, exp.bindings);
     if (! allT(A.isProcExp, procs)) {
-        return bind(A.unparse(exp), (exp: string) => makeFailure(`letrec - only support binding of procedures - ${exp}`));
+        return bind(A.unparse(exp), (exp: string) =>
+                    makeFailure(`letrec - only support binding of procedures - ${exp}`));
     }
     const paramss = R.map((p) => p.args, procs);
     const bodies = R.map((p) => p.body, procs);

@@ -12,7 +12,7 @@ import { applyEnv, makeEmptyEnv, makeExtEnv, makeRecEnv, Env } from "./L4-env";
 import { isClosure, makeClosure, Closure, Value } from "./L4-value";
 import { applyPrimitive } from "./evalPrimitive";
 import { allT, first, rest, isEmpty } from "../shared/list";
-import { Result, makeOk, makeFailure, bind, safe2, mapResult } from "../shared/result";
+import { Result, makeOk, makeFailure, bind, mapResult } from "../shared/result";
 import { parse as p } from "../shared/parser";
 
 // ========================================================
@@ -29,8 +29,9 @@ const applicativeEval = (exp: CExp, env: Env): Result<Value> =>
     isProcExp(exp) ? evalProc(exp, env) :
     isLetExp(exp) ? evalLet(exp, env) :
     isLetrecExp(exp) ? evalLetrec(exp, env) :
-    isAppExp(exp) ? safe2((proc: Value, args: Value[]) => applyProcedure(proc, args))
-                        (applicativeEval(exp.rator, env), mapResult((rand: CExp) => applicativeEval(rand, env), exp.rands)) :
+    isAppExp(exp) ? bind(applicativeEval(exp.rator, env), (proc: Value) =>
+                        bind(mapResult((rand: CExp) => applicativeEval(rand, env), exp.rands), (args: Value[]) =>
+                            applyProcedure(proc, args))) :
     isSetExp(exp) ? makeFailure(`To implement ${exp}`) :
     exp;
 
@@ -38,8 +39,9 @@ export const isTrueValue = (x: Value): boolean =>
     ! (x === false);
 
 const evalIf = (exp: IfExp, env: Env): Result<Value> =>
-    bind(applicativeEval(exp.test, env),
-         (test: Value) => isTrueValue(test) ? applicativeEval(exp.then, env) : applicativeEval(exp.alt, env));
+    bind(applicativeEval(exp.test, env), (test: Value) => 
+            isTrueValue(test) ? applicativeEval(exp.then, env) : 
+            applicativeEval(exp.alt, env));
 
 const evalProc = (exp: ProcExp, env: Env): Result<Closure> =>
     makeOk(makeClosure(exp.args, exp.body, env));
@@ -71,8 +73,8 @@ const evalCExps = (first: Exp, rest: Exp[], env: Env): Result<Value> =>
 // Compute the rhs of the define, extend the env with the new binding
 // then compute the rest of the exps in the new env.
 const evalDefineExps = (def: DefineExp, exps: Exp[], env: Env): Result<Value> =>
-    bind(applicativeEval(def.val, env),
-            (rhs: Value) => evalSequence(exps, makeExtEnv([def.var.var], [rhs], env)));
+    bind(applicativeEval(def.val, env), (rhs: Value) => 
+            evalSequence(exps, makeExtEnv([def.var.var], [rhs], env)));
 
 
 // Main program
@@ -80,7 +82,9 @@ export const evalProgram = (program: Program): Result<Value> =>
     evalSequence(program.exps, makeEmptyEnv());
 
 export const evalParse = (s: string): Result<Value> =>
-    bind(bind(p(s), parseL4Exp), (exp: Exp) => evalSequence([exp], makeEmptyEnv()));
+    bind(p(s), (x) => 
+        bind(parseL4Exp(x), (exp: Exp) =>
+            evalSequence([exp], makeEmptyEnv())));
 
 // LET: Direct evaluation rule without syntax expansion
 // compute the values, extend the env, eval the body.
