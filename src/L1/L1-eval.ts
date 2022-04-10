@@ -40,9 +40,8 @@ const L1applicativeEval = (exp: CExp, env: Env): Result<Value> =>
     isBoolExp(exp) ? makeOk(exp.val) :
     isPrimOp(exp) ? makeOk(exp) :
     isVarRef(exp) ? applyEnv(env, exp.var) :
-    isAppExp(exp) ? bind(mapResult((rand: CExp) =>  L1applicativeEval(rand, env),
-                                   exp.rands),
-                         (rands: Value[]) => L1applyProcedure(exp.rator, rands)) :
+    isAppExp(exp) ? bind(mapResult((rand: CExp) =>  L1applicativeEval(rand, env), exp.rands), (rands: Value[]) => 
+                         L1applyProcedure(exp.rator, rands)) :
     exp;
 
 const L1applyProcedure = (proc: CExp, args: Value[]): Result<Value> =>
@@ -80,14 +79,15 @@ const evalSequenceFirst = (first: Exp, rest: Exp[], env: Env): Result<Value> =>
     isDefineExp(first) ? evalDefineExps(first, rest, env) :
     isEmpty(rest) ? L1applicativeEval(first, env) :
     // _ is a don't care parameter
-    bind(L1applicativeEval(first, env), _ => evalSequence(rest, env));
+    bind(L1applicativeEval(first, env), _ => 
+         evalSequence(rest, env));
 
 // Eval a sequence of expressions when the first exp is a Define.
 // Compute the rhs of the define, extend the env with the new binding
 // then compute the rest of the exps in the new env.
 const evalDefineExps = (def: DefineExp, exps: Exp[], env: Env): Result<Value> =>
-    bind(L1applicativeEval(def.val, env),
-         (rhs: Value) => evalSequence(exps, makeEnv(def.var.var, rhs, env)));
+    bind(L1applicativeEval(def.val, env), (rhs: Value) => 
+         evalSequence(exps, makeEnv(def.var.var, rhs, env)));
 
 // Main program
 export const evalL1program = (program: Program): Result<Value> =>
