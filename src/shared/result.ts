@@ -29,7 +29,7 @@ export const isFailure = <T>(r: Result<T>): r is Failure =>
 export const bind = <T, U>(r: Result<T>, f: (x: T) => Result<U>): Result<U> =>
     isOk(r) ? f(r.value) : r;
 
-// bind a result value into a happy path function that could fail
+// bind a result value into a happy path function that does not fail
 export const mapv = <T, U>(r: Result<T>, f: (x: T) => U): Result<U> =>
     isOk(r) ? makeOk(f(r.value)) : r;
 
