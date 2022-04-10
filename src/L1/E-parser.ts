@@ -42,8 +42,12 @@ const isMulExp = (x: any): x is MulExp => x.tag === "MulExp";
 // - First invoke parse(x)
 // - If the result is a Failure, stop
 // - Else we received an Ok<Sexp> value, pass the Sexp result to the next function (parseESexp)
+// Once we get used to this notation, we can simplify this type of calls as follows:
+// bind(parse(x), parseESexp);
+// since the function (s: Sexp) => parseESexp(s); is just parseESexp.
 export const parseE = (x: string): Result<E> =>
-    bind(parse(x), (s: Sexp) => parseESexp(s));
+    bind(parse(x), (s: Sexp) => 
+         parseESexp(s));
 
 // ========================================================
 // Parsing
@@ -67,8 +71,8 @@ const parseEAtomic = (sexp: string): Result<E> =>
 const parseECompound = (sexps: Sexp[]): Result<E> =>
     (sexps.length !== 3) ? makeFailure("Wrong length") :
     isString(sexps[1]) ? bind(parseESexp(sexps[0]), (arg1: E) =>
-                          bind(parseESexp(sexps[2]), (arg2: E) =>
-                            parseE3(sexps[1], arg1, arg2))) :
+                              bind(parseESexp(sexps[2]), (arg2: E) =>
+                                   parseE3(sexps[1], arg1, arg2))) :
     makeFailure("Expected operator, got compound expression");
 
 const parseE3 = (op: Sexp, arg1: E, arg2: E): Result<E> =>
