@@ -81,8 +81,8 @@ export const parseL1Program = (sexp: Sexp): Result<Program> =>
     sexp;
 
 const parseL1GoodProgram = (keyword: Sexp, body: Sexp[]): Result<Program> =>
-    keyword === "L1" && !isEmpty(body) ? mapv(mapResult(parseL1Exp, body),
-                                              (exps: Exp[]) => makeProgram(exps)) :
+    keyword === "L1" && !isEmpty(body) ? mapv(mapResult(parseL1Exp, body), (exps: Exp[]) => 
+                                              makeProgram(exps)) :
     makeFailure("Program must be of the form (L1 <exp>+)");
 
 // Exp -> <DefineExp> | <Cexp>
@@ -110,8 +110,8 @@ export const parseDefine = (params: Sexp[]): Result<DefineExp> =>
 
 const parseGoodDefine = (variable: Sexp, val: Sexp): Result<DefineExp> =>
     ! isIdentifier(variable) ? makeFailure("First arg of define must be an identifier") :
-    mapv(parseL1CExp(val),
-         (value: CExp) => makeDefineExp(makeVarDecl(variable), value));
+    mapv(parseL1CExp(val), (value: CExp) => 
+         makeDefineExp(makeVarDecl(variable), value));
 
 // CExp -> AtomicExp | CompondCExp
 export const parseL1CExp = (sexp: Sexp): Result<CExp> =>
@@ -135,5 +135,5 @@ export const isPrimitiveOp = (x: string): boolean =>
 // AppExp -> ( <cexp>+ )
 export const parseAppExp = (op: Sexp, params: Sexp[]): Result<CExp> =>
     bind(parseL1CExp(op), (rator: CExp) =>
-        mapv(mapResult(parseL1CExp, params), (rands: CExp[]) =>
-            makeAppExp(rator, rands)));
+         mapv(mapResult(parseL1CExp, params), (rands: CExp[]) =>
+              makeAppExp(rator, rands)));
