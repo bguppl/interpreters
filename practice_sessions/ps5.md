@@ -413,6 +413,18 @@ For example, the following are equivalent pairs:
 (lambda (x) x) <==> (lambda (x1) x1)
 (lambda (x) (+ x y)) <==> (lambda (x1) (+ x1 y))  // y is not renamed because it occurs free
 ```
+      
+Why renamin?
+      
+```scheme
+(define z not)
+
+(((lambda (x)
+      (lambda (z) (x z)))
+    (lambda (w) (z w)))
+   ;; Note: z occurs free in the parent exp.
+   #f)
+```
 
 For renaming we use the ***renameExps*** procedure:
 ```typescript
