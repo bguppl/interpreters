@@ -784,7 +784,7 @@ Let us recall the exp procedure:
 (define exp-iter
   (lambda (b e acc)
     (cond ((= e 0) acc)
-    (else (exp-iter b (- e 1) (* b acc))))))
+           (else (exp-iter b (- e 1) (* b acc))))))
 ```
 
 In this program both "exp" and "exp-iter" are public functions.
