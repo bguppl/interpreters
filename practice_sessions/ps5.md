@@ -28,7 +28,7 @@ We define the environment data type inductively by the following definition:
 ```
   <env> ::= <empty-env> | <extended-env>
   <empty-env> ::= (empty-env) // empty-env()
-  <extended-env> ::= (env <string> <value> <inner-env>) // env(var:string, val:Value, inner-env: Env)
+  <extended-env> ::= (env <string> <value> <env>) // env(var:string, val:Value, inner-env: Env)
 ```
 
 The ***apply-env*** operation is defined recursively according to the structure of the data type:
