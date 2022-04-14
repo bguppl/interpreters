@@ -129,18 +129,18 @@ export const parseL3 = (x: string): Result<Program> =>
 
 export const parseL3Program = (sexp: Sexp): Result<Program> =>
     sexp === "" || isEmpty(sexp) ? makeFailure("Unexpected empty program") :
-    isToken(sexp) ? makeFailure("Program cannot be a single token") :
+    isToken(sexp) ? makeFailure(`Program cannot be a single token: ${JSON.stringify(sexp, null, 2)}`) :
     isArray(sexp) ? parseL3GoodProgram(first(sexp), rest(sexp)) :
-    makeFailure(`Unexpected type ${sexp}`);
+    makeFailure(`Unexpected type ${JSON.stringify(sexp, null, 2)}`);
 
 const parseL3GoodProgram = (keyword: Sexp, body: Sexp[]): Result<Program> =>
     keyword === "L3" && !isEmpty(body) ? mapv(mapResult(parseL3Exp, body), (exps: Exp[]) => 
                                               makeProgram(exps)) :
-    makeFailure("Program must be of the form (L3 <exp>+)");
+    makeFailure(`Program must be of the form (L3 <exp>+): ${JSON.stringify([keyword, ...body], null, 2)}`);
 
 // Exp -> <DefineExp> | <Cexp>
 export const parseL3Exp = (sexp: Sexp): Result<Exp> =>
-    isEmpty(sexp) ? makeFailure("Exp cannot be an empty list") :
+    isEmpty(sexp) ? makeFailure(`Exp cannot be an empty list: ${JSON.stringify(sexp, null, 2)}`) :
     isArray(sexp) ? parseL3CompoundExp(first(sexp), rest(sexp)) :
     isToken(sexp) ? parseL3Atomic(sexp) :
     sexp;
@@ -166,12 +166,12 @@ export const parseL3SpecialForm = (op: Sexp, params: Sexp[]): Result<CExp> =>
 // DefineExp -> (define <varDecl> <CExp>)
 export const parseDefine = (params: Sexp[]): Result<DefineExp> =>
     isEmpty(params) ? makeFailure("define missing 2 arguments") :
-    isEmpty(rest(params)) ? makeFailure("define missing 1 arguments") :
-    ! isEmpty(rest(rest(params))) ? makeFailure("define has too many arguments") :
+    isEmpty(rest(params)) ? makeFailure(`define missing 1 arguments: ${JSON.stringify(params, null, 2)}`) :
+    ! isEmpty(rest(rest(params))) ? makeFailure(`define has too many arguments: ${JSON.stringify(params, null, 2)}`) :
     parseGoodDefine(first(params), second(params));
 
 const parseGoodDefine = (variable: Sexp, val: Sexp): Result<DefineExp> =>
-    ! isIdentifier(variable) ? makeFailure("First arg of define must be an identifier") :
+    ! isIdentifier(variable) ? makeFailure(`First arg of define must be an identifier: {JSON.stringify(variable, null, 2)}`) :
     mapv(parseL3CExp(val), (value: CExp) => 
          makeDefineExp(makeVarDecl(variable), value));
 
@@ -209,14 +209,14 @@ const parseAppExp = (op: Sexp, params: Sexp[]): Result<AppExp> =>
              makeAppExp(rator, rands)));
 
 const parseIfExp = (params: Sexp[]): Result<IfExp> =>
-    params.length !== 3 ? makeFailure("Expression not of the form (if <cexp> <cexp> <cexp>)") :
+    params.length !== 3 ? makeFailure(`Expression not of the form (if <cexp> <cexp> <cexp>): ${JSON.stringify(params, null, 2)}`) :
     mapv(mapResult(parseL3CExp, params), (cexps: CExp[]) => 
         makeIfExp(cexps[0], cexps[1], cexps[2]));
 
 const parseProcExp = (vars: Sexp, body: Sexp[]): Result<ProcExp> =>
     isArray(vars) && allT(isString, vars) ? mapv(mapResult(parseL3CExp, body), (cexps: CExp[]) => 
                                                  makeProcExp(map(makeVarDecl, vars), cexps)) :
-    makeFailure(`Invalid vars for ProcExp ${vars}`);
+    makeFailure(`Invalid vars for ProcExp ${JSON.stringify(vars, null, 2)}`);
 
 const isGoodBindings = (bindings: Sexp): bindings is [string, Sexp][] =>
     isArray(bindings) &&
@@ -263,7 +263,7 @@ export const parseSExp = (sexp: Sexp): Result<SExpValue> =>
     isDottedPair(sexp) ? makeDottedPair(sexp) :
     isArray(sexp) ? (
         // fail on (x . y z)
-        sexp[0] === '.' ? makeFailure(`Bad dotted sexp: ${sexp}`) : 
+        sexp[0] === '.' ? makeFailure(`Bad dotted sexp: ${JSON.stringify(sexp, null, 2)}`) : 
         bind(parseSExp(first(sexp)), (val1: SExpValue) =>
              mapv(parseSExp(rest(sexp)), (val2: SExpValue) =>
                   makeCompoundSExp(val1, val2))) 

@@ -27,7 +27,7 @@ export const applyPrimitive = (proc: PrimOp, args: Value[]): Result<Value> =>
     proc.op === "symbol?" ? makeOk(isSymbolSExp(args[0])) :
     proc.op === "string?" ? makeOk(isString(args[0])) :
     // display, newline
-    makeFailure("Bad primitive op " + proc.op);
+    makeFailure(`Bad primitive op: ${proc.op}`);
 
 const minusPrim = (args: Value[]): Result<number> => {
     // TODO complete
@@ -35,7 +35,7 @@ const minusPrim = (args: Value[]): Result<number> => {
     if (isNumber(x) && isNumber(y)) {
         return makeOk(x - y);
     } else {
-        return makeFailure(`Type error: - expects numbers ${args}`)
+        return makeFailure(`Type error: - expects numbers ${JSON.stringify(args, null, 2)}`)
     }
 }
 
@@ -45,7 +45,7 @@ const divPrim = (args: Value[]): Result<number> => {
     if (isNumber(x) && isNumber(y)) {
         return makeOk(x / y);
     } else {
-        return makeFailure(`Type error: / expects numbers ${args}`)
+        return makeFailure(`Type error: / expects numbers ${JSON.stringify(args, null, 2)}`)
     }
 }
 
@@ -68,11 +68,11 @@ const eqPrim = (args: Value[]): boolean => {
 
 const carPrim = (v: Value): Result<Value> =>
     isCompoundSExp(v) ? makeOk(v.val1) :
-    makeFailure(`Car: param is not compound ${v}`);
+    makeFailure(`Car: param is not compound ${JSON.stringify(v, null, 2)}`);
 
 const cdrPrim = (v: Value): Result<Value> =>
     isCompoundSExp(v) ? makeOk(v.val2) :
-    makeFailure(`Cdr: param is not compound ${v}`);
+    makeFailure(`Cdr: param is not compound ${JSON.stringify(v, null, 2)}`);
 
 const consPrim = (v1: Value, v2: Value): CompoundSExp =>
     makeCompoundSExp(v1, v2);

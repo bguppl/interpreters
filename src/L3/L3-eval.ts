@@ -49,7 +49,7 @@ const evalProc = (exp: ProcExp, env: Env): Result<Closure> =>
 const L3applyProcedure = (proc: Value, args: Value[], env: Env): Result<Value> =>
     isPrimOp(proc) ? applyPrimitive(proc, args) :
     isClosure(proc) ? applyClosure(proc, args, env) :
-    makeFailure("Bad procedure " + JSON.stringify(proc));
+    makeFailure(`Bad procedure ${JSON.stringify(proc, null, 2)}`);
 
 // Applications are computed by substituting computed
 // values into the body of the closure.
@@ -88,7 +88,7 @@ const evalCExps = (first: Exp, rest: Exp[], env: Env): Result<Value> =>
 const evalDefineExps = (def: Exp, exps: Exp[], env: Env): Result<Value> =>
     isDefineExp(def) ? bind(L3applicativeEval(def.val, env), (rhs: Value) => 
                                 evalSequence(exps, makeEnv(def.var.var, rhs, env))) :
-    makeFailure("Unexpected " + def);
+    makeFailure(`Unexpected in evalDefine: ${JSON.stringify(def, null, 2)}`);
 
 // Main program
 export const evalL3program = (program: Program): Result<Value> =>

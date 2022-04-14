@@ -1,23 +1,26 @@
-import { isNumExp, parseL1Exp, isBoolExp, isVarRef, isDefineExp, isVarDecl, isAppExp, isProgram, parseL1 } from "../../src/L1/L1-ast";
-import { isOkT, isFailure, bind } from "../../src/shared/result";
+import { isNumExp, parseL1Exp, isBoolExp, isVarRef, isDefineExp, isVarDecl, isAppExp, isProgram, parseL1, Exp } from "../../src/L1/L1-ast";
+import { isOkT, isFailure, Result, bind } from "../../src/shared/result";
 import { parse as p } from "../../src/shared/parser";
+
+const parse = (s: string): Result<Exp> =>
+    bind(p(s), parseL1Exp);
 
 describe("L1 Parsing", () => {
     it("parses a number as NumExp", () => {
-        expect(bind(p("1"), parseL1Exp)).toSatisfy(isOkT(isNumExp));
+        expect(parse("1")).toSatisfy(isOkT(isNumExp));
     });
 
     it("parses a boolean as BoolExp", () => {
-        expect(bind(p("#t"), parseL1Exp)).toSatisfy(isOkT(isBoolExp));
-        expect(bind(p("#f"), parseL1Exp)).toSatisfy(isOkT(isBoolExp));
+        expect(parse("#t")).toSatisfy(isOkT(isBoolExp));
+        expect(parse("#f")).toSatisfy(isOkT(isBoolExp));
     });
 
     it("parses a variable as VarRef", () => {
-        expect(bind(p("x"), parseL1Exp)).toSatisfy(isOkT(isVarRef));
+        expect(parse("x")).toSatisfy(isOkT(isVarRef));
     });
 
     it('parses "define" expressions as DefineExp', () => {
-        const parsed = bind(p("(define x 1)"), parseL1Exp);
+        const parsed = parse("(define x 1)");
         expect(parsed).toSatisfy(isOkT(isDefineExp));
         if (isOkT(isDefineExp)(parsed)) {
             expect(parsed.value.var).toSatisfy(isVarDecl);
@@ -28,8 +31,8 @@ describe("L1 Parsing", () => {
     });
 
     it("parses application expressions as AppExp", () => {
-        expect(bind(p("(> x 1)"), parseL1Exp)).toSatisfy(isOkT(isAppExp));
-        expect(bind(p("(> (+ x x) (* x x))"), parseL1Exp)).toSatisfy(isOkT(isAppExp));
+        expect(parse("(> x 1)")).toSatisfy(isOkT(isAppExp));
+        expect(parse("(> (+ x x) (* x x))")).toSatisfy(isOkT(isAppExp));
     });
     
     it("parses a program as Program", () => {

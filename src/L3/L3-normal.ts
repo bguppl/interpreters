@@ -31,7 +31,7 @@ export const L3normalEval = (exp: CExp, env: Env): Result<Value> =>
     // This is the difference between applicative-eval and normal-eval
     // Substitute the arguments into the body without evaluating them first.
     isAppExp(exp) ? bind(L3normalEval(exp.rator, env), proc => L3normalApplyProc(proc, exp.rands, env)) :
-    makeFailure(`Bad ast: ${exp}`);
+    makeFailure(`Bad ast: ${JSON.stringify(exp, null, 2)}`);
 
 const evalIf = (exp: IfExp, env: Env): Result<Value> =>
     bind(L3normalEval(exp.test, env), (test: SExpValue) => 
@@ -56,7 +56,7 @@ const L3normalApplyProc = (proc: Value, args: CExp[], env: Env): Result<Value> =
         const body = renameExps(proc.body);
         return L3normalEvalSeq(substitute(body, vars, args), env);
     } else {
-        return makeFailure(`Bad proc applied ${proc}`);
+        return makeFailure(`Bad proc applied ${JSON.stringify(proc, null, 2)}`);
     }
 };
 
@@ -101,7 +101,7 @@ const evalCExps = (exp1: Exp, exps: Exp[], env: Env): Result<Value> =>
 const evalDefineExps = (def: Exp, exps: Exp[], env: Env): Result<Value> =>
     isDefineExp(def) ? bind(L3normalEval(def.val, env), (rhs: Value) => 
                                 evalExps(exps, makeEnv(def.var.var, rhs, env))) :
-    makeFailure("Unexpected " + def);
+    makeFailure(`Unexpected ${JSON.stringify(def, null, 2)}`);
 
 export const evalNormalParse = (s: string): Result<Value> =>
     bind(p(s), (parsed: Sexp) => 

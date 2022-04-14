@@ -179,13 +179,13 @@ export const parseL5 = (x: string): Result<Program> =>
 
 export const parseL5Program = (sexp: Sexp): Result<Program> =>
     sexp === "" || isEmpty(sexp) ? makeFailure("Unexpected empty program") :
-    isToken(sexp) ? makeFailure("Program cannot be a single token") :
+    isToken(sexp) ? makeFailure(`Program cannot be a single token: ${JSON.stringify(sexp)}`) :
     isArray(sexp) ? parseL5GoodProgram(first(sexp), rest(sexp)) :
     sexp;
 
 const parseL5GoodProgram = (keyword: Sexp, body: Sexp[]): Result<Program> =>
     keyword === "L5" && !isEmpty(body) ? mapv(mapResult(parseL5Exp, body), (exps: Exp[]) => makeProgram(exps)) :
-    makeFailure("Program must be of the form (L5 <exp>+)");
+    makeFailure(`Program must be of the form (L5 <exp>+): ${JSON.stringify([keyword, ...body], null, 2)}`);
 
 export const parseL5Exp = (sexp: Sexp): Result<Exp> =>
     isEmpty(sexp) ? makeFailure("Exp cannot be an empty list") :
@@ -213,12 +213,12 @@ export const parseL5SpecialForm = (op: SpecialFormKeyword, params: Sexp[]): Resu
 
 export const parseDefine = (params: Sexp[]): Result<DefineExp> =>
     isEmpty(params) ? makeFailure("define missing 2 arguments") :
-    isEmpty(rest(params)) ? makeFailure("define missing 1 arguments") :
-    ! isEmpty(rest(rest(params))) ? makeFailure("define has too many arguments") :
+    isEmpty(rest(params)) ? makeFailure(`define missing 1 arguments: ${JSON.stringify(params, null, 2)}`) :
+    ! isEmpty(rest(rest(params))) ? makeFailure(`define has too many arguments: ${JSON.stringify(params, null, 2)}`) :
     parseGoodDefine(first(params), second(params));
 
 const parseGoodDefine = (variable: Sexp, val: Sexp): Result<DefineExp> =>
-    ! isConcreteVarDecl(variable) ? makeFailure("First arg of define must be an identifier") :
+    ! isConcreteVarDecl(variable) ? makeFailure(`First arg of define must be an identifier: ${JSON.stringify(variable, null, 2)}`) :
     bind(parseVarDecl(variable), (varDecl: VarDecl) =>
         mapv(parseL5CExp(val), (val: CExp) =>
             makeDefineExp(varDecl, val)));
@@ -243,7 +243,7 @@ const parseAppExp = (op: Sexp, params: Sexp[]): Result<AppExp> =>
             makeAppExp(rator, rands)));
 
 const parseIfExp = (params: Sexp[]): Result<IfExp> =>
-    params.length !== 3 ? makeFailure("Expression not of the form (if <cexp> <cexp> <cexp>)") :
+    params.length !== 3 ? makeFailure(`Expression not of the form (if <cexp> <cexp> <cexp>): ${JSON.stringify(params, null, 2)}`) :
     mapv(mapResult(parseL5CExp, params), (cexps: CExp[]) => 
         makeIfExp(cexps[0], cexps[1], cexps[2]));
 
@@ -258,7 +258,7 @@ const parseProcExp = (vars: Sexp, rest: Sexp[]): Result<ProcExp> => {
                         mapv(returnTE, (returnTE: TExp) =>
                             makeProcExp(args, body, returnTE))));
     } else {
-        return makeFailure(`Invalid args ${JSON.stringify(vars)}`)
+        return makeFailure(`Invalid args ${JSON.stringify(vars, null, 2)}`)
     }
 }
 
@@ -267,7 +267,7 @@ const isGoodBindings = (bindings: Sexp): bindings is [Sexp, Sexp][] =>
 
 const parseLetExp = (bindings: Sexp, body: Sexp[]): Result<LetExp> =>
     isEmpty(body) ? makeFailure('Body of "let" cannot be empty') :
-    ! isGoodBindings(bindings) ? makeFailure(`Invalid bindings: ${JSON.stringify(bindings)}`) :
+    ! isGoodBindings(bindings) ? makeFailure(`Invalid bindings: ${JSON.stringify(bindings, null, 2)}`) :
     bind(parseBindings(bindings), (bdgs: Binding[]) =>
         mapv(mapResult(parseL5CExp, body), (body: CExp[]) =>
             makeLetExp(bdgs, body)));
@@ -284,10 +284,10 @@ export const parseVarDecl = (sexp: Sexp): Result<VarDecl> => {
         if (isString(v)) {
             return mapv(parseTExp(sexp[2]), (te: TExp) => makeVarDecl(v, te));
         } else {
-            return makeFailure(`Invalid var ${sexp[0]}`);
+            return makeFailure(`Invalid var ${JSON.stringify(sexp[0], null, 2)}`);
         }
     } else {
-        return makeFailure("Var cannot be a SexpString");
+        return makeFailure(`Var cannot be a SexpString: ${JSON.stringify(sexp)}`);
     }
 }
 
@@ -298,19 +298,19 @@ const parseBindings = (bindings: [Sexp, Sexp][]): Result<Binding[]> =>
 
 const parseLetrecExp = (bindings: Sexp, body: Sexp[]): Result<LetrecExp> =>
     isEmpty(body) ? makeFailure('Body of "letrec" cannot be empty') :
-    ! isGoodBindings(bindings) ? makeFailure(`Invalid bindings: ${JSON.stringify(bindings)}`) :
+    ! isGoodBindings(bindings) ? makeFailure(`Invalid bindings: ${JSON.stringify(bindings, null, 2)}`) :
     bind(parseBindings(bindings), (bdgs: Binding[]) =>
         mapv(mapResult(parseL5CExp, body), (body: CExp[]) => 
             makeLetrecExp(bdgs, body)));
 
 const parseSetExp = (params: Sexp[]): Result<SetExp> =>
     isEmpty(params) ? makeFailure("set! missing 2 arguments") :
-    isEmpty(rest(params)) ? makeFailure("set! missing 1 argument") :
-    ! isEmpty(rest(rest(params))) ? makeFailure("set! has too many arguments") :
+    isEmpty(rest(params)) ? makeFailure(`set! missing 1 argument: ${JSON.stringify(params, null, 2)}`) :
+    ! isEmpty(rest(rest(params))) ? makeFailure(`set! has too many arguments: ${JSON.stringify(params, null, 2)}`) :
     parseGoodSetExp(first(params), second(params));
     
 const parseGoodSetExp = (variable: Sexp, val: Sexp): Result<SetExp> =>
-    ! isIdentifier(variable) ? makeFailure("First arg of set! must be an identifier") :
+    ! isIdentifier(variable) ? makeFailure(`First arg of set! must be an identifier: ${JSON.stringify(variable, null, 2)}`) :
     mapv(parseL5CExp(val), (val: CExp) => makeSetExp(makeVarRef(variable), val));
 
 // sexps has the shape (quote <sexp>)
@@ -337,7 +337,7 @@ export const parseSExp = (sexp: Sexp): Result<SExpValue> =>
     isArray(sexp) && isDottedPair(sexp) ? makeDottedPair(sexp) :
     isArray(sexp) ? (
         // fail on (x . y z)
-        sexp[0] === '.' ? makeFailure("Bad dotted sexp: " + sexp) : 
+        sexp[0] === '.' ? makeFailure(`Bad dotted sexp: ${JSON.stringify(sexp, null, 2)}`) : 
         bind(parseSExp(first(sexp)), (val1: SExpValue) =>
             mapv(parseSExp(rest(sexp)), (val2: SExpValue) =>
                 makeCompoundSExp(val1, val2)))

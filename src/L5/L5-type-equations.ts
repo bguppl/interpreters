@@ -193,7 +193,7 @@ const solve = (equations: Equation[], sub: S.Sub): Res.Result<S.Sub> => {
     const handleBothSidesAtomic = (eq: Equation): Res.Result<S.Sub> =>
         T.isAtomicTExp(eq.left) && T.isAtomicTExp(eq.right) && T.eqAtomicTExp(eq.left, eq.right)
         ? solve(rest(equations), sub)
-        : Res.makeFailure(`Equation with non-equal atomic type ${eq}`);
+        : Res.makeFailure(`Equation with non-equal atomic type ${JSON.stringify(eq, null, 2)}`);
 
     if (isEmpty(equations)) {
         return Res.makeOk(sub);
@@ -207,7 +207,7 @@ const solve = (equations: Equation[], sub: S.Sub): Res.Result<S.Sub> => {
            bothSidesAtomic(eq) ? handleBothSidesAtomic(eq) :
            T.isCompoundTExp(eq.left) && T.isCompoundTExp(eq.right) && canUnify(eq) ?
                 solve(R.concat(rest(equations), splitEquation(eq)), sub) :
-           Res.makeFailure(`Equation contains incompatible types ${eq}`);
+           Res.makeFailure(`Equation contains incompatible types ${JSON.stringify(eq, null, 2)}`);
 };
 
 // Signature: canUnify(equation)

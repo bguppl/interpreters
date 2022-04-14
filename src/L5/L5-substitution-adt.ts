@@ -34,10 +34,10 @@ export const makeEmptySub = (): Sub => ({tag: "Sub", vars: [], tes: []});
 // Return error if a circular reference is found.
 export const checkNoOccurrence = (tvar: TVar, te: TExp): Result<true> => {
     const check = (e: TExp): Result<true> =>
-        isTVar(e) ? ((e.var === tvar.var) ? bind(unparseTExp(te), up => makeFailure(`Occur check error - circular sub ${tvar.var} in ${up}`)) : makeOk(true)) :
+        isTVar(e) ? ((e.var === tvar.var) ? bind(unparseTExp(te), up => makeFailure(`Occur check error - circular sub ${tvar.var} in ${JSON.stringify(up, null, 2)}`)) : makeOk(true)) :
         isAtomicTExp(e) ? makeOk(true) :
         isProcTExp(e) ? bind(mapResult(check, e.paramTEs), _ => check(e.returnTE)) :
-        makeFailure(`Bad type expression ${e} in ${te}`);
+        makeFailure(`Bad type expression ${e} in ${JSON.stringify(te, null, 2)}`);
     return check(te);
 };
 

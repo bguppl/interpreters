@@ -14,7 +14,7 @@ import { parse as p } from "../shared/parser";
 // Exp is only passed for documentation purposes.
 // te1 can be undefined when it is retrieved from a type variable which is not yet bound.
 const checkEqualType = (te1: T.TExp | undefined, te2: T.TExp, exp: A.Exp): Result<true> =>
-    te1 === undefined ? bind(T.unparseTExp(te2), (texp: string) => makeFailure(`Incompatible types: undefined - ${texp}`)) :
+    te1 === undefined ? bind(T.unparseTExp(te2), (texp: string) => makeFailure(`Incompatible types: undefined - ${JSON.stringify(texp, null, 2)}`)) :
     T.isTVar(te1) && T.isTVar(te2) ? ((T.eqTVar(te1, te2) ? makeOk(true) : checkTVarEqualTypes(te1, te2, exp))) :
     T.isTVar(te1) ? checkTVarEqualTypes(te1, te2, exp) :
     T.isTVar(te2) ? checkTVarEqualTypes(te2, te1, exp) :
@@ -60,9 +60,9 @@ const checkNoOccurrence = (tvar: T.TVar, te: T.TExp, exp: A.Exp): Result<true> =
         T.isAtomicTExp(te1) ? makeOk(true) :
         T.isProcTExp(te1) ? checkList(T.procTExpComponents(te1)) :
         T.isTVar(te1) ? 
-            (T.eqTVar(te1, tvar) ? bind(A.unparse(exp), (exp: string) => makeFailure(`Occur check error - ${te1.var} - ${tvar.var} in ${exp}`)) : 
+            (T.eqTVar(te1, tvar) ? bind(A.unparse(exp), (exp: string) => makeFailure(`Occur check error - ${te1.var} - ${tvar.var} in ${JSON.stringify(exp, null, 2)}`)) : 
              makeOk(true)) :
-        bind(A.unparse(exp), (exp: string) => makeFailure(`Bad type expression - ${JSON.stringify(te1)} in ${exp}`));
+        bind(A.unparse(exp), (exp: string) => makeFailure(`Bad type expression - ${JSON.stringify(te1)} in ${JSON.stringify(exp, null, 2)}`));
 
     return loop(te);
 }
@@ -93,7 +93,7 @@ export const typeofExp = (exp: A.Parsed, tenv: E.TEnv): Result<T.TExp> =>
     A.isDefineExp(exp) ? typeofDefine(exp, tenv) :
     A.isProgram(exp) ? typeofProgram(exp, tenv) :
     // TODO: isSetExp(exp) isLitExp(exp)
-    makeFailure("Unknown type");
+    makeFailure(`Unknown type: ${JSON.stringify(exp, null, 2)}`);
 
 // Purpose: Compute the type of a sequence of expressions
 // Signature: typeof-exps(exps, tenv)
@@ -185,7 +185,7 @@ export const typeofLetrec = (exp: A.LetrecExp, tenv: E.TEnv): Result<T.TExp> => 
     const procs = R.map((b) => b.val, exp.bindings);
     if (! allT(A.isProcExp, procs)) {
         return bind(A.unparse(exp), (exp: string) =>
-                    makeFailure(`letrec - only support binding of procedures - ${exp}`));
+                    makeFailure(`letrec - only support binding of procedures - ${JSON.stringify(exp, null, 2)}`));
     }
     const paramss = R.map((p) => p.args, procs);
     const bodies = R.map((p) => p.body, procs);

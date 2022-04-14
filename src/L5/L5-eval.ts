@@ -51,7 +51,7 @@ const evalProc = (exp: ProcExp, env: Env): Result<Closure> =>
 const applyProcedure = (proc: Value, args: Value[]): Result<Value> =>
     isPrimOp(proc) ? applyPrimitive(proc, args) :
     isClosure(proc) ? applyClosure(proc, args) :
-    makeFailure(`Bad procedure ${JSON.stringify(proc)}`);
+    makeFailure(`Bad procedure ${JSON.stringify(proc, null, 2)}`);
 
 const applyClosure = (proc: Closure, args: Value[]): Result<Value> => {
     const vars = map((v: VarDecl) => v.var, proc.params);
@@ -79,7 +79,7 @@ const evalDefineExps = (def: Exp, exps: Exp[]): Result<Value> =>
                             globalEnvAddBinding(def.var.var, rhs);
                             return evalSequence(exps, theGlobalEnv); 
                         }) :
-    makeFailure("Unexpected " + def);
+    makeFailure(`Unexpected define: ${JSON.stringify(def, null, 2)}`);
 
 // Main program
 export const evalProgram = (program: Program): Result<Value> =>

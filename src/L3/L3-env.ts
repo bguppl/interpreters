@@ -19,7 +19,7 @@ export const isNonEmptyEnv = (x: any): x is NonEmptyEnv => x.tag === "Env";
 export const isEnv = (x: any): x is Env => isEmptyEnv(x) || isNonEmptyEnv(x);
 
 export const applyEnv = (env: Env, v: string): Result<Value> =>
-    isEmptyEnv(env) ? makeFailure("var not found " + v) :
+    isEmptyEnv(env) ? makeFailure(`var not found: ${v}`) :
     env.var === v ? makeOk(env.val) :
     applyEnv(env.nextEnv, v);
 

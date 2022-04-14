@@ -1,7 +1,7 @@
 import { map } from 'ramda';
 import { makeNumExp, makeVarDecl, makeVarRef } from "../../src/L3/L3-ast";
 import * as LA from "../../src/L3/lexicalAddress";
-import { Result, makeOk, bind, isOkT } from "../../src/shared/result";
+import { Result, makeOk, bind, mapv, isOkT } from "../../src/shared/result";
 import { Sexp } from "s-expression";
 
 describe('parseLA', () => {
@@ -63,13 +63,19 @@ describe('crossContour', () => {
 describe('addLexicalAddress', () => {
     it('works...', () => {
         const f = (s: string): Result<Sexp> =>
-            bind(LA.parseLA(s), cexpla => bind(LA.addLexicalAddresses(cexpla), cexpla => makeOk(LA.unparseLA(cexpla))));
+            bind(LA.parseLA(s), cexpla => 
+                 mapv(LA.addLexicalAddresses(cexpla), cexpla => 
+                      LA.unparseLA(cexpla)));
+
         expect(f("(lambda (x) x)")).toEqual(makeOk(["lambda", ["x"], ["x", ":", "0", "0"]]));
+        
         expect(f("(lambda (x) (lambda (y) (+ x y)))")).toEqual(
             makeOk(["lambda", ["x"], ["lambda", ["y"], [["+", "free"], ["x", ":", "1", "0"], ["y", ":", "0", "0"]]]])
         );
+        
         expect(f("((lambda (x) (* x x)) ((lambda (x) (+ x x)) 2))")).toEqual(
-            makeOk([["lambda", ["x"], [["*", "free"], ["x", ":", "0", "0"], ["x", ":", "0", "0"]]], [["lambda", ["x"], [["+", "free"], ["x", ":", "0", "0"], ["x", ":", "0", "0"]]], "2"]])
+            makeOk([["lambda", ["x"], [["*", "free"], ["x", ":", "0", "0"], ["x", ":", "0", "0"]]], 
+                    [["lambda", ["x"], [["+", "free"], ["x", ":", "0", "0"], ["x", ":", "0", "0"]]], "2"]])
         );
     });
 });

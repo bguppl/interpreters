@@ -57,14 +57,14 @@ const parseESexp = (sexp: Sexp): Result<E> =>
     isString(sexp) ? parseEAtomic(sexp) :
     isArray(sexp) ? parseECompound(sexp) :
     // Quoted strings are not legal in the E-expression language
-    makeFailure("Expected either a compound expression or a token, got a quoted string");
+    makeFailure(`Expected either a compound expression or a token, got a quoted string: ${JSON.stringify(sexp, null, 2)}`);
 
 // Only numeric tokens are ok in this language
 // We decided not to refer to "+" and other primitives as distinct atomic expressions.
 // The decision is different in Scheme (and L1)
 const parseEAtomic = (sexp: string): Result<E> =>
     isNumericString(sexp) ? makeOk(makeNumExp(+sexp)) :
-    makeFailure("Bad token " + sexp);
+    makeFailure(`Bad token: ${JSON.stringify(sexp, null, 2)}`);
 
 // Compound expressions must be of the form (<exp> <op> <exp>) where op in (*, +)
 // This procedure is recursive since the left and right sides can be embedded compound expressions.
@@ -73,12 +73,12 @@ const parseECompound = (sexps: Sexp[]): Result<E> =>
     isString(sexps[1]) ? bind(parseESexp(sexps[0]), (arg1: E) =>
                               bind(parseESexp(sexps[2]), (arg2: E) =>
                                    parseE3(sexps[1], arg1, arg2))) :
-    makeFailure("Expected operator, got compound expression");
+    makeFailure(`Expected operator, got compound expression: ${JSON.stringify(sexps[1], null, 2)}`);
 
 const parseE3 = (op: Sexp, arg1: E, arg2: E): Result<E> =>
     op === "+" ? makeOk(makeAddExp(arg1, arg2)) :
     op === "*" ? makeOk(makeMulExp(arg1, arg2)) :
-    makeFailure("Bad operator " + op);
+    makeFailure(`Bad operator: ${JSON.stringify(op, null, 2)}`);
 
 // Examples
 

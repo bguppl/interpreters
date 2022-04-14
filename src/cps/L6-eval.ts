@@ -93,7 +93,7 @@ export const evalExps = (exps: Exp[], env: Env, cont: ContArray): Result<Value> 
     evalExpsFR(first(exps), rest(exps), env, cont)
 
 const evalExpsFR = (exp: Exp, exps: Exp[], env: Env, cont: ContArray): Result<Value> =>
-    isDefineExp(exp) ? cont(bind(unparse(exp), up => makeFailure(`Unexpected define: ${up}`))) :
+    isDefineExp(exp) ? cont(bind(unparse(exp), up => makeFailure(`Unexpected define: ${JSON.stringify(up, null, 2)}`))) :
     evalCont(exp, env,
              (firstVal: Result<Value>) =>
                 bind(firstVal,
@@ -135,7 +135,7 @@ const evalApp = (exp: AppExp, env: Env, cont: Cont): Result<Value> =>
 const applyProcedure = (proc: Value, args: Value[], cont: Cont): Result<Value> =>
     isPrimOp(proc) ? cont(applyPrimitive(proc, args)) :
     isClosure(proc) ? applyClosure(proc, args, cont) :
-    cont(makeFailure(`Bad procedure ${JSON.stringify(proc)}`));
+    cont(makeFailure(`Bad procedure ${JSON.stringify(proc, null, 2)}`));
 
 const applyClosure = (proc: Closure, args: Value[], cont: Cont): Result<Value> => {
     const vars = map((v: VarDecl) => v.var, proc.params);

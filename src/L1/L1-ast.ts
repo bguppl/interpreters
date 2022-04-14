@@ -5,7 +5,7 @@
 // - Type definitions for the AST of the language (with type predicates, constructors, getters)
 // - A parser function which constructs AST values from strings.
 
-import { isString, isArray, isNumericString, isIdentifier } from '../shared/type-predicates';
+import { isString, isNumericString, isIdentifier } from '../shared/type-predicates';
 import { first, rest, second, isEmpty } from '../shared/list';
 import { Result, makeOk, makeFailure, bind, mapResult, mapv } from "../shared/result";
 
@@ -19,11 +19,11 @@ export type CExp = NumExp | BoolExp | PrimOp | VarRef | AppExp;
 
 export interface Program {tag: "Program"; exps: Exp[]; }
 
-export interface DefineExp {tag: "DefineExp"; var: VarDecl; val: CExp; }
+export interface DefineExp {tag: "DefineExp"; var: VarDecl; val: CExp; }  // (define <var> <exp>)
 export interface NumExp {tag: "NumExp"; val: number; }
 export interface BoolExp {tag: "BoolExp"; val: boolean; }
 export interface PrimOp {tag: "PrimOp", op: string; }
-export interface VarRef {tag: "VarRef", var: string; }
+export interface VarRef {tag: "VarRef", var: string; } 
 export interface VarDecl {tag: "VarDecl", var: string; }
 export interface AppExp {tag: "AppExp", rator: CExp, rands: CExp[]; }
 
@@ -59,7 +59,8 @@ export const isCExp = (x: any): x is CExp =>
 
 // Make sure to run "npm install ramda s-expression --save"
 import { Sexp, Token } from "s-expression";
-import { parse as parseSexp, isToken } from "../shared/parser";
+import { parse as parseSexp, isToken, isCompoundSexp } from "../shared/parser";
+import { all, find } from 'ramda';
 
 // combine Sexp parsing with the L1 parsing
 export const parseL1 = (x: string): Result<Program> =>
@@ -76,19 +77,20 @@ export const parseL1 = (x: string): Result<Program> =>
 // <Program> -> (L1 <Exp>+)
 export const parseL1Program = (sexp: Sexp): Result<Program> =>
     sexp === "" || isEmpty(sexp) ? makeFailure("Unexpected empty program") :
-    isToken(sexp) ? makeFailure("Program cannot be a single token") :
-    isArray(sexp) ? parseL1GoodProgram(first(sexp), rest(sexp)) :
+    isToken(sexp) ? makeFailure(`Program cannot be a single token: ${sexp}`) :
+    isCompoundSexp(sexp) ? parseL1GoodProgram(first(sexp), rest(sexp)) :
     sexp;
 
 const parseL1GoodProgram = (keyword: Sexp, body: Sexp[]): Result<Program> =>
     keyword === "L1" && !isEmpty(body) ? mapv(mapResult(parseL1Exp, body), (exps: Exp[]) => 
                                               makeProgram(exps)) :
-    makeFailure("Program must be of the form (L1 <exp>+)");
+    makeFailure(`Program must be of the form (L1 <exp>+): ${JSON.stringify(keyword, null, 2)}`);
 
 // Exp -> <DefineExp> | <Cexp>
+// <Sexp> = <CompoundSexp> | <Token>
 export const parseL1Exp = (sexp: Sexp): Result<Exp> =>
     isEmpty(sexp) ? makeFailure("Exp cannot be an empty list") :
-    isArray(sexp) ? parseL1CompoundExp(first(sexp), rest(sexp)) :
+    isCompoundSexp(sexp) ? parseL1CompoundExp(first(sexp), rest(sexp)) :
     isToken(sexp) ? parseL1Atomic(sexp) :
     sexp;
     
@@ -103,20 +105,20 @@ export const parseL1CompoundCExp = (op: Sexp, params: Sexp[]): Result<CExp> =>
 
 // DefineExp -> (define <varDecl> <CExp>)
 export const parseDefine = (params: Sexp[]): Result<DefineExp> =>
-    isEmpty(params) ? makeFailure("define missing 2 arguments") :
-    isEmpty(rest(params)) ? makeFailure("define missing 1 arguments") :
-    ! isEmpty(rest(rest(params))) ? makeFailure("define has too many arguments") :
+    isEmpty(params) ? makeFailure(`define missing 2 arguments: ${JSON.stringify(params, null, 2)}`) :
+    isEmpty(rest(params)) ? makeFailure(`define missing 1 arguments: ${JSON.stringify(params, null, 2)}`) :
+    ! isEmpty(rest(rest(params))) ? makeFailure(`define has too many arguments: ${JSON.stringify(params, null, 2)}`) :
     parseGoodDefine(first(params), second(params));
 
 const parseGoodDefine = (variable: Sexp, val: Sexp): Result<DefineExp> =>
-    ! isIdentifier(variable) ? makeFailure("First arg of define must be an identifier") :
+    ! isIdentifier(variable) ? makeFailure(`First arg of define must be an identifier: ${JSON.stringify(variable, null, 2)}`) :
     mapv(parseL1CExp(val), (value: CExp) => 
          makeDefineExp(makeVarDecl(variable), value));
 
 // CExp -> AtomicExp | CompondCExp
 export const parseL1CExp = (sexp: Sexp): Result<CExp> =>
     isEmpty(sexp) ? makeFailure("CExp cannot be an empty list") :
-    isArray(sexp) ? parseL1CompoundCExp(first(sexp), rest(sexp)) :
+    isCompoundSexp(sexp) ? parseL1CompoundCExp(first(sexp), rest(sexp)) :
     isToken(sexp) ? parseL1Atomic(sexp) :
     sexp;
 
@@ -127,7 +129,7 @@ export const parseL1Atomic = (token: Token): Result<CExp> =>
     isString(token) && isNumericString(token) ? makeOk(makeNumExp(+token)) :
     isString(token) && isPrimitiveOp(token) ? makeOk(makePrimOp(token)) :
     isString(token) ? makeOk(makeVarRef(token)) :
-    makeFailure("Invalid atomic token: " + token);
+    makeFailure(`Invalid atomic token: ${token}`);
 
 export const isPrimitiveOp = (x: string): boolean =>
     ["+", "-", "*", "/", ">", "<", "=", "not"].includes(x)
@@ -137,3 +139,4 @@ export const parseAppExp = (op: Sexp, params: Sexp[]): Result<CExp> =>
     bind(parseL1CExp(op), (rator: CExp) =>
          mapv(mapResult(parseL1CExp, params), (rands: CExp[]) =>
               makeAppExp(rator, rands)));
+

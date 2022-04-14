@@ -32,7 +32,7 @@ const applicativeEval = (exp: CExp, env: Env): Result<Value> =>
     isAppExp(exp) ? bind(applicativeEval(exp.rator, env), (proc: Value) =>
                         bind(mapResult((rand: CExp) => applicativeEval(rand, env), exp.rands), (args: Value[]) =>
                             applyProcedure(proc, args))) :
-    isSetExp(exp) ? makeFailure(`To implement ${exp}`) :
+    isSetExp(exp) ? makeFailure(`To implement ${JSON.stringify(exp, null, 2)}`) :
     exp;
 
 export const isTrueValue = (x: Value): boolean =>
@@ -51,7 +51,7 @@ const evalProc = (exp: ProcExp, env: Env): Result<Closure> =>
 const applyProcedure = (proc: Value, args: Value[]): Result<Value> =>
     isPrimOp(proc) ? applyPrimitive(proc, args) :
     isClosure(proc) ? applyClosure(proc, args) :
-    makeFailure(`Bad procedure ${JSON.stringify(proc)}`);
+    makeFailure(`Bad procedure ${JSON.stringify(proc, null, 2)}`);
 
 const applyClosure = (proc: Closure, args: Value[]): Result<Value> => {
     const vars = map((v: VarDecl) => v.var, proc.params);
@@ -104,6 +104,6 @@ const evalLetrec = (exp: LetrecExp, env: Env): Result<Value> => {
         const bodies = map((v: ProcExp) => v.body, vals);
         return evalSequence(exp.body, makeRecEnv(vars, paramss, bodies, env));
     } else {
-        return makeFailure("Letrec: all variables must be bound to procedures");
+        return makeFailure(`Letrec: all variables must be bound to procedures: ${JSON.stringify(exp, null, 2)}`);
     }
 }

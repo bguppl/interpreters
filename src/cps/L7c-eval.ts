@@ -291,7 +291,7 @@ export const applySetCont = (): void => {
                               pcREG = "applyCont";
                           },
                           _ => {
-                              valREG = makeFailure(`var not found: ${v}`);
+                              valREG = makeFailure(`var not found: ${JSON.stringify(v, null, 2)}`);
                               contREG = cont.cont;
                               pcREG = "applyCont";
                           });
@@ -446,7 +446,7 @@ export const evalCont = (): void => {
     } else if (isAppExp(expREG)) {
         pcREG = 'evalApp';
     } else {
-        valREG = makeFailure(`Bad L5 AST ${expREG}`);
+        valREG = makeFailure(`Bad L5 AST ${JSON.stringify(expREG, null, 2)}`);
         pcREG = 'applyCont';
     }
 }
@@ -462,7 +462,7 @@ export const evalIf = (): void => {
         expREG = expREG.test;
         pcREG = 'evalCont';
     } else {
-        valREG = makeFailure(`Bad expREG in evalIf ${expREG}`);
+        valREG = makeFailure(`Bad expREG in evalIf ${JSON.stringify(expREG, null, 2)}`);
         pcREG = 'halt';
     }
 }
@@ -474,7 +474,7 @@ export const evalProc = (): void => {
         valREG = makeOk(makeClosure(expREG.args, expREG.body, envREG));
         pcREG = 'applyCont';
     } else {
-        valREG = makeFailure(`Bad expREG in evalProc ${expREG}`);
+        valREG = makeFailure(`Bad expREG in evalProc ${JSON.stringify(expREG, null, 2)}`);
         pcREG = 'halt';
     }
 }
@@ -497,7 +497,7 @@ export const evalLet = (): void => {
         contArrayREG = makeLetCont(expREG, envREG, contREG);
         pcREG = 'evalExps';
     } else {
-        valREG = makeFailure(`Bad expREG in evalLet ${expREG}`);
+        valREG = makeFailure(`Bad expREG in evalLet ${JSON.stringify(expREG, null, 2)}`);
         pcREG = 'halt';
     }
 }
@@ -548,7 +548,7 @@ export const evalLetrec = (): void => {
         contArrayREG = makeLetrecCont(expREG, extEnv, contREG);
         pcREG = 'evalExps';
     } else {
-        valREG = makeFailure(`Bad expREG in evalLetrec ${expREG}`);
+        valREG = makeFailure(`Bad expREG in evalLetrec ${JSON.stringify(expREG, null, 2)}`);
         pcREG = 'halt';
     }
 }
@@ -562,7 +562,7 @@ export const evalSet = (): void => {
         expREG = expREG.val;
         pcREG = 'evalCont';
     } else {
-        valREG = makeFailure(`Bad expREG in evalSet ${expREG}`);
+        valREG = makeFailure(`Bad expREG in evalSet ${JSON.stringify(expREG, null, 2)}`);
         pcREG = 'halt';
     }
 }
@@ -575,7 +575,7 @@ export const evalApp = (): void => {
         expREG = expREG.rator;
         pcREG = 'evalCont';
     } else {
-        valREG = makeFailure(`Bad expREG in evalApp ${expREG}`);
+        valREG = makeFailure(`Bad expREG in evalApp ${JSON.stringify(expREG, null, 2)}`);
         pcREG = 'halt';
     }
 }
@@ -604,7 +604,7 @@ export const applyProcedure = (): void => {
                           } else if (isClosure(val)) {
                               pcREG = "applyClosure";
                           } else {
-                              valREG = makeFailure(`Bad procedure: ${JSON.stringify(val)}`);
+                              valREG = makeFailure(`Bad procedure: ${JSON.stringify(val, null, 2)}`);
                               pcREG = "applyCont";
                           }
                       },
@@ -613,7 +613,7 @@ export const applyProcedure = (): void => {
                       });
            },
            _ => {
-               valREG = makeFailure(`Bad argument: ${JSON.stringify(valsREG)}`);
+               valREG = makeFailure(`Bad argument: ${JSON.stringify(valsREG, null, 2)}`);
                pcREG = "applyCont";
            });
 }
@@ -644,7 +644,7 @@ export const applyClosure = (): void => {
                    }
                },
                _ => {
-                   valREG = makeFailure(`Bad expREG in evalApp ${expREG}`);
+                   valREG = makeFailure(`Bad expREG in evalApp ${JSON.stringify(expREG, null, 2)}`);
                    pcREG = "halt";
                });
     } else {
@@ -671,7 +671,7 @@ export const evalExps = (): void => {
 const evalExpsFR = (): void => {
     dumpREG();
     if (isDefineExp(expREG)) {
-        valsREG = bind(unparse(expREG), e => makeFailure(`Unexpected define: ${e}`));
+        valsREG = bind(unparse(expREG), e => makeFailure(`Unexpected define: ${JSON.stringify(e, null, 2)}`));
         pcREG = 'applyContArray';
     } else {
         if (contArrayREG === undefined) {
@@ -694,7 +694,7 @@ export const evalDefineExps = (): void => {
         envREG = theGlobalEnv;
         pcREG = 'evalCont';
     } else {
-        valREG = makeFailure(`Bad expREG in evalDefine ${expREG}`);
+        valREG = makeFailure(`Bad expREG in evalDefine ${JSON.stringify(expREG, null, 2)}`);
         pcREG = 'halt';
     }
 }

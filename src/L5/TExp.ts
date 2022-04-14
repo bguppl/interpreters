@@ -155,7 +155,7 @@ export const parseTExp = (texp: Sexp): Result<TExp> =>
     (texp === "string") ? makeOk(makeStrTExp()) :
     isString(texp) ? makeOk(makeTVar(texp)) :
     isArray(texp) ? parseCompoundTExp(texp) :
-    makeFailure(`Unexpected TExp - ${texp}`);
+    makeFailure(`Unexpected TExp - ${JSON.stringify(texp, null, 2)}`);
 
 /*
 ;; expected structure: (<params> -> <returnte>)
@@ -164,10 +164,10 @@ export const parseTExp = (texp: Sexp): Result<TExp> =>
 */
 const parseCompoundTExp = (texps: Sexp[]): Result<ProcTExp> => {
     const pos = texps.indexOf('->');
-    return (pos === -1)  ? makeFailure(`Procedure type expression without -> - ${texps}`) :
-           (pos === 0) ? makeFailure(`No param types in proc texp - ${texps}`) :
-           (pos === texps.length - 1) ? makeFailure(`No return type in proc texp - ${texps}`) :
-           (texps.slice(pos + 1).indexOf('->') > -1) ? makeFailure(`Only one -> allowed in a procexp - ${texps}`) :
+    return (pos === -1)  ? makeFailure(`Procedure type expression without -> - ${JSON.stringify(texps, null, 2)}`) :
+           (pos === 0) ? makeFailure(`No param types in proc texp - ${JSON.stringify(texps, null, 2)}`) :
+           (pos === texps.length - 1) ? makeFailure(`No return type in proc texp - ${JSON.stringify(texps, null, 2)}`) :
+           (texps.slice(pos + 1).indexOf('->') > -1) ? makeFailure(`Only one -> allowed in a procexp - ${JSON.stringify(texps, null, 2)}`) :
            bind(parseTupleTExp(texps.slice(0, pos)), (args: TExp[]) =>
                mapv(parseTExp(texps[pos + 1]), (returnTE: TExp) =>
                     makeProcTExp(args, returnTE)));
@@ -184,7 +184,7 @@ const parseTupleTExp = (texps: Sexp[]): Result<TExp[]> => {
     const splitEvenOdds = (texps: Sexp[]): Result<Sexp[]> =>
         isEmpty(texps) ? makeOk([]) :
         isEmpty(rest(texps)) ? makeOk(texps) :
-        texps[1] !== '*' ? makeFailure(`Parameters of procedure type must be separated by '*': ${texps}`) :
+        texps[1] !== '*' ? makeFailure(`Parameters of procedure type must be separated by '*': ${JSON.stringify(texps, null, 2)}`) :
         mapv(splitEvenOdds(texps.slice(2)), (sexps: Sexp[]) => [texps[0], ...sexps]);
 
     return isEmptyTuple(texps) ? makeOk([]) : bind(splitEvenOdds(texps), (argTEs: Sexp[]) => 

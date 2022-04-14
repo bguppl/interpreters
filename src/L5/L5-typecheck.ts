@@ -52,7 +52,7 @@ export const typeofExp = (exp: Parsed, tenv: TEnv): Result<TExp> =>
     isDefineExp(exp) ? typeofDefine(exp, tenv) :
     isProgram(exp) ? typeofProgram(exp, tenv) :
     // TODO: isSetExp(exp) isLitExp(exp)
-    makeFailure("Unknown type");
+    makeFailure(`Unknown type: ${JSON.stringify(exp, null, 2)}`);
 
 // Purpose: Compute the type of a sequence of expressions
 // Check all the exps in a sequence - return type of last.
@@ -187,7 +187,7 @@ export const typeofLetrec = (exp: LetrecExp, tenv: TEnv): Result<TExp> => {
     const ps = map((b) => b.var.var, exp.bindings);
     const procs = map((b) => b.val, exp.bindings);
     if (! allT(isProcExp, procs))
-        return makeFailure(`letrec - only support binding of procedures - ${exp}`);
+        return makeFailure(`letrec - only support binding of procedures - ${JSON.stringify(exp, null, 2)}`);
     const paramss = map((p) => p.args, procs);
     const bodies = map((p) => p.body, procs);
     const tijs = map((params) => map((p) => p.texp, params), paramss);

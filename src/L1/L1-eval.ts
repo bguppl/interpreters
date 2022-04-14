@@ -28,7 +28,7 @@ export const isNonEmptyEnv = (x: any): x is NonEmptyEnv => x.tag === "Env";
 export const isEnv = (x: any): x is Env => isEmptyEnv(x) || isNonEmptyEnv(x);
 
 const applyEnv = (env: Env, v: string): Result<Value> =>
-    isEmptyEnv(env) ? makeFailure("var not found " + v) :
+    isEmptyEnv(env) ? makeFailure(`var not found ${v}`) :
     env.var === v ? makeOk(env.val) :
     applyEnv(env.nextEnv, v);
 
@@ -46,7 +46,7 @@ const L1applicativeEval = (exp: CExp, env: Env): Result<Value> =>
 
 const L1applyProcedure = (proc: CExp, args: Value[]): Result<Value> =>
     isPrimOp(proc) ? applyPrimitive(proc, args) :
-    makeFailure("Bad procedure " + proc);
+    makeFailure(`Bad procedure ${JSON.stringify(proc, null, 2)}`);
 
 // There are type errors which we will address in L3
 const applyPrimitive = (proc: PrimOp, args: Value[]): Result<Value> =>

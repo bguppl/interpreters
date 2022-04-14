@@ -128,19 +128,19 @@ const parseLACompound = (sexps: Sexp[]): Result<CExpLA> =>
 
 const parseAppExpLA = (sexps: Sexp[]): Result<AppExpLA> =>
     mapv(mapResult(parseLASExp, sexps), (cexps: CExpLA[]) => 
-            makeAppExpLA(first(cexps), rest(cexps)));
+         makeAppExpLA(first(cexps), rest(cexps)));
 
 const parseIfExpLA = (sexps: Sexp[]): Result<IfExpLA> =>
     mapv(mapResult(parseLASExp, rest(sexps)), (cexps: CExpLA[]) => 
-            makeIfExpLA(cexps[0], cexps[1], cexps[2]));
+         makeIfExpLA(cexps[0], cexps[1], cexps[2]));
 
 const parseProcExpLA = (sexps: Sexp[]): Result<ProcExpLA> => {
     const vars = sexps[1];
     if (isArray(vars) && allT(isString, vars)) {
         return mapv(mapResult(parseLASExp, rest(rest(sexps))), (body: CExpLA[]) => 
-                        makeProcExpLA(map(makeVarDecl, vars), body));
+                    makeProcExpLA(map(makeVarDecl, vars), body));
     } else {
-        return makeFailure("Invalid vars for ProcExp");
+        return makeFailure(`Invalid vars for ProcExp: ${JSON.stringify(vars, null, 2)}`);
     }
 }
 
@@ -274,24 +274,24 @@ export const addLexicalAddresses = (exp: CExpLA): Result<CExpLA> => {
     const visitProc = (proc: ProcExpLA, addresses: LexicalAddress[]): Result<ProcExpLA> => {
         const newAddresses = crossContour(proc.params, addresses);
         return mapv(mapResult(b => visit(b, newAddresses), proc.body), (bs: CExpLA[]) => 
-                        makeProcExpLA(proc.params, bs));
+                    makeProcExpLA(proc.params, bs));
     };
     const visit = (exp: CExpLA, addresses: LexicalAddress[]): Result<CExpLA> =>
         isBoolExp(exp) ? makeOk(exp) :
         isNumExp(exp) ? makeOk(exp) :
         isStrExp(exp) ? makeOk(exp) :
         isVarRef(exp) ? makeOk(getLexicalAddress(exp, addresses)) :
-        isFreeVar(exp) ? makeFailure(`unexpected LA ${exp}`) :
-        isLexicalAddress(exp) ? makeFailure(`unexpected LA ${exp}`) :
+        isFreeVar(exp) ? makeFailure(`unexpected LA ${JSON.stringify(exp, null, 2)}`) :
+        isLexicalAddress(exp) ? makeFailure(`unexpected LA ${JSON.stringify(exp, null, 2)}`) :
         isLitExp(exp) ? makeOk(exp) :
         isIfExpLA(exp) ? bind(visit(exp.test, addresses), (test: CExpLA) =>
-                                bind(visit(exp.then, addresses), (then: CExpLA) =>
-                                    mapv(visit(exp.alt, addresses), (alt: CExpLA) =>
+                              bind(visit(exp.then, addresses), (then: CExpLA) =>
+                                   mapv(visit(exp.alt, addresses), (alt: CExpLA) =>
                                         makeIfExpLA(test, then, alt)))) :
         isProcExpLA(exp) ? visitProc(exp, addresses) :
         isAppExpLA(exp) ? bind(visit(exp.rator, addresses), (rator: CExpLA) =>
-                            mapv(mapResult(rand => visit(rand, addresses), exp.rands), (rands: CExpLA[]) =>
-                                makeAppExpLA(rator, rands))) :
+                               mapv(mapResult(rand => visit(rand, addresses), exp.rands), (rands: CExpLA[]) =>
+                                    makeAppExpLA(rator, rands))) :
         exp;
     return visit(exp, []);
 };

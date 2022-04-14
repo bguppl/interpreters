@@ -50,7 +50,7 @@ export const isEnv = (x: any): x is Env => isEmptyEnv(x) || isExtEnv(x) || isRec
 
 // Apply-env
 export const applyEnv = (env: Env, v: string): Result<Value> =>
-    isEmptyEnv(env) ? makeFailure(`var not found ${v}`) :
+    isEmptyEnv(env) ? makeFailure(`var not found ${JSON.stringify(v, null, 2)}`) :
     isExtEnv(env) ? applyExtEnv(env, v) :
     applyRecEnv(env, v);
 
