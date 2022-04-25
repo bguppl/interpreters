@@ -443,7 +443,7 @@ async function createManyStudents2(baseUrl: string, names: string[]) {
             const maxStud = students.reduce(((prev, cur) => (Number(cur.id) > Number(prev.id)) ? cur : prev), {id: 0});
             let currStudId = Number(maxStud.id) + 1
             for (const name of names) {
-                newStud = {id: currStudId, title: names[0], author: `st${currStudId}`};
+                newStud = {id: currStudId, title: name, author: `st${currStudId}`};
                 await createStudent(baseUrl, newStud);
                 currStudId++;
             }
@@ -523,7 +523,7 @@ interface GeneratorFunction {
 }
 ```
 
-That is a generator function (`function *`) returns an *iterator* that also adheres to the iterable protocol thus can be used with `for-of` and `...`. Its `Symbol.iterator`  returns the generator itself.
+That is, a generator function (`function *`) returns an *iterator* that also adheres to the *iterable* protocol thus can be used with `for-of` and `...`. Its `Symbol.iterator`  returns the generator itself.
 
 
 
