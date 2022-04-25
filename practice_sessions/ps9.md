@@ -44,7 +44,7 @@ hard to write and even harder to read. For example:
 ```typescript
 function nestedSequentialRequests(baseUrl, studentName) {
     let args = {
-        headers: { "Content-Type":" application/json"},
+        headers: { "Content-Type": "application/json"},
     };
     request.get(baseUrl+"/posts", args, function(err, httpResponse, body) {
         if (err || httpResponse.statusCode >= 400) {
@@ -173,7 +173,7 @@ function createStudentPromise(baseUrl: string, studentName: string) {
     const request = {
         method: 'GET',
         uri: baseUrl+"/posts",
-        headers: {"Content-Type":" application/json"},
+        headers: {"Content-Type": "application/json"},
     };
     rpn(request)
         .then((data) => {
@@ -219,7 +219,7 @@ function createStudentPromiseChain(baseUrl: string, studentName: string) {
     const request = {
         method: 'GET',
         uri: baseUrl+"/posts",
-        headers: {"Content-Type":" application/json"},
+        headers: {"Content-Type": "application/json"},
     };
     rpn(request)
         .then((data) => {
@@ -256,7 +256,7 @@ function getStudents(baseUrl: string) {
     const request = {
         method: 'GET',
         uri: baseUrl+"/posts",
-        headers: {"Content-Type":" application/json"},
+        headers: {"Content-Type": "application/json"},
     };
     return rpn(request);
 }
@@ -301,7 +301,7 @@ function deleteStudent(baseUrl: string, id: string) {
     const request = {
         method: 'DELETE',
         uri: baseUrl+"/posts/"+id,
-        headers: {"Content-Type":" application/json"},
+        headers: {"Content-Type": "application/json"},
     };
     console.log("Submitted delete request for ", id);
     return rpn(request);
