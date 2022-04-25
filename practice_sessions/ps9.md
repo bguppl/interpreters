@@ -16,8 +16,11 @@ The callback function would then be called when the asynchronous operation ended
 import fs from 'fs';
 
 fs.writeFile('hello_world.txt', 'Hello World!', function (err) {
-    if (err) return console.log(err);
-    console.log('Wrote "Hello World" to hello_world.txt');
+    if (err) {
+        console.log(err);
+    } else {
+        console.log('Wrote "Hello World" to hello_world.txt');
+    }
 });
 ```
 
@@ -45,7 +48,7 @@ function nestedSequentialRequests(baseUrl, studentName) {
     };
     request.get(baseUrl+"/posts", args, function(err, httpResponse, body) {
         if (err || httpResponse.statusCode >= 400) {
-            return console.error('something went wrong on the first request:', err);
+            console.error('something went wrong on the first request:', err);
         } else {
             // Process the return value of the first GET request: extract max(id)
             // console.log("Server response: ", body);
@@ -62,7 +65,7 @@ function nestedSequentialRequests(baseUrl, studentName) {
             };
             request.post(args, function(err, httpResponse, body) {
                 if (err || httpResponse.statusCode >= 400) {
-                    return console.error('something went wrong in the second request:', err)
+                    console.error('something went wrong in the second request:', err)
                 }  else {
                     console.log("Created student: ", newStud);
                     console.log("Server response: ", body);
@@ -90,7 +93,7 @@ we write `g` first, then `f` - which reflects the order in which the functions a
 ## Promises to the rescue
 
 As we have observed in the example above, it is not practical to combine asynchronous functions.
-* It is difficult to "pipe" functions into each other
+* It is difficult to compose/"pipe" functions into each other
 * It is difficult to handle errors and propagate them
 
 [Promises](http://exploringjs.com/es6/ch_promises.html) are a technique that was introduced to make asynchronous composition more convenient.
@@ -150,6 +153,8 @@ Let us re-implement the example above with requests encapsulated as Promises.
 
 We will use a http-request module which produces a Promise object when we invoke it:
 
+> note that promise based http requests have been standardtized in the browser and are coming to node (currently experimental in node 18)
+
 It is installed with npm:
 
 ```
@@ -183,8 +188,8 @@ function createStudentPromise(baseUrl: string, studentName: string) {
                 url: baseUrl+"/posts",  
                 headers: { 'Content-Type': 'application/json' },
                 form: newStud
-            };
-            rpn(args)
+          };
+          rpn(args)
             .then((data)=> {
                     console.log("Created student: ", newStud);
                     console.log("Server response: ", data);
@@ -385,7 +390,7 @@ async function greeting1() {
     return 'Hello, world!';
 }
 
-const greeting2 = async() => 'Hello, World';
+const greeting2 = async () => 'Hello, World';
 
 // in both cases the type is () => Promise<string>
 // so we cant just use the value 
@@ -435,10 +440,12 @@ async function createManyStudents2(baseUrl: string, names: string[]) {
         try {
             const data = await getStudents(baseUrl);
             const students = JSON.parse(data);
+            const maxStud = students.reduce(((prev, cur) => (Number(cur.id) > Number(prev.id)) ? cur : prev), {id: 0});
+            let currStudId = Number(maxStud.id) + 1
             for (const name of names) {
-                maxStud = students.reduce(((prev, cur) => (Number(cur.id) > Number(prev.id)) ? cur : prev), {id: 0}),
-                    newStud = {id: Number(maxStud.id) + 1, title: names[0], author: "st" + (Number(maxStud.id) + 1)};
+                newStud = {id: currStudId, title: names[0], author: `st${currStudId}`};
                 await createStudent(baseUrl, newStud);
+                currStudId++;
             }
         } catch (err) {
             console.error("Something went wrong: ", err);
@@ -474,7 +481,7 @@ But what exactly did count3() return?
 
 To understand this we need the following two protocols:
 
-First, JavaScript defines the following very general **iterator protocol**:
+First, *JavaScript* defines the following very general **iterator protocol**:
 
 ```typescript
 interface IteratorResult<T> {
@@ -487,7 +494,7 @@ interface Iterator<T> {
 ```
 
 The second protocol we need the **iterable protocol**. 
-In JavaScript any object can hook into the `for ... of` construct (and the `...` spread syntax)
+In JavaScript any object can hook into the `for-of` construct (and the `...` spread syntax)
 by adding a special function name `Symbol.iterator` that returns an iterator. This is called the iterable protocol:
 
 ```typescript
@@ -515,4 +522,8 @@ interface GeneratorFunction {
     (...args: any[]): Generator;
 }
 ```
+
+That is a generator function (`function *`) returns an *iterator* that also adheres to the iterable protocol thus can be used with `for-of` and `...`. Its `Symbol.iterator`  returns the generator itself.
+
+
 
