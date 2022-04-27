@@ -19,7 +19,14 @@ export const substitute = (body: CExp[], vars: string[], exps: CExp[]): CExp[] =
         const argNames = map((x) => x.var, e.args);
         const subst = zip(vars, exps);
         const freeSubst = filter((ve) => !includes(first(ve), argNames), subst);
-        return makeProcExp(e.args, substitute(e.body, map((x: KeyValuePair<string, CExp>) => x[0], freeSubst), map((x: KeyValuePair<string, CExp>) => x[1], freeSubst)));
+        return makeProcExp(
+            e.args,
+            substitute(
+                e.body,
+                map((x: KeyValuePair<string, CExp>) => x[0], freeSubst),
+                map((x: KeyValuePair<string, CExp>) => x[1], freeSubst)
+            )
+        );
     };
     
     const sub = (e: CExp): CExp => isNumExp(e) ? e :
