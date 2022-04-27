@@ -258,7 +258,7 @@ const plus : (args: number[]) => number =
 const minus : (args: number[]) => number =
     reduce((x, y) => x - y, 0, args)
 ```
-And in the procedure ```eval-L1-program```, we initialize the global environment differently:
+And in the procedure ```evalL1program```, we initialize the global environment differently:
 
 ```typescript
 const evalL1program = (program: Program): Value =>
@@ -296,7 +296,7 @@ and we have two new primitives in our language (display and newline).
 
 <h3><b>Order of Evaluation of Parameters in a Procedure Application</b></h3>
 
-L1-eval-program(program) receives a program, which includes an ordered sequence of expressions. 
+evalL1program(program) receives a program, which includes an ordered sequence of expressions. 
 It iterates over the expressions and depending on the type of each expression, it either evaluates a ***DefineExp*** and obtains a new environment, which is then used to evaluate the next steps of the program; or it evaluates the expression.
 
 In expressions such as `(+ (+ 1 2) (+ 3 4) (+ 5 6))` the operational semantics does <b>not</b> specify the order of execution among the arguments - we could compute (+ 5  6) first and (+ 1 2) next, or in reverse, or even together (in parallel).
