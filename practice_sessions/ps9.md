@@ -399,7 +399,7 @@ const greeting2 = async () => 'Hello, World';
 greeting1().then(s => console.log(s))
 ```
 
-The `await` is only valid within an `async` function:
+The `await` is only valid within an `async` function (and also at the top level in newer javascript runtimes):
 
 ```typescript
 async function greeting3() {

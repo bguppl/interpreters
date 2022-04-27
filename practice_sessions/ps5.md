@@ -25,10 +25,10 @@ An environment represents a partial function (as opposed to a total function) fr
 It supports the operation ***apply-env(env, var)*** which either returns the value of ***var*** in the environment ***env***, or else throws an error.
 
 We define the environment data type inductively by the following definition:
-```
-  <env> ::= <empty-env> | <extended-env>
-  <empty-env> ::= (empty-env) // empty-env()
-  <extended-env> ::= (env <string> <value> <env>) // env(var:string, val:Value, inner-env: Env)
+```typescript
+type Env = EmptyEnv | NonEmptyEnv;
+interface EmptyEnv {tag: "EmptyEnv"}
+interface NonEmptyEnv {tag: "Env"; var: string; val: Value; nextEnv: Env;}
 ```
 
 The ***apply-env*** operation is defined recursively according to the structure of the data type:
