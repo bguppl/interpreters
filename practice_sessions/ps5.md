@@ -414,7 +414,7 @@ For example, the following are equivalent pairs:
 (lambda (x) (+ x y)) <==> (lambda (x1) (+ x1 y))  // y is not renamed because it occurs free
 ```
       
-Why renamin?
+Why renaming?
       
 ```scheme
 (define z not)
