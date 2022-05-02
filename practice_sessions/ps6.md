@@ -244,7 +244,7 @@ What line of code needs to be added to produce this diagram?
 Accordingly, the env diagram for this evaluation is:
 
 ```scheme
-(p1 (lambda (a b) a)
+(p1 (lambda (a b) a))
 ```
 
 <b>Q: </b>which env and closures will remain at the end of the evaluation?
