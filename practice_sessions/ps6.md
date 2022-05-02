@@ -427,6 +427,9 @@ const parseGoodSetExp = (variable: Sexp, val: Sexp): Result<SetExp> =>
 
 ```typescript
 const evalSet = (exp: SetExp, env: Env): Result<void> =>
-    safe2((val: Value, bdg: FBinding) => makeOk(setFBinding(bdg, val)))
-        (applicativeEval(exp.val, env), applyEnvBdg(env, exp.var.var));
+    bind(applicativeEval(exp.val, env), (val: Value) => 
+        bind(applyEnvBdg(env, exp.var.var), (bdg: FBinding) =>
+          makeOk(setFBinding(bdg, val))
+        )
+    )
 ```
