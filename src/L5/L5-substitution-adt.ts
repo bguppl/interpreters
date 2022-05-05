@@ -1,4 +1,4 @@
-import { partial, map, prop } from 'ramda';
+import { map, prop, includes } from 'ramda';
 import { eqTVar, isAtomicTExp, isProcTExp, isTVar, makeProcTExp, unparseTExp, TExp, TVar } from "./TExp";
 import { cons, isEmpty, first, rest } from "../shared/list";
 import { Result, makeOk, makeFailure, mapResult, bind, zipWithResult, mapv } from '../shared/result';
@@ -34,7 +34,8 @@ export const makeEmptySub = (): Sub => ({tag: "Sub", vars: [], tes: []});
 // Return error if a circular reference is found.
 export const checkNoOccurrence = (tvar: TVar, te: TExp): Result<true> => {
     const check = (e: TExp): Result<true> =>
-        isTVar(e) ? ((e.var === tvar.var) ? bind(unparseTExp(te), up => makeFailure(`Occur check error - circular sub ${tvar.var} in ${JSON.stringify(up, null, 2)}`)) : makeOk(true)) :
+        isTVar(e) ? ((e.var === tvar.var) ? bind(unparseTExp(te), up => makeFailure(`Occur check error - circular sub ${tvar.var} in ${JSON.stringify(up, null, 2)}`)) : 
+                                            makeOk(true)) :
         isAtomicTExp(e) ? makeOk(true) :
         isProcTExp(e) ? bind(mapResult(check, e.paramTEs), _ => check(e.returnTE)) :
         makeFailure(`Bad type expression ${e} in ${JSON.stringify(te, null, 2)}`);
@@ -62,7 +63,7 @@ export const applySub = (sub: Sub, te: TExp): TExp =>
     isEmptySub(sub) ? te :
     isAtomicTExp(te) ? te :
     isTVar(te) ? subGet(sub, te) :
-    isProcTExp(te) ? makeProcTExp(map(partial(applySub, [sub]), te.paramTEs), applySub(sub, te.returnTE)) :
+    isProcTExp(te) ? makeProcTExp(map((te) => applySub(sub, te), te.paramTEs), applySub(sub, te.returnTE)) :
     te;
 
 // ============================================================
@@ -81,8 +82,7 @@ const combine = (sub: Sub, vars: TVar[], tes: TExp[]): Result<Sub> =>
 // Calls to makeSub to do the occur-check
 export const extendSub = (sub: Sub, v: TVar, te: TExp): Result<Sub> =>
     bind(makeSub([v], [te]), (sub2: Sub) => {
-        const updatedTEs = map(partial(applySub, [sub2]), sub.tes);
-        return map(prop('var'), sub.vars).includes(v.var)
-               ? makeSub(sub.vars, updatedTEs)
-               : makeSub(cons(v, sub.vars), cons(te, updatedTEs));
+        const updatedTEs = map((te) => applySub(sub2, te), sub.tes);
+        return includes(v.var, map(prop('var'), sub.vars)) ? makeSub(sub.vars, updatedTEs) :
+               makeSub(cons(v, sub.vars), cons(te, updatedTEs));
     });
