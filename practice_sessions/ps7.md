@@ -15,15 +15,15 @@ A type-binding is a pair  `<T,s(T)>`  such that  `T = s(T)`. Type-Substitutions 
 
 A typing statement is a true/false formula that states a judgment about the type of a language expression, given a type environment.
 
-It has the notation:  `Tenv |- e:T`, which reads: under the type-environment Tenv, the expression e has type T.
+It has the notation:  `Tenv ⊢ e:T`, which reads: under the type-environment Tenv, the expression e has type T.
 
-E.g.,  `{x:Number} |- (+ 3 x):Number`  states that under the assumption that the type of x is Number, the type of (+ 3 x) is Number. For the typing statement below, note whether they are  **true or false:**
+E.g.,  `{x:Number} ⊢ (+ 3 x):Number`  states that under the assumption that the type of x is Number, the type of (+ 3 x) is Number. For the typing statement below, note whether they are  **true or false:**
 
-* **{f:[Number->T1]} |- (f 7): T1**	
-* **{y:Number, f:[T1->T1]} |- (f x):T1**	
-* **{x:Number} |- x: Boolean**	
-* **{x:Boolean, y:Number} |- x: Boolean**
-* **{f:[T1->T2], g:[T2->T3], x:T1} |- (g (f x)):T3**
+* **{f:[Number->T1]} ⊢ (f 7): T1**	
+* **{y:Number, f:[T1->T1]} ⊢ (f x):T1**	
+* **{x:Number} ⊢ x: Boolean**	
+* **{x:Boolean, y:Number} ⊢ x: Boolean**
+* **{f:[T1->T2], g:[T2->T3], x:T1} ⊢ (g (f x)):T3**
 
 ## Question 2 
 
@@ -33,10 +33,10 @@ Note : assumptions in Tenv are an added part to the axioms we have.
 
 |Term 1                         | Term 2 
 |-------------------------------|-----------------------------|
-|{foo: [T1->T2]} \|- 5:N	    |{} \|- 5:N  
-|{x:N} \|- (+ x 3):N  	        |{y:N,x:N} \|- (+ x 3):N
-|{} \|- (lambda (x)(+ x 3)):[N->N]| {y:N} \|- (lambda (x)(+ x y)):[N->N] <br> (Can we compare these two?)
-|{f:[N->N]} \|-((lambda (f x) (f x))(lambda (x) (* x x)) 10):N | {} \|-((lambda (f x) (f x)) (lambda (x) (* x x)) 10):N|
+|{foo: [T1->T2]} ⊢ 5:N	        |{} ⊢ 5:N  
+|{x:N} ⊢ (+ x 3):N  	        |{y:N,x:N} ⊢ (+ x 3):N
+|{} ⊢ (lambda (x)(+ x 3)):[N->N]| {y:N} ⊢ (lambda (x)(+ x y)):[N->N] <br> (Can we compare these two?)
+|{f:[N->N]} ⊢ ((lambda (f x) (f x))(lambda (x) (* x x)) 10):N | {} ⊢ ((lambda (f x) (f x)) (lambda (x) (* x x)) 10):N|
 
 Note: A typing statement has to be true in order to determine its strength.
 
@@ -270,10 +270,10 @@ Extending the typing mechanism for if expressions: Recall the typing rule for if
 For every: type environment _Tenv, 
            expressions _e1, _e2, _e3,
            and type expressions Boolean, _S2:
-If         _Tenv |- _e1:Boolean,
-           _Tenv |- _e2:_S2,
-           _Tenv |- _e3:_S2
-Then _Tenv |- (if _e1 _e2 _e3):_S2
+If         _Tenv ⊢ _e1:Boolean,
+           _Tenv ⊢ _e2:_S2,
+           _Tenv ⊢ _e3:_S2
+Then _Tenv ⊢ (if _e1 _e2 _e3):_S2
 ```
 
 First thing we notice from the rule is that the consequence expression (_c) and the alternative expression (_a) have the same type. Given the first observation, the second thing we notice is that the type of the if expression is the type of the consequence expression. Given the two observation we can add the following equations:
