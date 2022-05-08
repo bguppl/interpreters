@@ -473,6 +473,7 @@ The equations for the primitives are:
 |sqrt	                        |Tsqrt = [Number -> Number]
 
 **Stage IV**: Solve the equations.
+
 |Equation                       | Substitution
 |-------------------------------|-----------------------------|
 |1. T1 = [Tnum4 * Tsqrt -> T0]	|{}
