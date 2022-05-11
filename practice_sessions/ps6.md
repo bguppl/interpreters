@@ -341,7 +341,7 @@ How to use a counter in code:
 
 ;; [Empty -> Counter]
 ;; Counter is implemented as: [(Box(Number) -> Any) -> Any]
-(define make-counter-sel
+(define (make-counter-sel)
   (let ((count (box 0)))
     (lambda (sel)
       (sel count))))
