@@ -283,21 +283,25 @@ If         _Tenv ⊢ _e1:Boolean,
 Then _Tenv ⊢ (if _e1 _e2 _e3):_S2
 ```
 
-First thing we notice from the rule is that the consequence expression (_c) and the alternative expression (_a) have the same type.
-Given the first observation, the second thing we notice is that the type of the if expression is the type of the consequence expression.
-Given the two observation we can add the following equations:
-```
-Expression	 Equation
-(if _p _c _a)	 T_p = Boolean
-               T_c = T_a
-            	 Tif = T_c
-```
 
 #### Questions:
 
 -   If both consequence and alternative expressions had different types could we type the if expression?
 -   Do we need to add an equation for _p?
 
+
+First thing we notice from the rule is that the consequence expression (_c) and the alternative expression (_a) have the same type.
+
+Given the first observation, the second thing we notice is that the type of the if expression is the type of the consequence expression.
+
+Given the two observation we can add the following equations:
+
+```
+Expression	 Equation
+(if _p _c _a)	 T_p = Boolean
+               T_c = T_a
+            	 Tif = T_c
+```
   
 Example: type the expression `(if #t (+ 1 2) 3)`
 
