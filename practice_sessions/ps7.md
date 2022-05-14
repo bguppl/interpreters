@@ -276,22 +276,22 @@ Extending the typing mechanism for if expressions: Recall the typing rule for if
 ```
 ### Typing rule of If experession :
 For every: type environment _Tenv, 
-           expressions _e1, _e2, _e3,
-           and type expressions Boolean, _S2:
-If         _Tenv ⊢ _e1:Boolean,
-           _Tenv ⊢ _e2:_S2,
-           _Tenv ⊢ _e3:_S2
-Then _Tenv ⊢ (if _e1 _e2 _e3):_S2
+           expressions _p, _c, _a,
+           and type expressions Boolean, _Tif:
+If         _Tenv ⊢ _p:Boolean,
+           _Tenv ⊢ _c:_Tif,
+           _Tenv ⊢ _a:_Tif
+Then _Tenv ⊢ (if _p _c _a):_Tif
 ```
 
 
 #### Questions:
 
 -   If both consequence and alternative expressions had different types could we type the if expression?
--   Do we need to add an equation for _p?
+-   Do we need to add an equation for `_p`?
 
 
-First thing we notice from the rule is that the consequence expression (_c) and the alternative expression (_a) have the same type.
+First thing we notice from the rule is that the consequence expression (`_c`) and the alternative expression (`_a`) have the same type.
 
 Given the first observation, the second thing we notice is that the type of the if expression is the type of the consequence expression.
 
@@ -299,9 +299,9 @@ Given the two observation we can add the following equations:
 
 ```
 Expression	 Equation
-(if _p _c _a)	 T_p = Boolean
-               T_c = T_a
-            	 Tif = T_c
+(if _p _c _a)	T_p = Boolean
+                T_c = T_a
+            	Tif = T_c
 ```
   
 Example: type the expression `(if #t (+ 1 2) 3)`
