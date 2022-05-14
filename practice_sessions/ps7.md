@@ -66,9 +66,10 @@ All other unifiers are obtained from it by application of additional substitutio
 |Type expressions	            | MGU
 |-------------------------------|-----------------------------|
 |{x: T1}, {x: N}	            |{T1=N}  (a non-MGU unifier: {T1=N, T2=B})
-{x: [T1*[T1->T2]->T2]},  {x: [Number * [T3->T4]->T4]}	    |{T1=Number, T3=Number, T4=T2}
-{x: [T1*[T1->T2]->N]},   {x: [[T3->T4] * [T5->Number]->N]}  |{T1=[T3->T4], T5=[T3->T4], T2=Number}
-{x: [T1*[T1->T2]->N]},   {x: [Number * [Symbol->T3]->N]}    |No unifier
+|{x: T1}, {x: T2}	            |{T1=T2}  (a non-MGU unifier: {T1=N, T2=N})
+|{x: [T1*[T1->T2]->T2]},  {x: [Number * [T3->T4]->T4]}	    |{T1=Number, T3=Number, T4=T2}
+|{x: [T1*[T1->T2]->N]},   {x: [[T3->T4] * [T5->Number]->N]}  |{T1=[T3->T4], T5=[T3->T4], T2=Number}
+|{x: [T1*[T1->T2]->N]},   {x: [Number * [Symbol->T3]->N]}    |No unifier
 
 ## Type inference using type constraints
 
