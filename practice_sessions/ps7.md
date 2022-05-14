@@ -296,7 +296,7 @@ First thing we notice from the rule is that the consequence expression (`_c`) an
 
 Given the first observation, the second thing we notice is that the type of the if expression is the type of the consequence expression.
 
-Given the two observation we can add the following equations:
+Given the two observations we can add the following equations:
 
 ```
 Expression	 Equation
