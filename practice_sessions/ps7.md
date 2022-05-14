@@ -39,6 +39,7 @@ Note : assumptions in Tenv are an added part to the axioms we have.
 |{foo: [T1->T2]} ⊢ 5:N	        |{} ⊢ 5:N  
 |{x:N} ⊢ (+ x 3):N  	        |{y:N,x:N} ⊢ (+ x 3):N
 |{} ⊢ (lambda (x)(+ x 3)):[N->N]| {y:N} ⊢ (lambda (x)(+ x y)):[N->N] <br> (Can we compare these two?)
+|{} ⊢ (lambda (x)(+ x 3)):[N->N]| {y:N} ⊢ (lambda (z)(+ z 3)):[N->N]
 |{f:[N->N]} ⊢ ((lambda (f x) (f x))(lambda (x) (* x x)) 10):N | {} ⊢ ((lambda (f x) (f x)) (lambda (x) (* x x)) 10):N|
 
 Note: A typing statement has to be true in order to determine its strength.
