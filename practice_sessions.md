@@ -51,7 +51,7 @@ All the code for the practice sessions can be found [here](https://github.com/bg
 
 ## Week 8
 
-* [PS #8: Type Inference System](./practice_sessions/ps8.pdf)
+* [PS #8: Type Inference System](./practice_sessions/ps8.html)
 
 ## Week 9
 
