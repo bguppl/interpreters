@@ -59,7 +59,7 @@ All the code for the practice sessions can be found [here](https://github.com/bg
 
 ## Week 10
 
-* [PS #10: Lazy-Lists and Continuation Passing Style (CPS)](./practice_sessions/ps10.html)
+* [PS #10: Lazy-List and Continuation Passing Style (CPS)](./practice_sessions/ps10.html)
 
 ## Week 11
 
