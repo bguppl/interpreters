@@ -14,10 +14,3 @@ code.highlighter-rouge {white-space:nowrap;}
 .ind {text-indent:10%}
 .s5 {text-align:left;}
 
-/* position support */
-.center {
-  display: block;
-  margin-left: auto;
-  margin-right: auto;
-  width: 50%;
-}
