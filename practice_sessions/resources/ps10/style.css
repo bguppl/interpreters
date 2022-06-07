@@ -1,0 +1,25 @@
+/* RTL support */
+#content {text-align:right; direction:rtl;}
+.site-footer, .highlight, pre, .l {text-align:left; direction:ltr;}
+
+/* Printing support */
+#content h2 {break-before:page;}
+li, pre, p, .highlight, .site-footer, .l, .av {page-break-inside:avoid;}
+
+/* Position support */
+.pr {position:relative;}
+.s1, .s2, .s3, .s4, .s5, .s6 {position:absolute;}
+.s1 {left:55px;  top:13px;}
+.s2 {left:290px; top:13px;}
+.s3 {left:355px; top:60px;}
+.s4 {left:25px;  top:50px;}
+.s5 {left:400px; top:58px;}
+.s6 {left:5px;   top:110px;}
+
+/* Rest support */
+#content {text-align:justify;}
+h1, h2, h3, .c {text-align:center;}
+code.highlighter-rouge {white-space:nowrap;}
+.courier {font-family:'Courier New';}
+.ind {text-indent:10%}
+.s5 {text-align:left;}
