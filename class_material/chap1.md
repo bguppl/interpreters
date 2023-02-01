@@ -411,26 +411,25 @@ printCubes2([0, 1, 2, 3, 4]);
 To run an automatic test, we can now write a unit test in the following style:
 
 ```typescript
-import { expect } from "chai";
-import { cubes } from "./lecture1";
+import { cubes } from "../lecture1";
 
 describe("cubes", () => {
     it("does nothing to an empty array", () => {
         let numbers = [];
         cubes(numbers);
-        expect(numbers.length).to.equal(0);
+        expect(numbers.length).toEqual(0);
     });
 
     it("does not change invariant cubes", () => {
         let numbers = [0, 1];
         cubes(numbers);
-        expect(numbers).to.deep.equal([0, 1]);
+        expect(numbers).toEqual([0, 1]);
     });
   
     it("cubes the elements of an array", () => {
         let numbers = [1, 2, 3];
         cubes(numbers);
-        expect(numbers).to.deep.equal([1, 8, 27]);
+        expect(numbers).toEqual([1, 8, 27]);
     });
 });
 ```
@@ -446,7 +445,7 @@ These *good features* were encouraged by the facilities of the programming langu
 * It is easy to define arrays, give them names, initialize them with values, pass them as parameters, access their elements.
 * It is easy to define functions.
 * Functions can invoke other functions when knowing their name and the parameters they expect.
-* It is easy to test functions using facilities like Mocha and Chai.
+* It is easy to test functions using facilities like Jest.
 
 In other words, the language *encouraged us* to organize our program in a good manner.
 
