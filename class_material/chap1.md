@@ -381,10 +381,15 @@ To address this limitation, we will refactor the program in 2 stages - data tran
 This allows us to test the data transformation procedure by feeding it some test data, and then checking that the output fulfills expectations.
 
 ```typescript
-function cubes(numbers) {
+export function cubes(numbers) {
     for (let i = 0; i < numbers.length; i++) {
         numbers[i] = cube(numbers[i]);
     }
+}
+
+// Use a library function Math.pow 
+function cube(number) {
+    return Math.pow(number, 3);
 }
 
 function printArray(a) {
