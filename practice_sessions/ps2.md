@@ -1,6 +1,6 @@
 # TypeScript: Type Checking
 
-## PPL 2021 
+## PPL 2023
 ## Practical Session - Week #2
 
 ### Why Types
@@ -442,8 +442,8 @@ For example, let's look at this tree:
 
 
 ```typescript
-interface Tree<T> {
-    root: number;
+type Tree<T> = {
+    root: T;
     children: Tree<T>[];
 }
 
@@ -484,6 +484,27 @@ console.log(getChild(t, [0, 0])); // ==> { root: 2, children: [] }
 console.log(getChild(t, [1, 0])); // ==> { root: 3, children: [] }
 console.log(getChild(t, [1, 0, 0, 0])); // ==> { root: 3, children: [] } (Do not go "after" the leaves.)
 ```
+
+In the rest of the semester, we write functions in TypeScript in the style of functional programming, using the fat arrow syntax.
+The same function will be defined as follows:
+
+```typescript
+const getChild = <T>(t: Tree<T>, path: number[]): Tree<T> =>
+    // end of the path
+    (path.length === 0) ? t :
+    // t is a leaf - cannot go down
+    (t.children.length === 0) ? t : 
+    // recursive case
+    getChild(t.children[path[0]], path.slice(1));
+
+console.log(getChild(t, [1, 0]));
+```
+
+The differences are:
+* The function is defined as a const name and an anonymous function on the right hand side of the const
+* The body of the function is a single expression
+* We use the ternary if expression (as opposed to the if-statement) `test ? then : else`
+* There is no use for the `return` reserved word.
 
 ## Function Types
 
