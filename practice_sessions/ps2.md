@@ -94,23 +94,23 @@ s; // => { name: 'avi', cs: true, age: 22 }
 
 Type expressions can be given names. 
 
-Map type (aka object type) expression can be named using the interface construct:
+Type expressions can be named using the type alias construct:
 
 ```typescript
-interface <typeName> {
+type <typeName> = {
     <key>: <typeAnnotation>;
     ...
 }
 ```
 
-Additionally, Typescript has a more general purpose type alias construct that can assign a name to any type annotation:
+Or in general, to give a name to any type annotation:
 
 ```typescript
 type <typeName> = <typeAnnotation>;
 ```
 
 ```typescript
-interface Student {
+type Student = {
     name: string;
     cs: boolean;
     age: number;
@@ -126,7 +126,7 @@ Naming types allows the definition of recursive types. Consider the case of defi
 
 
 ```typescript
-interface NumberLink {
+type NumberLink = {
     num: number;
     next?: NumberLink;
 }
@@ -190,7 +190,7 @@ Consider the case of defining an **homogeneous generic** Linked List.  This is a
 
 
 ```typescript
-interface Link<T> {
+type Link<T> = {
     x: T;
     next?: Link<T>;
 }
@@ -317,17 +317,15 @@ squareSumList({ x: 1, next: { x: 2, next: { x: 3 } } }, 0); // = 1*1 + 2*2 + 3*3
 
 We saw in class the definition of a `BinTree<T>` type specification. It demonstrated:
 
-* the need for naming types (with the `interface` construct)
-to allow recursive type specification
-* the need to define optional properties in maps (with the `key?` notation)
-to allow the *end of the recursion* in the values.
+* the need for naming types (with the `type` alias construct) to allow recursive type specification
+* the need to define optional properties in maps (with the `key?` notation) to allow the *end of the recursion* in the values.
 
 **Exercise:**
 Define a Tree with an arbitrary number of children below each node.
 
 
 ```typescript
-interface Tree<T> {
+type Tree<T> = {
     root: T;
     children: Tree<T>[];
 }
@@ -392,7 +390,7 @@ as possible that the type definition we provide allows us to encode:
 If we defined `Tree` as:
 
 ```typescript
-interface Tree<T> {
+type Tree<T> = {
     root: T;
     children?: Tree<T>[];
 }
@@ -424,7 +422,7 @@ if (root.children.length === 0) {
 Thus, the definition of the type:
 
 ```typescript
-interface Tree<T> {
+type Tree<T> = {
     root: T;
     children: Tree<T>[];
 }
