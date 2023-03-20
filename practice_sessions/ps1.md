@@ -1,6 +1,6 @@
 # TypeScript: Complex Data Types, JSON, Map, Filter, Reduce
 
-## PPL 2022 - [Course Website](https://bguppl.github.io/interpreters/)
+## PPL 2023 - [Course Website](https://bguppl.github.io/interpreters/)
 ## Practical Session - Week #1
 
 ### How to Install Node.js and NPM on Windows
@@ -207,16 +207,16 @@ We can describe this structure using the following TypeScript declaration:
 }
 ```
 
-This can be made more readable if we name the types, using the **interface** TypeScript construct to name map compound types:
+This can be made more readable if we name the types, using the **type alias** TypeScript construct to name map compound types:
 
 
 ```typescript
-interface Student {
+type Student = {
     name: string;
     degree: string;
 }
 
-interface StudentsData {
+type StudentsData = {
     department: string;
     students: Student[];
 }
@@ -279,7 +279,7 @@ Let us describe the **type** of this value:
 The corresponding TypeScript annotation is:
 
 ```typescript
-interface Video {
+type Video = {
     id: number;
     title: string;
     boxart: string;
@@ -293,8 +293,6 @@ type Releases = Video[];
 
 This type annotation lets us think about the data we obtained from the API as an array `[v1, v2, v3, v4]` where each item $$v_i$$ is a map `{ id, title, boxart, uri, rating, bookmark }`.
 
-
-Note: while `interface` actually introduces a new type, `type` only provides an alias and not a new type. For instance, alias names will not be used in error messages. In addition, unlike an interface, one can give a type alias to any type annotation.
 
 #### 2.3.1 Map over an Array of Videos
 
@@ -413,7 +411,7 @@ let boxarts = [
 Let us define the type of this returned value: it is a homogeneous array of maps. Each map describes a boxart.
 
 ```typescript
-interface Boxart {
+type Boxart = {
     width: number; 
     height: number;
     url: string;
@@ -428,7 +426,7 @@ In terms of types, the transformation maps an array `Boxart[]` into a `number`. 
 
 
 ```typescript
-interface Boxart {
+type Boxart = {
     width: number; 
     height: number;
     url: string;
@@ -544,7 +542,7 @@ To document the structure of this value, let us write its type:
 The TypeScript definition is thus:
 
 ```typescript
-interface VideoCategory {
+type VideoCategory = {
     name: string;
     videos: Video[];
 }
