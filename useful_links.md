@@ -29,10 +29,10 @@ The instructions for installations are similar for Windows, Linux and MacOS (usi
 The full installation and configuration guide can be seen [here](https://youtu.be/tnn_a4hReKs) (the video shows older versions of VS Code and Node, but the setup should still be relevant).
 
 
-0. Download node.js from [https://nodejs.org](https://nodejs.org) and install the LTS version (16).
+0. Download node.js from [https://nodejs.org](https://nodejs.org) and install the LTS version (18).
 0. Download VS Code from [https://code.visualstudio.com/](https://code.visualstudio.com/) and install.
 0. Open command prompt by clicking on Start and typing `cmd`.
-0. Make sure node is installed by running `node -v`. The expected output should start with 'v16.'.
+0. Make sure node is installed by running `node -v`. The expected output should start with 'v18.'.
 0. Globally install Typescript's compiler and REPL `npm i -g ts-node typescript`.
 1. Make sure Typescript is installed by running `tsc -v`. The expected output should start with '4.5'.
 2. Navigate to a directory you want to create your projects in (e.g., 'Desktop\ppl').
@@ -61,7 +61,7 @@ In order to work on the assignments in pairs, we recommend using the Visual Stud
 
 ## Scheme
 
-* The Racket [homepage](http://racket-lang.org/) includes downloads and documentation. Current version is Racket 8.0.
+* The Racket [homepage](http://racket-lang.org/) includes downloads and documentation. Current version is Racket 8.8.
 * A tutorial [The Scheme Programming Language](http://www.scheme.com/tspl4/) by R.K. Dybvig.
 * [R6RS Standard](http://www.r6rs.org/final/r6rs.pdf)
 
