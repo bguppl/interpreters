@@ -7,7 +7,7 @@
 
 Node.js is a JavaScript interpreter. NPM (Node Package Manager) let's you install software (libraries, plugins, frameworks and applications) used to build Node applications. Both are installed using the installer package avaiable from the Node.js web site. The isntallation is pretty straightforward: 
 
-1. Download the LTS (version 16) Windows installer from [nodejs.org](https://nodejs.org/en/)
+1. Download the LTS (version 18) Windows installer from [nodejs.org](https://nodejs.org/en/)
 2. Run the installer (the .msi file you downloaded in the previous step.)
 3. Follow the prompts in the installer (Accept the license agreement, click the NEXT button a bunch of times and accept the default installation settings).
 4. Restart your computer.
