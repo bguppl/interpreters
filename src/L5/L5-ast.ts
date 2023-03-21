@@ -81,74 +81,74 @@ export const expComponents = (e: Exp): CExp[] =>
     []; // Atomic expressions have no components
 
 // Type definitions
-export interface Program {tag: "Program"; exps: Exp[]; }
+export type Program = {tag: "Program"; exps: Exp[]; }
 export const makeProgram = (exps: Exp[]): Program => ({tag: "Program", exps: exps});
 export const isProgram = (x: any): x is Program => x.tag === "Program";
 
-export interface DefineExp {tag: "DefineExp"; var: VarDecl; val: CExp; }
+export type DefineExp = {tag: "DefineExp"; var: VarDecl; val: CExp; }
 export const makeDefineExp = (v: VarDecl, val: CExp): DefineExp =>
     ({tag: "DefineExp", var: v, val: val});
 export const isDefineExp = (x: any): x is DefineExp => x.tag === "DefineExp";
 
-export interface NumExp {tag: "NumExp"; val: number; }
+export type NumExp = {tag: "NumExp"; val: number; }
 export const makeNumExp = (n: number): NumExp => ({tag: "NumExp", val: n});
 export const isNumExp = (x: any): x is NumExp => x.tag === "NumExp";
 
-export interface BoolExp {tag: "BoolExp"; val: boolean; }
+export type BoolExp = {tag: "BoolExp"; val: boolean; }
 export const makeBoolExp = (b: boolean): BoolExp => ({tag: "BoolExp", val: b});
 export const isBoolExp = (x: any): x is BoolExp => x.tag === "BoolExp";
 
-export interface StrExp {tag: "StrExp"; val: string; }
+export type StrExp = {tag: "StrExp"; val: string; }
 export const makeStrExp = (s: string): StrExp => ({tag: "StrExp", val: s});
 export const isStrExp = (x: any): x is StrExp => x.tag === "StrExp";
 
-export interface PrimOp {tag: "PrimOp"; op: PrimOpKeyword; }
+export type PrimOp = {tag: "PrimOp"; op: PrimOpKeyword; }
 export const makePrimOp = (op: PrimOpKeyword): PrimOp => ({tag: "PrimOp", op: op});
 export const isPrimOp = (x: any): x is PrimOp => x.tag === "PrimOp";
 
-export interface VarRef {tag: "VarRef"; var: string; }
+export type VarRef = {tag: "VarRef"; var: string; }
 export const makeVarRef = (v: string): VarRef => ({tag: "VarRef", var: v});
 export const isVarRef = (x: any): x is VarRef => x.tag === "VarRef";
 
-export interface VarDecl {tag: "VarDecl"; var: string; texp: TExp}
+export type VarDecl = {tag: "VarDecl"; var: string; texp: TExp}
 export const makeVarDecl = (v: string, te: TExp): VarDecl => ({tag: "VarDecl", var: v, texp: te});
 export const isVarDecl = (x: any): x is VarDecl => x.tag === "VarDecl";
 
-export interface AppExp {tag: "AppExp"; rator: CExp; rands: CExp[]; }
+export type AppExp = {tag: "AppExp"; rator: CExp; rands: CExp[]; }
 export const makeAppExp = (rator: CExp, rands: CExp[]): AppExp =>
     ({tag: "AppExp", rator: rator, rands: rands});
 export const isAppExp = (x: any): x is AppExp => x.tag === "AppExp";
 
-export interface IfExp {tag: "IfExp"; test: CExp; then: CExp; alt: CExp; }
+export type IfExp = {tag: "IfExp"; test: CExp; then: CExp; alt: CExp; }
 export const makeIfExp = (test: CExp, then: CExp, alt: CExp): IfExp =>
     ({tag: "IfExp", test: test, then: then, alt: alt});
 export const isIfExp = (x: any): x is IfExp => x.tag === "IfExp";
 
-export interface ProcExp {tag: "ProcExp"; args: VarDecl[], body: CExp[]; returnTE: TExp }
+export type ProcExp = {tag: "ProcExp"; args: VarDecl[], body: CExp[]; returnTE: TExp }
 export const makeProcExp = (args: VarDecl[], body: CExp[], returnTE: TExp): ProcExp =>
     ({tag: "ProcExp", args: args, body: body, returnTE: returnTE});
 export const isProcExp = (x: any): x is ProcExp => x.tag === "ProcExp";
 
-export interface Binding {tag: "Binding"; var: VarDecl; val: CExp; }
+export type Binding = {tag: "Binding"; var: VarDecl; val: CExp; }
 export const makeBinding = (v: VarDecl, val: CExp): Binding =>
     ({tag: "Binding", var: v, val: val});
 export const isBinding = (x: any): x is Binding => x.tag === "Binding";
 
-export interface LetExp {tag: "LetExp"; bindings: Binding[]; body: CExp[]; }
+export type LetExp = {tag: "LetExp"; bindings: Binding[]; body: CExp[]; }
 export const makeLetExp = (bindings: Binding[], body: CExp[]): LetExp =>
     ({tag: "LetExp", bindings: bindings, body: body});
 export const isLetExp = (x: any): x is LetExp => x.tag === "LetExp";
 
-export interface LitExp {tag: "LitExp"; val: SExpValue; }
+export type LitExp = {tag: "LitExp"; val: SExpValue; }
 export const makeLitExp = (val: SExpValue): LitExp => ({tag: "LitExp", val: val});
 export const isLitExp = (x: any): x is LitExp => x.tag === "LitExp";
 
-export interface LetrecExp {tag: "LetrecExp"; bindings: Binding[]; body: CExp[]; }
+export type LetrecExp = {tag: "LetrecExp"; bindings: Binding[]; body: CExp[]; }
 export const makeLetrecExp = (bindings: Binding[], body: CExp[]): LetrecExp =>
     ({tag: "LetrecExp", bindings: bindings, body: body});
 export const isLetrecExp = (x: any): x is LetrecExp => x.tag === "LetrecExp";
 
-export interface SetExp {tag: "SetExp"; var: VarRef; val: CExp; }
+export type SetExp = {tag: "SetExp"; var: VarRef; val: CExp; }
 export const makeSetExp = (v: VarRef, val: CExp): SetExp =>
     ({tag: "SetExp", var: v, val: val});
 export const isSetExp = (x: any): x is SetExp => x.tag === "SetExp";

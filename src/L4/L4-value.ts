@@ -15,7 +15,7 @@ export const isFunctional = (x: any): x is Functional => isPrimOp(x) || isClosur
 // ========================================================
 // Closure for L4 - the field env is added.
 // We also use a frame-based representation of closures as opposed to one env per var.
-export interface Closure {
+export type Closure = {
     tag: "Closure";
     params: VarDecl[];
     body: CExp[];
@@ -27,15 +27,15 @@ export const isClosure = (x: any): x is Closure => x.tag === "Closure";
 
 // ========================================================
 // SExp
-export interface CompoundSExp {
+export type CompoundSExp = {
     tag: "CompoundSexp";
     val1: SExpValue;
     val2: SExpValue;
 }
-export interface EmptySExp {
+export type EmptySExp = {
     tag: "EmptySExp";
 }
-export interface SymbolSExp {
+export type SymbolSExp = {
     tag: "SymbolSExp";
     val: string;
 }

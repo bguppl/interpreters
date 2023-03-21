@@ -33,7 +33,7 @@ export const isCExpLA = (x: any): x is CExpLA =>
     isNumExp(x) || isBoolExp(x) || isStrExp(x) || isLitExp(x) || isVarRef(x) ||
     isLexAddress(x) || isProcExpLA(x) || isIfExpLA(x) || isAppExpLA(x);
 
-export interface ProcExpLA {
+export type ProcExpLA = {
     tag: "ProcExpLA";
     params: VarDecl[];
     body: CExpLA[];
@@ -43,7 +43,7 @@ export const isProcExpLA = (x: any): x is ProcExpLA =>
 export const makeProcExpLA = (params: VarDecl[], body: CExpLA[]): ProcExpLA =>
     ({tag: "ProcExpLA", params: params, body: body});
 
-export interface IfExpLA {
+export type IfExpLA = {
     tag: "IfExpLA";
     test: CExpLA;
     then: CExpLA;
@@ -54,7 +54,7 @@ export const isIfExpLA = (x: any): x is IfExpLA =>
 export const makeIfExpLA = (test: CExpLA, then: CExpLA, alt: CExpLA): IfExpLA =>
     ({tag: "IfExpLA", test: test, then: then, alt: alt});
 
-export interface AppExpLA {
+export type AppExpLA = {
     tag: "AppExpLA";
     rator: CExpLA;
     rands: CExpLA[];
@@ -73,14 +73,14 @@ AST extension for lexical-address annotations
 export type LexAddress = FreeVar | LexicalAddress;
 export const isLexAddress = (x: any): x is LexAddress => isFreeVar(x) || isLexicalAddress(x);
 
-export interface FreeVar {
+export type FreeVar = {
     tag: "FreeVar";
     var: string;
 }
 export const isFreeVar = (x: any): x is FreeVar => (typeof(x) === 'object') && (x.tag === "FreeVar");
 export const makeFreeVar = (v: string): FreeVar => ({tag: "FreeVar", var: v});
 
-export interface LexicalAddress {
+export type LexicalAddress = {
     tag: "LexicalAddress";
     var: string;
     depth: number;

@@ -14,14 +14,14 @@ const isEmpty = (x: any): boolean => x.length === 0;
 
 export type LazyTree<Node> = EmptyLZT | LZT<Node>;
 
-export interface EmptyLZT {
+export type EmptyLZT = {
     tag: "EmptyLZT";
 };
 export const makeEmptyLZT = (): EmptyLZT => ({tag: "EmptyLZT"});
 export const isEmptyLZT = (x: any): x is EmptyLZT => x.tag === "EmptyLZT";
 
 // Low level representation of LZT
-export interface LZT<Node> {
+export type LZT<Node> = {
     tag: "LZT";
     root: Node;
     children$: Generator<LazyTree<Node>>;

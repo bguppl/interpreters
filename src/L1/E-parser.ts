@@ -19,15 +19,15 @@ type E = NumExp | AddExp | MulExp;
 const isE = (x: any): x is E => isNumExp(x) || isAddExp(x) || isMulExp(x);
 
 // For each constituent type define an interface, a constructor and a type predicate.
-interface NumExp { tag: "NumExp"; val: number; };
+type NumExp = { tag: "NumExp"; val: number; };
 const makeNumExp = (n: number): NumExp => ({ tag: "NumExp", val: n });
 const isNumExp = (x: any): x is NumExp => x.tag === "NumExp";
 
-interface AddExp { tag: "AddExp"; left: E; right: E };
+type AddExp = { tag: "AddExp"; left: E; right: E };
 const makeAddExp = (left: E, right: E): AddExp => ({ tag: "AddExp", left: left, right: right });
 const isAddExp = (x: any): x is AddExp => x.tag === "AddExp";
 
-interface MulExp { tag: "MulExp"; left: E; right: E };
+type MulExp = { tag: "MulExp"; left: E; right: E };
 const makeMulExp = (left: E, right: E): MulExp => ({ tag: "MulExp", left: left, right: right });
 const isMulExp = (x: any): x is MulExp => x.tag === "MulExp";
 
