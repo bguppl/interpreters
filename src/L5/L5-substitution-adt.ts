@@ -9,7 +9,7 @@ import { Result, makeOk, makeFailure, mapResult, bind, zipWithResult, mapv } fro
 // lists of variables and type expression.
 // The empty substitution is [[], []]
 
-export interface Sub {tag: "Sub"; vars: TVar[]; tes: TExp[]; }
+export type Sub = {tag: "Sub"; vars: TVar[]; tes: TExp[]; }
 export const isSub = (x: any): x is Sub => x.tag === "Sub";
 
 // Constructors:

@@ -50,22 +50,22 @@ export type AtomicExp = NumExp | BoolExp | StrExp | PrimOp | VarRef;
 export type CompoundExp = AppExp | IfExp | ProcExp | LetExp | LitExp;
 export type CExp =  AtomicExp | CompoundExp;
 
-export interface Program {tag: "Program"; exps: Exp[]; }
-export interface DefineExp {tag: "DefineExp"; var: VarDecl; val: CExp; }
-export interface NumExp {tag: "NumExp"; val: number; }
-export interface BoolExp {tag: "BoolExp"; val: boolean; }
-export interface StrExp {tag: "StrExp"; val: string; }
-export interface PrimOp {tag: "PrimOp"; op: string; }
-export interface VarRef {tag: "VarRef"; var: string; }
-export interface VarDecl {tag: "VarDecl"; var: string; }
-export interface AppExp {tag: "AppExp"; rator: CExp; rands: CExp[]; }
+export type Program = {tag: "Program"; exps: Exp[]; }
+export type DefineExp = {tag: "DefineExp"; var: VarDecl; val: CExp; }
+export type NumExp = {tag: "NumExp"; val: number; }
+export type BoolExp = {tag: "BoolExp"; val: boolean; }
+export type StrExp = {tag: "StrExp"; val: string; }
+export type PrimOp = {tag: "PrimOp"; op: string; }
+export type VarRef = {tag: "VarRef"; var: string; }
+export type VarDecl = {tag: "VarDecl"; var: string; }
+export type AppExp = {tag: "AppExp"; rator: CExp; rands: CExp[]; }
 // L2
-export interface IfExp {tag: "IfExp"; test: CExp; then: CExp; alt: CExp; }
-export interface ProcExp {tag: "ProcExp"; args: VarDecl[], body: CExp[]; }
-export interface Binding {tag: "Binding"; var: VarDecl; val: CExp; }
-export interface LetExp {tag: "LetExp"; bindings: Binding[]; body: CExp[]; }
+export type IfExp = {tag: "IfExp"; test: CExp; then: CExp; alt: CExp; }
+export type ProcExp = {tag: "ProcExp"; args: VarDecl[], body: CExp[]; }
+export type Binding = {tag: "Binding"; var: VarDecl; val: CExp; }
+export type LetExp = {tag: "LetExp"; bindings: Binding[]; body: CExp[]; }
 // L3
-export interface LitExp {tag: "LitExp"; val: SExpValue; }
+export type LitExp = {tag: "LitExp"; val: SExpValue; }
 
 // Type value constructors for disjoint types
 export const makeProgram = (exps: Exp[]): Program => ({tag: "Program", exps: exps});

@@ -30,47 +30,47 @@ export const isCont = (x: any): x is Cont =>
 export const isContArray = (x: any): x is ContArray =>
     isLetCont(x) || isLetrecCont(x) || isAppCont2(x) || isExpsCont2(x);
 
-export interface TopCont {tag: "TopCont"}
+export type TopCont = {tag: "TopCont"}
 export const makeTopCont = (): TopCont => ({tag: "TopCont"});
 export const isTopCont = (x: any): x is TopCont => x.tag === "TopCont";
 
-export interface IfCont {tag: "IfCont", exp: IfExp, env: Env, cont: Cont}
+export type IfCont = {tag: "IfCont", exp: IfExp, env: Env, cont: Cont}
 export const makeIfCont = (exp: IfExp, env: Env, cont: Cont): IfCont => ({tag: "IfCont", env: env, exp: exp, cont: cont});
 export const isIfCont = (x: any): x is IfCont => x.tag === "IfCont";
 
-export interface FirstCont {tag: "FirstCont", exps: Exp[], env: Env, cont: Cont}
+export type FirstCont = {tag: "FirstCont", exps: Exp[], env: Env, cont: Cont}
 export const makeFirstCont = (exps: Exp[], env: Env, cont: Cont): FirstCont => ({tag: "FirstCont", env: env, exps: exps, cont: cont});
 export const isFirstCont = (x: any): x is FirstCont => x.tag === "FirstCont";
 
-export interface SetCont {tag: "SetCont", exp: SetExp, env: Env, cont: Cont}
+export type SetCont = {tag: "SetCont", exp: SetExp, env: Env, cont: Cont}
 export const makeSetCont = (exp: SetExp, env: Env, cont: Cont): SetCont => ({tag: "SetCont", env: env, exp: exp, cont: cont});
 export const isSetCont = (x: any): x is SetCont => x.tag === "SetCont";
 
-export interface AppCont1 {tag: "AppCont1", exp: AppExp, env: Env, cont: Cont}
+export type AppCont1 = {tag: "AppCont1", exp: AppExp, env: Env, cont: Cont}
 export const makeAppCont1 = (exp: AppExp, env: Env, cont: Cont): AppCont1 => ({tag: "AppCont1", env: env, exp: exp, cont: cont});
 export const isAppCont1 = (x: any): x is AppCont1 => x.tag === "AppCont1";
 
-export interface ExpsCont1 {tag: "ExpsCont1", exps: Exp[], env: Env, cont: ContArray}
+export type ExpsCont1 = {tag: "ExpsCont1", exps: Exp[], env: Env, cont: ContArray}
 export const makeExpsCont1 = (exps: Exp[], env: Env, cont: ContArray): ExpsCont1 => ({tag: "ExpsCont1", env: env, exps: exps, cont: cont});
 export const isExpsCont1 = (x: any): x is ExpsCont1 => x.tag === "ExpsCont1";
 
-export interface LetCont {tag: "LetCont", exp: LetExp, env: Env, cont: Cont}
+export type LetCont = {tag: "LetCont", exp: LetExp, env: Env, cont: Cont}
 export const makeLetCont = (exp: LetExp, env: Env, cont: Cont): LetCont => ({tag: "LetCont", env: env, exp: exp, cont: cont});
 export const isLetCont = (x: any): x is LetCont => x.tag === "LetCont";
 
-export interface LetrecCont {tag: "LetrecCont", exp: LetrecExp, env: ExtEnv, cont: Cont}
+export type LetrecCont = {tag: "LetrecCont", exp: LetrecExp, env: ExtEnv, cont: Cont}
 export const makeLetrecCont = (exp: LetrecExp, env: ExtEnv, cont: Cont): LetrecCont => ({tag: "LetrecCont", env: env, exp: exp, cont: cont});
 export const isLetrecCont = (x: any): x is LetrecCont => x.tag === "LetrecCont";
 
-export interface AppCont2 {tag: "AppCont2", proc: Result<Value>, env: Env, cont: Cont}
+export type AppCont2 = {tag: "AppCont2", proc: Result<Value>, env: Env, cont: Cont}
 export const makeAppCont2 = (proc: Result<Value>, env: Env, cont: Cont): AppCont2 => ({tag: "AppCont2", proc: proc, env: env, cont: cont});
 export const isAppCont2 = (x: any): x is AppCont2 => x.tag === "AppCont2";
 
-export interface ExpsCont2 {tag: "ExpsCont2", firstVal: Value, cont: ContArray}
+export type ExpsCont2 = {tag: "ExpsCont2", firstVal: Value, cont: ContArray}
 export const makeExpsCont2 = (firstVal: Value, cont: ContArray): ExpsCont2 => ({tag: "ExpsCont2", firstVal: firstVal, cont: cont});
 export const isExpsCont2 = (x: any): x is ExpsCont2 => x.tag === "ExpsCont2";
 
-export interface DefCont {tag: "DefCont", exp: DefineExp, exps: Exp[], cont: Cont}
+export type DefCont = {tag: "DefCont", exp: DefineExp, exps: Exp[], cont: Cont}
 export const makeDefCont = (exp: DefineExp, exps: Exp[], cont: Cont): DefCont => ({tag: "DefCont", exp: exp, exps: exps, cont: cont});
 export const isDefCont = (x: any): x is DefCont => x.tag === "DefCont";
 

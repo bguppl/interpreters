@@ -17,15 +17,15 @@ export type Exp = DefineExp | CExp;
 // An expression which can be embedded inside other expressions (constituent expression)
 export type CExp = NumExp | BoolExp | PrimOp | VarRef | AppExp;
 
-export interface Program {tag: "Program"; exps: Exp[]; }
+export type Program = {tag: "Program"; exps: Exp[]; }
 
-export interface DefineExp {tag: "DefineExp"; var: VarDecl; val: CExp; }  // (define <var> <exp>)
-export interface NumExp {tag: "NumExp"; val: number; }
-export interface BoolExp {tag: "BoolExp"; val: boolean; }
-export interface PrimOp {tag: "PrimOp", op: string; }
-export interface VarRef {tag: "VarRef", var: string; } 
-export interface VarDecl {tag: "VarDecl", var: string; }
-export interface AppExp {tag: "AppExp", rator: CExp, rands: CExp[]; }
+export type DefineExp = {tag: "DefineExp"; var: VarDecl; val: CExp; }  // (define <var> <exp>)
+export type NumExp = {tag: "NumExp"; val: number; }
+export type BoolExp = {tag: "BoolExp"; val: boolean; }
+export type PrimOp = {tag: "PrimOp", op: string; }
+export type VarRef = {tag: "VarRef", var: string; } 
+export type VarDecl = {tag: "VarDecl", var: string; }
+export type AppExp = {tag: "AppExp", rator: CExp, rands: CExp[]; }
 
 // Type value constructors for disjoint types
 export const makeProgram = (exps: Exp[]): Program => ({tag: "Program", exps: exps});

@@ -21,14 +21,14 @@ import { Result, makeOk, makeFailure } from '../shared/result';
 // ========================================================
 // Environment data type
 export type Env = EmptyEnv | ExtEnv | RecEnv;
-export interface EmptyEnv {tag: "EmptyEnv" }
-export interface ExtEnv {
+export type EmptyEnv = {tag: "EmptyEnv" }
+export type ExtEnv = {
     tag: "ExtEnv";
     vars: string[];
     vals: Value[];
     nextEnv: Env;
 }
-export interface RecEnv {
+export type RecEnv = {
     tag: "RecEnv";
     vars: string[];
     paramss: VarDecl[][];

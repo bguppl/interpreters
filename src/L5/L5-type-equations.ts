@@ -15,7 +15,7 @@ import { parse as p } from "../shared/parser";
 // It is implemented as a list of pairs (Exp TExp).
 // When a new Exp is added to a pool, a fresh Tvar
 // is allocated for it.
-export interface PoolItem {e: A.Exp, te: T.TExp}
+export type PoolItem = {e: A.Exp, te: T.TExp}
 export type Pool = PoolItem[];
 
 export const makeEmptyPool = () => [];
@@ -74,7 +74,7 @@ export const expToPool = (exp: A.Exp): Pool => {
 
 // ========================================================
 // Equations ADT
-export interface Equation {left: T.TExp, right: T.TExp}
+export type Equation = {left: T.TExp, right: T.TExp}
 export const makeEquation = (l: T.TExp, r: T.TExp): Equation => ({left: l, right: r});
 
 export const safeLast = <T extends any>(list: readonly T[]): Opt.Optional<T> => {

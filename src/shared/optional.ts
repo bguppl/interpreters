@@ -3,12 +3,12 @@ import { makeOk, makeFailure, Result } from "./result";
 
 export type Optional<T> = Some<T> | None;
 
-interface Some<T> {
+type Some<T> = {
     tag: "Some";
     value: T;
 }
 
-interface None {
+type None = {
     tag: "None";
 }
 

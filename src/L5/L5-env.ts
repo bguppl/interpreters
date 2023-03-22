@@ -33,7 +33,7 @@ import { cons } from "../shared/list";
 
 // ========================================================
 // Frame binding
-export interface FBinding {
+export type FBinding = {
     tag: "FBinding";
     var: string;
     val: Box<Value>;
@@ -48,7 +48,7 @@ export const setFBinding = (f: FBinding, val: Value): void => { setBox(f.val, va
 
 // ========================================================
 // Frame
-interface Frame {
+type Frame = {
     tag: "Frame";
     fbindings: FBinding[];
 }
@@ -93,7 +93,7 @@ export const applyEnv = (env: Env, v: string): Result<Value> =>
 
 // ========================================================
 // ExtEnv
-export interface ExtEnv {
+export type ExtEnv = {
     tag: "ExtEnv";
     frame: Frame;
     env: Env;
@@ -112,7 +112,7 @@ const applyExtEnvBdg = (env: ExtEnv, v: string): Result<FBinding> =>
 // ========================================================
 // GlobalEnv
 // global-env - has a mutable frame - so that we can add bindings at any time.
-interface GlobalEnv {
+type GlobalEnv = {
     tag: "GlobalEnv";
     frame: Box<Frame>;
 }

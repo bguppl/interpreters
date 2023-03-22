@@ -17,11 +17,11 @@ import { Result, makeOk, makeFailure } from '../shared/result';
 
 export type TEnv = EmptyTEnv | ExtendTEnv;
 
-export interface EmptyTEnv { tag: "EmptyTEnv" }
+export type EmptyTEnv = { tag: "EmptyTEnv" }
 export const makeEmptyTEnv = (): EmptyTEnv => ({tag: "EmptyTEnv"});
 export const isEmptyTEnv = (x: any): x is EmptyTEnv => x.tag === "EmptyTEnv";
 
-export interface ExtendTEnv { tag: "ExtendTEnv"; vars: string[]; texps: TExp[]; tenv: TEnv; }
+export type ExtendTEnv = { tag: "ExtendTEnv"; vars: string[]; texps: TExp[]; tenv: TEnv; }
 export const makeExtendTEnv = (vars: string[], texps: TExp[], tenv: TEnv): ExtendTEnv =>
     ({tag: "ExtendTEnv", vars: vars, texps: texps, tenv: tenv});
 export const isExtendTEnv = (x: any): x is ExtendTEnv => x.tag === "ExtendTEnv";
