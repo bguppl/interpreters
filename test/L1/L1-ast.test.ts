@@ -8,6 +8,7 @@ const parse = (s: string): Result<Exp> =>
 describe("L1 Parsing", () => {
     it("parses a number as NumExp", () => {
         expect(parse("1")).toSatisfy(isOkT(isNumExp));
+        expect(parse("3.0")).toSatisfy(isOkT(isNumExp));
     });
 
     it("parses a boolean as BoolExp", () => {

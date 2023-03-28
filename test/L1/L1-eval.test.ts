@@ -16,6 +16,7 @@ describe('L1 Eval', () => {
         expect(bind(parseL1(`(L1 (+ 6 3))`), evalL1program)).toEqual(makeOk(9));
         expect(bind(parseL1(`(L1 (+ -1 1))`), evalL1program)).toEqual(makeOk(0));
         expect(bind(parseL1(`(L1 (* 6 3))`), evalL1program)).toEqual(makeOk(18));
+        expect(bind(parseL1(`(L1 (/ -3 0.5))`), evalL1program)).toEqual(makeOk(-6));
     });
 
     it('Evaluates all boolean primitives', () => {
