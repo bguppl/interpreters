@@ -16,6 +16,8 @@
 
 [5. Data Types and Operations on Data](./class_material/1.4TypesAndOperations.html)
 
+[6. Composition and Monads](./class_material/1.5Monad.html)
+
 
 
 ## Chapter 2: Syntax and Semantics with Scheme
