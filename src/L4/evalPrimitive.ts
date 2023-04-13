@@ -1,12 +1,13 @@
 // ========================================================
 // Primitives
 
-import { allT, first, rest } from "../shared/list";
+import { allT, first, isNonEmptyList, rest } from "../shared/list";
 import { isNumber, isBoolean, isString } from "../shared/type-predicates";
 import { makeOk, Result, makeFailure } from "../shared/result";
 import { reduce } from "ramda";
 import { PrimOp } from "./L4-ast";
 import { Value, isSymbolSExp, isEmptySExp, isCompoundSExp, CompoundSExp, makeCompoundSExp, makeEmptySExp, EmptySExp } from "./L4-value";
+import { format } from "../shared/format";
 
 export const applyPrimitive = (proc: PrimOp, args: Value[]): Result<Value> =>
     proc.op === "+" ? (allT(isNumber, args) ? makeOk(reduce((x: number, y: number) => x + y, 0, args)) : makeFailure("+ expects numbers only")) :
@@ -31,7 +32,7 @@ export const applyPrimitive = (proc: PrimOp, args: Value[]): Result<Value> =>
     proc.op === "boolean?" ? makeOk(typeof(args[0]) === 'boolean') :
     proc.op === "symbol?" ? makeOk(isSymbolSExp(args[0])) :
     proc.op === "string?" ? makeOk(isString(args[0])) :
-    makeFailure(`Bad primitive op: ${JSON.stringify(proc.op)}`);
+    makeFailure(`Bad primitive op: ${format(proc.op)}`);
 
 const minusPrim = (args: Value[]): Result<number> => {
     // TODO complete
@@ -39,7 +40,7 @@ const minusPrim = (args: Value[]): Result<number> => {
     if (isNumber(x) && isNumber(y)) {
         return makeOk(x - y);
     } else {
-        return makeFailure(`Type error: - expects numbers ${JSON.stringify(args, null, 2)}`)
+        return makeFailure(`Type error: - expects numbers ${format(args)}`)
     }
 }
 
@@ -49,7 +50,7 @@ const divPrim = (args: Value[]): Result<number> => {
     if (isNumber(x) && isNumber(y)) {
         return makeOk(x / y);
     } else {
-        return makeFailure(`Type error: / expects numbers ${JSON.stringify(args, null, 2)}`)
+        return makeFailure(`Type error: / expects numbers ${format(args)}`)
     }
 }
 
@@ -72,18 +73,18 @@ const eqPrim = (args: Value[]): boolean => {
 
 const carPrim = (v: Value): Result<Value> =>
     isCompoundSExp(v) ? makeOk(v.val1) :
-    makeFailure(`Car: param is not compound ${JSON.stringify(v, null, 2)}`);
+    makeFailure(`Car: param is not compound ${format(v)}`);
 
 const cdrPrim = (v: Value): Result<Value> =>
     isCompoundSExp(v) ? makeOk(v.val2) :
-    makeFailure(`Cdr: param is not compound ${JSON.stringify(v, null, 2)}`);
+    makeFailure(`Cdr: param is not compound ${format(v)}`);
 
 const consPrim = (v1: Value, v2: Value): CompoundSExp =>
     makeCompoundSExp(v1, v2);
 
 export const listPrim = (vals: Value[]): EmptySExp | CompoundSExp =>
-    vals.length === 0 ? makeEmptySExp() :
-    makeCompoundSExp(first(vals), listPrim(rest(vals)))
+    isNonEmptyList<Value>(vals) ? makeCompoundSExp(first(vals), listPrim(rest(vals))) :
+    makeEmptySExp();
 
 const isListPrim = (v: Value): boolean =>
     isEmptySExp(v) || isCompoundSExp(v);

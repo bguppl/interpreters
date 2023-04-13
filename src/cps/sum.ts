@@ -75,7 +75,7 @@ export const sumCPS2 = (n: number): number =>
 // *consumes* stack memory (because TS does not implement tail-call-optimization).
 const sumREG1VM = (nREG: number, contREG: CCont, valREG: number): number => {
     const sumCPSCReg = (): number => {
-        // console.log(`sumCPCReg n=${nREG} cont=${JSON.stringify(contREG)}`)
+        // console.log(`sumCPCReg n=${nREG} cont=${format(contREG)}`)
         if (nREG === 0) {
             valREG = 0;
             return applyContReg();
@@ -87,7 +87,7 @@ const sumREG1VM = (nREG: number, contREG: CCont, valREG: number): number => {
     }
 
     const applyContReg = (): number => {
-        // console.log(`applyContReg val=${valREG} cont=${JSON.stringify(contREG)}`)
+        // console.log(`applyContReg val=${valREG} cont=${format(contREG)}`)
         if (isIdCont(contREG)) {
             return valREG;
         } else if (isCont1(contREG)) {
@@ -129,7 +129,7 @@ type InstructionSet = 'applyContReg2' | 'sumCPSCReg2' | 'halt';
 // We manipulate the stack explicitly.
 const sumREG2VM = (nREG2: number, contREG2: CCont, valREG2: number, pcREG2: InstructionSet): number => {
     const sumCPSCReg2 = (): void => {
-        // console.log(`sumCPCReg n=${nREG2} cont=${JSON.stringify(contREG2)}`)
+        // console.log(`sumCPCReg n=${nREG2} cont=${format(contREG2)}`)
         if (nREG2 === 0) {
             valREG2 = 0;
             pcREG2 = 'applyContReg2';
@@ -141,7 +141,7 @@ const sumREG2VM = (nREG2: number, contREG2: CCont, valREG2: number, pcREG2: Inst
     }
 
     const applyContReg2 = (): void => {
-        // console.log(`applyContReg val=${valREG2} cont=${JSON.stringify(contREG2)}`)
+        // console.log(`applyContReg val=${valREG2} cont=${format(contREG2)}`)
         if (isIdCont(contREG2)) {
             pcREG2 = 'halt';
             // return valREG;

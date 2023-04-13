@@ -1,11 +1,11 @@
 // ===========================================================
 // AST type models
-import { map, pipe, zipWith } from "ramda";
+import { map, zipWith } from "ramda";
 import { makeEmptySExp, makeSymbolSExp, SExpValue, makeCompoundSExp, valueToString } from './L3-value'
-import { first, second, rest, allT, isEmpty } from "../shared/list";
+import { first, second, rest, allT, isEmpty, isNonEmptyList, List } from "../shared/list";
 import { isArray, isString, isNumericString, isIdentifier } from "../shared/type-predicates";
 import { Result, makeOk, makeFailure, bind, mapResult, mapv } from "../shared/result";
-import { parse as p, isSexpString, isToken } from "../shared/parser";
+import { parse as p, isSexpString, isToken, isCompoundSexp } from "../shared/parser";
 import { Sexp, Token } from "s-expression";
 
 /*
@@ -129,21 +129,22 @@ export const parseL3 = (x: string): Result<Program> =>
 
 export const parseL3Program = (sexp: Sexp): Result<Program> =>
     sexp === "" || isEmpty(sexp) ? makeFailure("Unexpected empty program") :
-    isToken(sexp) ? makeFailure(`Program cannot be a single token: ${JSON.stringify(sexp, null, 2)}`) :
-    isArray(sexp) ? parseL3GoodProgram(first(sexp), rest(sexp)) :
-    makeFailure(`Unexpected type ${JSON.stringify(sexp, null, 2)}`);
+    isToken(sexp) ? makeFailure(`Program cannot be a single token: ${format(sexp)}`) :
+    isNonEmptyList<Sexp>(sexp) ? parseL3GoodProgram(first(sexp), rest(sexp)) :
+    makeFailure(`Unexpected type ${format(sexp)}`);
 
 const parseL3GoodProgram = (keyword: Sexp, body: Sexp[]): Result<Program> =>
     keyword === "L3" && !isEmpty(body) ? mapv(mapResult(parseL3Exp, body), (exps: Exp[]) => 
                                               makeProgram(exps)) :
-    makeFailure(`Program must be of the form (L3 <exp>+): ${JSON.stringify([keyword, ...body], null, 2)}`);
+    makeFailure(`Program must be of the form (L3 <exp>+): ${format([keyword, ...body])}`);
 
 // Exp -> <DefineExp> | <Cexp>
 export const parseL3Exp = (sexp: Sexp): Result<Exp> =>
-    isEmpty(sexp) ? makeFailure(`Exp cannot be an empty list: ${JSON.stringify(sexp, null, 2)}`) :
-    isArray(sexp) ? parseL3CompoundExp(first(sexp), rest(sexp)) :
+    isCompoundSexp(sexp) ? 
+        isNonEmptyList<Sexp>(sexp) ? parseL3CompoundExp(first(sexp), rest(sexp)) :
+        makeFailure(`Exp cannot be an empty list: ${format(sexp)}`) :
     isToken(sexp) ? parseL3Atomic(sexp) :
-    sexp;
+    makeFailure(`Bad param: ${sexp}`);
 
 // Compound -> DefineExp | CompoundCExp
 export const parseL3CompoundExp = (op: Sexp, params: Sexp[]): Result<Exp> => 
@@ -158,28 +159,36 @@ export const parseL3CompoundCExp = (op: Sexp, params: Sexp[]): Result<CExp> =>
 export const parseL3SpecialForm = (op: Sexp, params: Sexp[]): Result<CExp> =>
     isEmpty(params) ? makeFailure("Empty args for special form") :
     op === "if" ? parseIfExp(params) :
-    op === "lambda" ? parseProcExp(first(params), rest(params)) :
-    op === "let" ? parseLetExp(first(params), rest(params)) :
-    op === "quote" ? parseLitExp(first(params)) :
+    op === "lambda" ? 
+        isNonEmptyList<Sexp>(params) ? parseProcExp(first(params), rest(params)) :
+        makeFailure(`Bad proc: ${params}`) :
+    op === "let" ? 
+        isNonEmptyList<Sexp>(params) ? parseLetExp(first(params), rest(params)) :
+        makeFailure(`Bad let: ${params}`) :
+    op === "quote" ? 
+        isNonEmptyList<Sexp>(params) ? parseLitExp(first(params)) :
+        makeFailure(`Bad quote exp: ${params}`) :
     makeFailure("Never");
 
 // DefineExp -> (define <varDecl> <CExp>)
-export const parseDefine = (params: Sexp[]): Result<DefineExp> =>
-    isEmpty(params) ? makeFailure("define missing 2 arguments") :
-    isEmpty(rest(params)) ? makeFailure(`define missing 1 arguments: ${JSON.stringify(params, null, 2)}`) :
-    ! isEmpty(rest(rest(params))) ? makeFailure(`define has too many arguments: ${JSON.stringify(params, null, 2)}`) :
-    parseGoodDefine(first(params), second(params));
+export const parseDefine = (params: List<Sexp>): Result<DefineExp> =>
+    isNonEmptyList<Sexp>(params) ? 
+        isEmpty(rest(params)) ? makeFailure(`define missing 1 arguments: ${format(params)}`) :
+        (params.length > 2) ? makeFailure(`define too many arguments: ${format(params)}`) :
+        parseGoodDefine(first(params), second(params)) :
+    makeFailure("define missing 2 arguments");
 
 const parseGoodDefine = (variable: Sexp, val: Sexp): Result<DefineExp> =>
-    ! isIdentifier(variable) ? makeFailure(`First arg of define must be an identifier: {JSON.stringify(variable, null, 2)}`) :
+    ! isIdentifier(variable) ? makeFailure(`First arg of define must be an identifier: ${format(variable)}`) :
     mapv(parseL3CExp(val), (value: CExp) => 
          makeDefineExp(makeVarDecl(variable), value));
 
 export const parseL3CExp = (sexp: Sexp): Result<CExp> =>
-    isEmpty(sexp) ? makeFailure("CExp cannot be an empty list") :
-    isArray(sexp) ? parseL3CompoundCExp(first(sexp), rest(sexp)) :
+    isCompoundSexp(sexp) ? 
+        isNonEmptyList<Sexp>(sexp) ? parseL3CompoundCExp(first(sexp), rest(sexp)) :
+        makeFailure("CExp cannot be an empty list") :
     isToken(sexp) ? parseL3Atomic(sexp) :
-    sexp;
+    makeFailure(`Bad sexp: ${sexp}`);
 
 // Atomic -> number | boolean | primitiveOp | string
 export const parseL3Atomic = (token: Token): Result<CExp> =>
@@ -209,18 +218,18 @@ const parseAppExp = (op: Sexp, params: Sexp[]): Result<AppExp> =>
              makeAppExp(rator, rands)));
 
 const parseIfExp = (params: Sexp[]): Result<IfExp> =>
-    params.length !== 3 ? makeFailure(`Expression not of the form (if <cexp> <cexp> <cexp>): ${JSON.stringify(params, null, 2)}`) :
+    params.length !== 3 ? makeFailure(`Expression not of the form (if <cexp> <cexp> <cexp>): ${format(params)}`) :
     mapv(mapResult(parseL3CExp, params), (cexps: CExp[]) => 
         makeIfExp(cexps[0], cexps[1], cexps[2]));
 
 const parseProcExp = (vars: Sexp, body: Sexp[]): Result<ProcExp> =>
     isArray(vars) && allT(isString, vars) ? mapv(mapResult(parseL3CExp, body), (cexps: CExp[]) => 
                                                  makeProcExp(map(makeVarDecl, vars), cexps)) :
-    makeFailure(`Invalid vars for ProcExp ${JSON.stringify(vars, null, 2)}`);
+    makeFailure(`Invalid vars for ProcExp ${format(vars)}`);
 
 const isGoodBindings = (bindings: Sexp): bindings is [string, Sexp][] =>
     isArray(bindings) &&
-    allT(isArray, bindings) &&
+    allT(isNonEmptyList<Sexp>, bindings) &&
     allT(isIdentifier, map(first, bindings));
 
 const parseLetExp = (bindings: Sexp, body: Sexp[]): Result<LetExp> => {
@@ -261,21 +270,21 @@ export const parseSExp = (sexp: Sexp): Result<SExpValue> =>
     isString(sexp) ? makeOk(makeSymbolSExp(sexp)) :
     sexp.length === 0 ? makeOk(makeEmptySExp()) :
     isDottedPair(sexp) ? makeDottedPair(sexp) :
-    isArray(sexp) ? (
+    isNonEmptyList<Sexp>(sexp) ? (
         // fail on (x . y z)
-        sexp[0] === '.' ? makeFailure(`Bad dotted sexp: ${JSON.stringify(sexp, null, 2)}`) : 
+        first(sexp) === '.' ? makeFailure(`Bad dotted sexp: ${format(sexp)}`) : 
         bind(parseSExp(first(sexp)), (val1: SExpValue) =>
              mapv(parseSExp(rest(sexp)), (val2: SExpValue) =>
                   makeCompoundSExp(val1, val2))) 
         ) :
-    sexp;
+    makeFailure(`Bad sexp: ${sexp}`);
 
 
 // ==========================================================================
 // Unparse: Map an AST to a concrete syntax string.
 
 import { isSymbolSExp, isEmptySExp, isCompoundSExp } from './L3-value';
-
+import { format } from "../shared/format";
 
 // Add a quote for symbols, empty and compound sexp - strings and numbers are not quoted.
 const unparseLitExp = (le: LitExp): string =>

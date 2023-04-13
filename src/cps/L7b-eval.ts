@@ -15,6 +15,7 @@ import { isEmpty, allT, first, rest } from '../shared/list';
 import { Result, makeOk, makeFailure, bind, either } from "../shared/result";
 import { applyPrimitive } from "../L5/evalPrimitive";
 import { parse as p } from "../shared/parser";
+import { format } from "../shared/format";
 
 // ========================================================
 // Concrete Continuation datatype
@@ -201,7 +202,7 @@ export const evalApp = (exp: AppExp, env: Env, cont: Cont): Result<Value> =>
 export const applyProcedure = (proc: Value, args: Value[], cont: Cont): Result<Value> =>
     isPrimOp(proc) ? applyCont(cont, applyPrimitive(proc, args)) :
     isClosure(proc) ? applyClosure(proc, args, cont) :
-    applyCont(cont, makeFailure(`Bad procedure ${JSON.stringify(proc, null, 2)}`));
+    applyCont(cont, makeFailure(`Bad procedure ${format(proc)}`));
 
 export const applyClosure = (proc: Closure, args: Value[], cont: Cont): Result<Value> => {
     const vars = map((v: VarDecl) => v.var, proc.params);
@@ -230,7 +231,7 @@ export const evalExps = (exps: Exp[], env: Env, cont: ContArray): Result<Value> 
     evalExpsFR(first(exps), rest(exps), env, cont);
 
 const evalExpsFR = (exp: Exp, exps: Exp[], env: Env, cont: ContArray): Result<Value> =>
-    isDefineExp(exp) ? applyContArray(cont, bind(unparse(exp), e => makeFailure(`Unexpected define: ${JSON.stringify(e, null, 2)}`))) :
+    isDefineExp(exp) ? applyContArray(cont, bind(unparse(exp), e => makeFailure(`Unexpected define: ${format(e)}`))) :
     evalCont(exp, env, makeExpsCont1(exps, env, cont));
 
 // Evaluate a program

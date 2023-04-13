@@ -1,9 +1,10 @@
 import { PrimOp } from "./L5-ast";
 import { Value, isSymbolSExp, isCompoundSExp, makeCompoundSExp, makeEmptySExp, isEmptySExp, CompoundSExp, EmptySExp } from "./L5-value";
 import { Result, makeFailure, makeOk } from "../shared/result";
-import { allT, first, rest } from "../shared/list";
+import { allT, first, isNonEmptyList, rest } from "../shared/list";
 import { isNumber, isString, isBoolean } from "../shared/type-predicates";
 import { reduce } from "ramda";
+import { format } from "../shared/format";
 
 export const applyPrimitive = (proc: PrimOp, args: Value[]): Result<Value> =>
     proc.op === "+" ? (allT(isNumber, args) ? makeOk(reduce((x, y) => x + y, 0, args)) : makeFailure("+ expects numbers only")) :
@@ -35,7 +36,7 @@ const minusPrim = (args: Value[]): Result<number> => {
     if (isNumber(x) && isNumber(y)) {
         return makeOk(x - y);
     } else {
-        return makeFailure(`Type error: - expects numbers ${JSON.stringify(args, null, 2)}`)
+        return makeFailure(`Type error: - expects numbers ${format(args)}`)
     }
 }
 
@@ -45,7 +46,7 @@ const divPrim = (args: Value[]): Result<number> => {
     if (isNumber(x) && isNumber(y)) {
         return makeOk(x / y);
     } else {
-        return makeFailure(`Type error: / expects numbers ${JSON.stringify(args, null, 2)}`)
+        return makeFailure(`Type error: / expects numbers ${format(args)}`)
     }
 }
 
@@ -68,18 +69,18 @@ const eqPrim = (args: Value[]): boolean => {
 
 const carPrim = (v: Value): Result<Value> =>
     isCompoundSExp(v) ? makeOk(v.val1) :
-    makeFailure(`Car: param is not compound ${JSON.stringify(v, null, 2)}`);
+    makeFailure(`Car: param is not compound ${format(v)}`);
 
 const cdrPrim = (v: Value): Result<Value> =>
     isCompoundSExp(v) ? makeOk(v.val2) :
-    makeFailure(`Cdr: param is not compound ${JSON.stringify(v, null, 2)}`);
+    makeFailure(`Cdr: param is not compound ${format(v)}`);
 
 const consPrim = (v1: Value, v2: Value): CompoundSExp =>
     makeCompoundSExp(v1, v2);
 
 export const listPrim = (vals: Value[]): EmptySExp | CompoundSExp =>
-    vals.length === 0 ? makeEmptySExp() :
-    makeCompoundSExp(first(vals), listPrim(rest(vals)))
+    isNonEmptyList<Value>(vals) ? makeCompoundSExp(first(vals), listPrim(rest(vals))) :
+    makeEmptySExp();
 
 const isListPrim = (v: Value): boolean =>
     isEmptySExp(v) || isCompoundSExp(v);

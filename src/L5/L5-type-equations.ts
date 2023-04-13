@@ -6,8 +6,9 @@ import * as TC from "./L5-typecheck";
 import * as T from "./TExp";
 import * as Res from "../shared/result";
 import * as Opt from "../shared/optional";
-import { isEmpty, first, rest, cons } from "../shared/list";
+import { isEmpty, first, rest, cons, isNonEmptyList } from "../shared/list";
 import { parse as p } from "../shared/parser";
+import { format } from "../shared/format";
 
 // ============================================================n
 // Pool ADT
@@ -44,16 +45,18 @@ export const inPool = (pool: Pool, e: A.Exp): Opt.Optional<T.TExp> => {
 // fun should construct a new pool given a new expression from exp-list
 // that has not yet been seen before.
 const reducePool = (fun: (e: A.Exp, pool: Pool) => Pool, exps: A.Exp[], result: Pool): Pool =>
-    isEmpty(exps) ? result :
-    Opt.maybe(inPool(result, first(exps)),
-              _ => reducePool(fun, rest(exps), result),
-              () => reducePool(fun, rest(exps), fun(first(exps), result)));
+    isNonEmptyList<A.Exp>(exps) ?
+        Opt.maybe(inPool(result, first(exps)),
+                  _ => reducePool(fun, rest(exps), result),
+                  () => reducePool(fun, rest(exps), fun(first(exps), result))) :
+    result;
 
 const reducePoolVarDecls = (fun: (e: A.VarDecl, pool: Pool) => Pool, vds: A.VarDecl[], result: Pool): Pool =>
-    isEmpty(vds) ? result :
-    Opt.maybe(inPool(result, A.makeVarRef(first(vds).var)),
-              _ => reducePoolVarDecls(fun, rest(vds), result),
-              () => reducePoolVarDecls(fun, rest(vds), fun(first(vds), result)));
+    isNonEmptyList<A.VarDecl>(vds) ?
+        Opt.maybe(inPool(result, A.makeVarRef(first(vds).var)),
+                  _ => reducePoolVarDecls(fun, rest(vds), result),
+                  () => reducePoolVarDecls(fun, rest(vds), fun(first(vds), result))) :
+    result;
 
 // Purpose: Traverse the abstract syntax tree L5-exp
 //          and collect all sub-expressions into a Pool of fresh type variables.
@@ -99,9 +102,9 @@ export const flatten = <T>(listOfLists: readonly T[][]): T[] => R.chain(R.identi
 // @Pre: pool is the result of expToPool(exp)
 export const poolToEquations = (pool: Pool): Opt.Optional<Equation[]> => {
     // VarRef generate no equations beyond that of var-decl - remove them.
-    const poolWithoutVars: Pool = R.filter(R.propSatisfies(R.complement(A.isVarRef), 'e'), pool);
-    return Opt.mapv(Opt.mapOptional((e: A.Exp) => makeEquationsFromExp(e, pool), R.map(R.prop('e'), poolWithoutVars)), (eqns: Equation[][]) => 
-                flatten(eqns));
+    const poolWithoutVars = R.filter(R.propSatisfies(R.complement(A.isVarRef), 'e'), pool);
+    return Opt.mapv(Opt.mapOptional((e: A.Exp) => makeEquationsFromExp(e, pool), R.map(R.prop('e'), poolWithoutVars)), 
+                    (eqns: Equation[][]) => flatten(eqns));
 };
 
 // Signature: make-equation-from-exp(exp, pool)
@@ -145,14 +148,14 @@ export const makeEquationsFromExp = (exp: A.Exp, pool: Pool): Opt.Optional<Equat
 export const inferType = (exp: A.Exp): Opt.Optional<T.TExp> => {
     // console.log(`Infer ${A.unparse(exp)}`)
     const pool = expToPool(exp);
-    // console.log(`Pool ${JSON.stringify(pool)}`);
+    // console.log(`Pool ${format(pool)}`);
     const equations = poolToEquations(pool);
-    // console.log(`Equations ${JSON.stringify(equations)}`);
+    // console.log(`Equations ${format(equations)}`);
     const sub = Opt.bind(equations, (eqns: Equation[]) => Res.resultToOptional(solveEquations(eqns)));
-    // console.log(`Sub ${JSON.stringify(sub)}`);
+    // console.log(`Sub ${format(sub)}`);
     // Extract the computed type of the root expression from the pool
     const texp = inPool(pool, exp);
-    // console.log(`TExp = ${JSON.stringify(bindResult(optionalToResult(texp, "TExp is None"), T.unparseTExp))}`);
+    // console.log(`TExp = ${format(bindResult(optionalToResult(texp, "TExp is None"), T.unparseTExp))}`);
     // Replace all TVars in the computed type by their type expression
     return Opt.bind(sub, (sub: S.Sub) =>
                 Opt.mapv(texp, (texp: T.TExp) =>
@@ -184,6 +187,11 @@ export const solveEquations = (equations: Equation[]): Res.Result<S.Sub> =>
 // Purpose: Solve the equations, starting from a given substitution.
 //          Returns the resulting substitution, or error, if not solvable
 const solve = (equations: Equation[], sub: S.Sub): Res.Result<S.Sub> => {
+    
+    if (!isNonEmptyList<Equation>(equations)) {
+        return Res.makeOk(sub);
+    }
+
     const solveVarEq = (tvar: T.TVar, texp: T.TExp): Res.Result<S.Sub> =>
         Res.bind(S.extendSub(sub, tvar, texp), sub2 => solve(rest(equations), sub2));
 
@@ -193,11 +201,7 @@ const solve = (equations: Equation[], sub: S.Sub): Res.Result<S.Sub> => {
     const handleBothSidesAtomic = (eq: Equation): Res.Result<S.Sub> =>
         T.isAtomicTExp(eq.left) && T.isAtomicTExp(eq.right) && T.eqAtomicTExp(eq.left, eq.right)
         ? solve(rest(equations), sub)
-        : Res.makeFailure(`Equation with non-equal atomic type ${JSON.stringify(eq, null, 2)}`);
-
-    if (isEmpty(equations)) {
-        return Res.makeOk(sub);
-    }
+        : Res.makeFailure(`Equation with non-equal atomic type ${format(eq)}`);
 
     const eq = makeEquation(S.applySub(sub, first(equations).left),
                             S.applySub(sub, first(equations).right));
@@ -207,7 +211,7 @@ const solve = (equations: Equation[], sub: S.Sub): Res.Result<S.Sub> => {
            bothSidesAtomic(eq) ? handleBothSidesAtomic(eq) :
            T.isCompoundTExp(eq.left) && T.isCompoundTExp(eq.right) && canUnify(eq) ?
                 solve(R.concat(rest(equations), splitEquation(eq)), sub) :
-           Res.makeFailure(`Equation contains incompatible types ${JSON.stringify(eq, null, 2)}`);
+           Res.makeFailure(`Equation contains incompatible types ${format(eq)}`);
 };
 
 // Signature: canUnify(equation)

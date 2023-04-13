@@ -17,6 +17,7 @@
 import { VarDecl, CExp } from './L4-ast';
 import { makeClosure, Value } from './L4-value';
 import { Result, makeOk, makeFailure } from '../shared/result';
+import { format } from '../shared/format';
 
 // ========================================================
 // Environment data type
@@ -50,7 +51,7 @@ export const isEnv = (x: any): x is Env => isEmptyEnv(x) || isExtEnv(x) || isRec
 
 // Apply-env
 export const applyEnv = (env: Env, v: string): Result<Value> =>
-    isEmptyEnv(env) ? makeFailure(`var not found ${JSON.stringify(v, null, 2)}`) :
+    isEmptyEnv(env) ? makeFailure(`var not found ${format(v)}`) :
     isExtEnv(env) ? applyExtEnv(env, v) :
     applyRecEnv(env, v);
 

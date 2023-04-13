@@ -31,12 +31,13 @@
 */
 import { chain, concat, map, uniq } from "ramda";
 import { Sexp } from "s-expression";
-import { isEmpty } from "../shared/list";
+import { isEmpty, isNonEmptyList } from "../shared/list";
 import { isArray, isBoolean, isString } from '../shared/type-predicates';
 import { makeBox, setBox, unbox, Box } from '../shared/box';
 import { cons, first, rest } from '../shared/list';
 import { Result, bind, makeOk, makeFailure, mapResult, mapv } from "../shared/result";
 import { parse as p } from "../shared/parser";
+import { format } from "../shared/format";
 
 export type TExp =  AtomicTExp | CompoundTExp | TVar;
 export const isTExp = (x: any): x is TExp => isAtomicTExp(x) || isCompoundTExp(x) || isTVar(x);
@@ -155,7 +156,7 @@ export const parseTExp = (texp: Sexp): Result<TExp> =>
     (texp === "string") ? makeOk(makeStrTExp()) :
     isString(texp) ? makeOk(makeTVar(texp)) :
     isArray(texp) ? parseCompoundTExp(texp) :
-    makeFailure(`Unexpected TExp - ${JSON.stringify(texp, null, 2)}`);
+    makeFailure(`Unexpected TExp - ${format(texp)}`);
 
 /*
 ;; expected structure: (<params> -> <returnte>)
@@ -164,10 +165,10 @@ export const parseTExp = (texp: Sexp): Result<TExp> =>
 */
 const parseCompoundTExp = (texps: Sexp[]): Result<ProcTExp> => {
     const pos = texps.indexOf('->');
-    return (pos === -1)  ? makeFailure(`Procedure type expression without -> - ${JSON.stringify(texps, null, 2)}`) :
-           (pos === 0) ? makeFailure(`No param types in proc texp - ${JSON.stringify(texps, null, 2)}`) :
-           (pos === texps.length - 1) ? makeFailure(`No return type in proc texp - ${JSON.stringify(texps, null, 2)}`) :
-           (texps.slice(pos + 1).indexOf('->') > -1) ? makeFailure(`Only one -> allowed in a procexp - ${JSON.stringify(texps, null, 2)}`) :
+    return (pos === -1)  ? makeFailure(`Procedure type expression without -> - ${format(texps)}`) :
+           (pos === 0) ? makeFailure(`No param types in proc texp - ${format(texps)}`) :
+           (pos === texps.length - 1) ? makeFailure(`No return type in proc texp - ${format(texps)}`) :
+           (texps.slice(pos + 1).indexOf('->') > -1) ? makeFailure(`Only one -> allowed in a procexp - ${format(texps)}`) :
            bind(parseTupleTExp(texps.slice(0, pos)), (args: TExp[]) =>
                mapv(parseTExp(texps[pos + 1]), (returnTE: TExp) =>
                     makeProcTExp(args, returnTE)));
@@ -183,8 +184,8 @@ const parseTupleTExp = (texps: Sexp[]): Result<TExp[]> => {
     // [x1 * x2 * ... * xn] => [x1,...,xn]
     const splitEvenOdds = (texps: Sexp[]): Result<Sexp[]> =>
         isEmpty(texps) ? makeOk([]) :
-        isEmpty(rest(texps)) ? makeOk(texps) :
-        texps[1] !== '*' ? makeFailure(`Parameters of procedure type must be separated by '*': ${JSON.stringify(texps, null, 2)}`) :
+        (texps.length === 1) ? makeOk(texps) :
+        texps[1] !== '*' ? makeFailure(`Parameters of procedure type must be separated by '*': ${format(texps)}`) :
         mapv(splitEvenOdds(texps.slice(2)), (sexps: Sexp[]) => [texps[0], ...sexps]);
 
     return isEmptyTuple(texps) ? makeOk([]) : bind(splitEvenOdds(texps), (argTEs: Sexp[]) => 
@@ -196,10 +197,11 @@ const parseTupleTExp = (texps: Sexp[]): Result<TExp[]> => {
 */
 export const unparseTExp = (te: TExp): Result<string> => {
     const unparseTuple = (paramTes: TExp[]): Result<string[]> =>
-        isEmpty(paramTes) ? makeOk(["Empty"]) :
-        bind(unparseTExp(first(paramTes)), (paramTE: string) =>
+        isNonEmptyList<TExp>(paramTes) ? bind(unparseTExp(first(paramTes)), (paramTE: string) =>
             mapv(mapResult(unparseTExp, rest(paramTes)), (paramTEs: string[]) =>
-                cons(paramTE, chain(te => ['*', te], paramTEs))));
+                cons(paramTE, chain(te => ['*', te], paramTEs)))) :
+        makeOk(["Empty"]);
+
     const up = (x?: TExp): Result<string | string[]> =>
         isNumTExp(x) ? makeOk('number') :
         isBoolTExp(x) ? makeOk('boolean') :
@@ -271,14 +273,15 @@ const matchTVarsInTProcs = <T1, T2>(te1: TExp, te2: TExp,
 const matchTVarsInTEs = <T1, T2>(te1: TExp[], te2: TExp[],
                                     succ: (mapping: Array<Pair<TVar, TVar>>) => T1,
                                     fail: () => T2): T1 | T2 =>
-    (isEmpty(te1) && isEmpty(te2)) ? succ([]) :
-    (isEmpty(te1) || isEmpty(te2)) ? fail() :
     // Match first then continue on rest
-    matchTVarsInTE(first(te1), first(te2),
-                    (subFirst) => matchTVarsInTEs(rest(te1), rest(te2), 
+    isNonEmptyList<TExp>(te1) && isNonEmptyList<TExp>(te2) ?
+        matchTVarsInTE(first(te1), first(te2),
+                        (subFirst) => matchTVarsInTEs(rest(te1), rest(te2), 
                                         (subRest) => succ(concat(subFirst, subRest)), 
                                         fail),
-                    fail);
+                        fail) :
+    (isEmpty(te1) && isEmpty(te2)) ? succ([]) :
+    fail();
 
 // Signature: equivalent-tes?(te1, te2)
 // Purpose:   Check whether 2 type expressions are equivalent up to
@@ -286,7 +289,7 @@ const matchTVarsInTEs = <T1, T2>(te1: TExp[], te2: TExp[],
 // Example:  equivalentTEs(parseTExp('(T1 * (Number -> T2) -> T3))',
 //                         parseTExp('(T4 * (Number -> T5) -> T6))') => #t
 export const equivalentTEs = (te1: TExp, te2: TExp): boolean => {
-    // console.log(`EqTEs ${JSON.stringify(te1)} - ${JSON.stringify(te2)}`);
+    // console.log(`EqTEs ${format(te1)} - ${format(te2)}`);
     const tvarsPairs = matchTVarsInTE(te1, te2, (x) => x, () => false);
     // console.log(`EqTEs pairs = ${map(JSON.stringify, tvarsPairs)}`)
     if (isBoolean(tvarsPairs))

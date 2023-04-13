@@ -1,10 +1,11 @@
 // L1-eval.ts
 
 import { reduce } from "ramda";
-import { first, isEmpty, rest } from "../shared/list";
+import { List, first, isEmpty, isNonEmptyList, rest } from "../shared/list";
 import { Result, makeOk, makeFailure, bind, mapResult } from "../shared/result";
 import { CExp, DefineExp, Exp, PrimOp, Program } from "./L1-ast";
 import { isAppExp, isBoolExp, isDefineExp, isNumExp, isPrimOp, isVarRef } from "./L1-ast";
+import { format } from "../shared/format";
 
 // ========================================================
 // Value type definition
@@ -46,7 +47,7 @@ const L1applicativeEval = (exp: CExp, env: Env): Result<Value> =>
 
 const L1applyProcedure = (proc: CExp, args: Value[]): Result<Value> =>
     isPrimOp(proc) ? applyPrimitive(proc, args) :
-    makeFailure(`Bad procedure ${JSON.stringify(proc, null, 2)}`);
+    makeFailure(`Bad procedure ${format(proc)}`);
 
 // There are type errors which we will address in L3
 const applyPrimitive = (proc: PrimOp, args: Value[]): Result<Value> =>
@@ -71,10 +72,10 @@ const applyPrimitive = (proc: PrimOp, args: Value[]): Result<Value> =>
     makeFailure("Bad primitive op " + proc.op);
 
 // Evaluate a sequence of expressions (in a program)
-export const evalSequence = (seq: Exp[], env: Env): Result<Value> =>
-    isEmpty(seq) ? makeFailure("Empty sequence") :
-    evalSequenceFirst(first(seq), rest(seq), env);
-
+export const evalSequence = (seq: List<Exp>, env: Env): Result<Value> =>
+    isNonEmptyList<Exp>(seq) ? evalSequenceFirst(first(seq), rest(seq), env) :
+    makeFailure("Empty sequence");
+    
 const evalSequenceFirst = (first: Exp, rest: Exp[], env: Env): Result<Value> =>
     isDefineExp(first) ? evalDefineExps(first, rest, env) :
     isEmpty(rest) ? L1applicativeEval(first, env) :

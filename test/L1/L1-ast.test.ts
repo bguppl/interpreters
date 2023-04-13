@@ -1,6 +1,7 @@
 import { isNumExp, parseL1Exp, isBoolExp, isVarRef, isDefineExp, isVarDecl, isAppExp, isProgram, parseL1, Exp } from "../../src/L1/L1-ast";
 import { isOkT, isFailure, Result, bind } from "../../src/shared/result";
 import { parse as p } from "../../src/shared/parser";
+import { format } from "../../src/shared/format";
 
 const parse = (s: string): Result<Exp> =>
     bind(p(s), parseL1Exp);
@@ -27,7 +28,7 @@ describe("L1 Parsing", () => {
             expect(parsed.value.var).toSatisfy(isVarDecl);
             expect(parsed.value.val).toSatisfy(isNumExp);
         } else {
-            expect.fail(`${JSON.stringify(parsed)} not a "define" expression`);
+            expect.fail(`${format(parsed)} not a "define" expression`);
         }
     });
 

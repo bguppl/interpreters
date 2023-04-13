@@ -34,6 +34,7 @@ import { map, zipWith } from "ramda";
 import { Value } from './L4-value-box';
 import { Result, makeFailure, makeOk, bind, either, mapv } from "../shared/result";
 import { cons } from "../shared/list";
+import { format } from "../shared/format";
 
 // ========================================================
 // Box datatype
@@ -75,7 +76,7 @@ export const frameVals = (frame: Frame): Value[] => map(getFBindingVal, frame.fb
 
 const applyFrame = (frame: Frame, v: string): Result<FBinding> => {
     const pos = frameVars(frame).indexOf(v);
-    return (pos > -1) ? makeOk(frame.fbindings[pos]) : makeFailure(`Var not found: ${JSON.stringify(v, null, 2)}`);
+    return (pos > -1) ? makeOk(frame.fbindings[pos]) : makeFailure(`Var not found: ${format(v)}`);
 };
 export const setVarFrame = (frame: Frame, v: string, val: Value): Result<void> =>
     mapv(applyFrame(frame, v), (bdg: FBinding) => setFBinding(bdg, val));

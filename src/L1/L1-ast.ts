@@ -6,7 +6,7 @@
 // - A parser function which constructs AST values from strings.
 
 import { isString, isNumericString, isIdentifier } from '../shared/type-predicates';
-import { first, rest, second, isEmpty } from '../shared/list';
+import { first, rest, second, isEmpty, isNonEmptyList, List } from '../shared/list';
 import { Result, makeOk, makeFailure, bind, mapResult, mapv } from "../shared/result";
 
 // ===============
@@ -61,6 +61,7 @@ export const isCExp = (x: any): x is CExp =>
 import { Sexp, Token } from "s-expression";
 import { parse as parseSexp, isToken, isCompoundSexp } from "../shared/parser";
 import { all, find } from 'ramda';
+import { format } from '../shared/format';
 
 // combine Sexp parsing with the L1 parsing
 export const parseL1 = (x: string): Result<Program> =>
@@ -78,19 +79,23 @@ export const parseL1 = (x: string): Result<Program> =>
 export const parseL1Program = (sexp: Sexp): Result<Program> =>
     sexp === "" || isEmpty(sexp) ? makeFailure("Unexpected empty program") :
     isToken(sexp) ? makeFailure(`Program cannot be a single token: ${sexp}`) :
-    isCompoundSexp(sexp) ? parseL1GoodProgram(first(sexp), rest(sexp)) :
+    isCompoundSexp(sexp) ? 
+        isNonEmptyList<Sexp>(sexp) ? parseL1GoodProgram(first(sexp), rest(sexp)) : 
+        makeFailure(`Program cannot be a list of a single token: ${sexp}`) :
     sexp;
 
 const parseL1GoodProgram = (keyword: Sexp, body: Sexp[]): Result<Program> =>
     keyword === "L1" && !isEmpty(body) ? mapv(mapResult(parseL1Exp, body), (exps: Exp[]) => 
                                               makeProgram(exps)) :
-    makeFailure(`Program must be of the form (L1 <exp>+): ${JSON.stringify(keyword, null, 2)}`);
+    makeFailure(`Program must be of the form (L1 <exp>+): ${format(keyword)}`);
 
 // Exp -> <DefineExp> | <Cexp>
 // <Sexp> = <CompoundSexp> | <Token>
 export const parseL1Exp = (sexp: Sexp): Result<Exp> =>
     isEmpty(sexp) ? makeFailure("Exp cannot be an empty list") :
-    isCompoundSexp(sexp) ? parseL1CompoundExp(first(sexp), rest(sexp)) :
+    isCompoundSexp(sexp) ? 
+        isNonEmptyList<Sexp>(sexp) ? parseL1CompoundExp(first(sexp), rest(sexp)) :
+        makeFailure(`Exp cannot be a list of single token: ${sexp}`) :
     isToken(sexp) ? parseL1Atomic(sexp) :
     sexp;
     
@@ -104,21 +109,23 @@ export const parseL1CompoundCExp = (op: Sexp, params: Sexp[]): Result<CExp> =>
     parseAppExp(op, params);
 
 // DefineExp -> (define <varDecl> <CExp>)
-export const parseDefine = (params: Sexp[]): Result<DefineExp> =>
-    isEmpty(params) ? makeFailure(`define missing 2 arguments: ${JSON.stringify(params, null, 2)}`) :
-    isEmpty(rest(params)) ? makeFailure(`define missing 1 arguments: ${JSON.stringify(params, null, 2)}`) :
-    ! isEmpty(rest(rest(params))) ? makeFailure(`define has too many arguments: ${JSON.stringify(params, null, 2)}`) :
-    parseGoodDefine(first(params), second(params));
+export const parseDefine = (params: List<Sexp>): Result<DefineExp> =>
+    isNonEmptyList<Sexp>(params) ?
+        isEmpty(rest(params)) ? makeFailure(`define missing 1 arguments: ${format(params)}`) :
+        (params.length > 2) ? makeFailure(`define has too many arguments: ${format(params)}`) :
+        parseGoodDefine(first(params), second(params)) :
+    makeFailure(`define missing 2 arguments: ${format(params)}`);
 
 const parseGoodDefine = (variable: Sexp, val: Sexp): Result<DefineExp> =>
-    ! isIdentifier(variable) ? makeFailure(`First arg of define must be an identifier: ${JSON.stringify(variable, null, 2)}`) :
+    ! isIdentifier(variable) ? makeFailure(`First arg of define must be an identifier: ${format(variable)}`) :
     mapv(parseL1CExp(val), (value: CExp) => 
          makeDefineExp(makeVarDecl(variable), value));
 
 // CExp -> AtomicExp | CompondCExp
 export const parseL1CExp = (sexp: Sexp): Result<CExp> =>
-    isEmpty(sexp) ? makeFailure("CExp cannot be an empty list") :
-    isCompoundSexp(sexp) ? parseL1CompoundCExp(first(sexp), rest(sexp)) :
+    isCompoundSexp(sexp) ?
+        isNonEmptyList<Sexp>(sexp) ? parseL1CompoundCExp(first(sexp), rest(sexp)) :
+        makeFailure(`L1CExp cannot be an empty list`) :
     isToken(sexp) ? parseL1Atomic(sexp) :
     sexp;
 

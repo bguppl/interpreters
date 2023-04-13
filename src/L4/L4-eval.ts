@@ -11,9 +11,10 @@ import { isBoolExp, isCExp, isLitExp, isNumExp, isPrimOp, isStrExp, isVarRef,
 import { applyEnv, makeEmptyEnv, makeExtEnv, makeRecEnv, Env } from "./L4-env";
 import { isClosure, makeClosure, Closure, Value } from "./L4-value";
 import { applyPrimitive } from "./evalPrimitive";
-import { allT, first, rest, isEmpty } from "../shared/list";
+import { allT, first, rest, isEmpty, isNonEmptyList } from "../shared/list";
 import { Result, makeOk, makeFailure, bind, mapResult } from "../shared/result";
 import { parse as p } from "../shared/parser";
+import { format } from "../shared/format";
 
 // ========================================================
 // Eval functions
@@ -32,7 +33,7 @@ const applicativeEval = (exp: CExp, env: Env): Result<Value> =>
     isAppExp(exp) ? bind(applicativeEval(exp.rator, env), (proc: Value) =>
                         bind(mapResult((rand: CExp) => applicativeEval(rand, env), exp.rands), (args: Value[]) =>
                             applyProcedure(proc, args))) :
-    isSetExp(exp) ? makeFailure(`To implement ${JSON.stringify(exp, null, 2)}`) :
+    isSetExp(exp) ? makeFailure(`To implement ${format(exp)}`) :
     exp;
 
 export const isTrueValue = (x: Value): boolean =>
@@ -51,7 +52,7 @@ const evalProc = (exp: ProcExp, env: Env): Result<Closure> =>
 const applyProcedure = (proc: Value, args: Value[]): Result<Value> =>
     isPrimOp(proc) ? applyPrimitive(proc, args) :
     isClosure(proc) ? applyClosure(proc, args) :
-    makeFailure(`Bad procedure ${JSON.stringify(proc, null, 2)}`);
+    makeFailure(`Bad procedure ${format(proc)}`);
 
 const applyClosure = (proc: Closure, args: Value[]): Result<Value> => {
     const vars = map((v: VarDecl) => v.var, proc.params);
@@ -60,8 +61,8 @@ const applyClosure = (proc: Closure, args: Value[]): Result<Value> => {
 
 // Evaluate a sequence of expressions (in a program)
 export const evalSequence = (seq: Exp[], env: Env): Result<Value> =>
-    isEmpty(seq) ? makeFailure("Empty sequence") :
-    evalCExps(first(seq), rest(seq), env);
+    isNonEmptyList<Exp>(seq) ? evalCExps(first(seq), rest(seq), env) : 
+    makeFailure("Empty sequence");
     
 const evalCExps = (first: Exp, rest: Exp[], env: Env): Result<Value> =>
     isDefineExp(first) ? evalDefineExps(first, rest, env) :
@@ -104,6 +105,6 @@ const evalLetrec = (exp: LetrecExp, env: Env): Result<Value> => {
         const bodies = map((v: ProcExp) => v.body, vals);
         return evalSequence(exp.body, makeRecEnv(vars, paramss, bodies, env));
     } else {
-        return makeFailure(`Letrec: all variables must be bound to procedures: ${JSON.stringify(exp, null, 2)}`);
+        return makeFailure(`Letrec: all variables must be bound to procedures: ${format(exp)}`);
     }
 }

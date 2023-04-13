@@ -9,9 +9,10 @@ import { applyTEnv, makeEmptyTEnv, makeExtendTEnv, TEnv } from "./TEnv";
 import { isProcTExp, makeBoolTExp, makeNumTExp, makeProcTExp, makeStrTExp, makeVoidTExp,
          parseTE, unparseTExp,
          BoolTExp, NumTExp, StrTExp, TExp, VoidTExp } from "./TExp";
-import { isEmpty, allT, first, rest } from '../shared/list';
+import { isEmpty, allT, first, rest, NonEmptyList, List, isNonEmptyList } from '../shared/list';
 import { Result, makeFailure, bind, makeOk, zipWithResult } from '../shared/result';
 import { parse as p } from "../shared/parser";
+import { format } from '../shared/format';
 
 // Purpose: Check that type expressions are equivalent
 // as part of a fully-annotated type check process of exp.
@@ -52,14 +53,17 @@ export const typeofExp = (exp: Parsed, tenv: TEnv): Result<TExp> =>
     isDefineExp(exp) ? typeofDefine(exp, tenv) :
     isProgram(exp) ? typeofProgram(exp, tenv) :
     // TODO: isSetExp(exp) isLitExp(exp)
-    makeFailure(`Unknown type: ${JSON.stringify(exp, null, 2)}`);
+    makeFailure(`Unknown type: ${format(exp)}`);
 
 // Purpose: Compute the type of a sequence of expressions
 // Check all the exps in a sequence - return type of last.
 // Pre-conditions: exps is not empty.
-export const typeofExps = (exps: Exp[], tenv: TEnv): Result<TExp> =>
-    isEmpty(rest(exps)) ? typeofExp(first(exps), tenv) :
-    bind(typeofExp(first(exps), tenv), _ => typeofExps(rest(exps), tenv));
+export const typeofExps = (exps: List<Exp>, tenv: TEnv): Result<TExp> =>
+    isNonEmptyList<Exp>(exps) ? 
+        isEmpty(rest(exps)) ? typeofExp(first(exps), tenv) :
+        bind(typeofExp(first(exps), tenv), _ => typeofExps(rest(exps), tenv)) :
+    makeFailure(`Unexpected empty list of expressions`);
+
 
 // a number literal has type num-te
 export const typeofNum = (n: NumExp): NumTExp => makeNumTExp();
@@ -187,7 +191,7 @@ export const typeofLetrec = (exp: LetrecExp, tenv: TEnv): Result<TExp> => {
     const ps = map((b) => b.var.var, exp.bindings);
     const procs = map((b) => b.val, exp.bindings);
     if (! allT(isProcExp, procs))
-        return makeFailure(`letrec - only support binding of procedures - ${JSON.stringify(exp, null, 2)}`);
+        return makeFailure(`letrec - only support binding of procedures - ${format(exp)}`);
     const paramss = map((p) => p.args, procs);
     const bodies = map((p) => p.body, procs);
     const tijs = map((params) => map((p) => p.texp, params), paramss);

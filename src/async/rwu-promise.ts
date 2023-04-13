@@ -1,4 +1,5 @@
 import * as fs from 'fs';
+import { format } from '../shared/format';
 
 const readFilePromise = (filename: string): Promise<string> => {
   return new Promise<string>( (resolve, reject) => {
@@ -28,7 +29,7 @@ const readUpdateWrite = (filename: string): Promise<void> => {
             .then((content) => {
                 let j = JSON.parse(content);
                 j.lastModified = new Date();
-                return writeFilePromise(filename, JSON.stringify(j));
+                return writeFilePromise(filename, format(j));
             })
             .catch((err) => console.error(err));
 }
@@ -39,14 +40,14 @@ const readUpdateWrite_async = async (filename: string): Promise<void> => {
         const content = await readFilePromise(filename);
         let j = JSON.parse(content);
         j.lastModified = new Date();
-        return writeFilePromise(filename, JSON.stringify(j));
+        return writeFilePromise(filename, format(j));
     }
     catch (err) {
         return console.error(err);
     }
 }
 
-writeFilePromise('test.async', JSON.stringify({a: 1}))
+writeFilePromise('test.async', format({a: 1}))
     .then(() => console.log("File is created"))
     .then(() => readFilePromise('test.async'))
     .then((content) => console.log(JSON.parse(content)))

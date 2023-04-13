@@ -9,13 +9,14 @@ import { makeBoolExp, makeLitExp, makeNumExp, makeProcExp, makeStrExp } from "./
 import { parseL3Exp } from "./L3-ast";
 import { applyEnv, makeEmptyEnv, makeEnv, Env } from "./L3-env";
 import { isClosure, makeClosure, Closure, Value } from "./L3-value";
-import { first, rest, isEmpty } from '../shared/list';
+import { first, rest, isEmpty, List, isNonEmptyList } from '../shared/list';
 import { isBoolean, isNumber, isString } from "../shared/type-predicates";
 import { Result, makeOk, makeFailure, bind, mapResult, mapv } from "../shared/result";
 import { renameExps, substitute } from "./substitute";
 import { applyPrimitive } from "./evalPrimitive";
 import { parse as p } from "../shared/parser";
 import { Sexp } from "s-expression";
+import { format } from "../shared/format";
 
 // ========================================================
 // Eval functions
@@ -49,7 +50,7 @@ const evalProc = (exp: ProcExp, env: Env): Result<Closure> =>
 const L3applyProcedure = (proc: Value, args: Value[], env: Env): Result<Value> =>
     isPrimOp(proc) ? applyPrimitive(proc, args) :
     isClosure(proc) ? applyClosure(proc, args, env) :
-    makeFailure(`Bad procedure ${JSON.stringify(proc, null, 2)}`);
+    makeFailure(`Bad procedure ${format(proc)}`);
 
 // Applications are computed by substituting computed
 // values into the body of the closure.
@@ -71,10 +72,11 @@ const applyClosure = (proc: Closure, args: Value[], env: Env): Result<Value> => 
 }
 
 // Evaluate a sequence of expressions (in a program)
-export const evalSequence = (seq: Exp[], env: Env): Result<Value> =>
-    isEmpty(seq) ? makeFailure("Empty sequence") :
-    isDefineExp(first(seq)) ? evalDefineExps(first(seq), rest(seq), env) :
-    evalCExps(first(seq), rest(seq), env);
+export const evalSequence = (seq: List<Exp>, env: Env): Result<Value> =>
+    isNonEmptyList<Exp>(seq) ? 
+        isDefineExp(first(seq)) ? evalDefineExps(first(seq), rest(seq), env) :
+        evalCExps(first(seq), rest(seq), env) :
+    makeFailure("Empty sequence");
 
 const evalCExps = (first: Exp, rest: Exp[], env: Env): Result<Value> =>
     isCExp(first) && isEmpty(rest) ? L3applicativeEval(first, env) :
@@ -88,7 +90,7 @@ const evalCExps = (first: Exp, rest: Exp[], env: Env): Result<Value> =>
 const evalDefineExps = (def: Exp, exps: Exp[], env: Env): Result<Value> =>
     isDefineExp(def) ? bind(L3applicativeEval(def.val, env), (rhs: Value) => 
                                 evalSequence(exps, makeEnv(def.var.var, rhs, env))) :
-    makeFailure(`Unexpected in evalDefine: ${JSON.stringify(def, null, 2)}`);
+    makeFailure(`Unexpected in evalDefine: ${format(def)}`);
 
 // Main program
 export const evalL3program = (program: Program): Result<Value> =>

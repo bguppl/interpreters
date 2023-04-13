@@ -10,9 +10,10 @@ import { isTrueValue } from "./L3-eval";
 import { applyPrimitive } from "./evalPrimitive";
 import { renameExps, substitute } from "./substitute";
 import { isClosure, makeClosure, SExpValue, Value } from "./L3-value";
-import { first, rest, isEmpty } from '../shared/list';
+import { first, rest, isEmpty, List, isNonEmptyList } from '../shared/list';
 import { Result, makeOk, makeFailure, bind, mapResult } from "../shared/result";
 import { parse as p } from "../shared/parser";
+import { format } from "../shared/format";
 
 /*
 Purpose: Evaluate an L3 expression with normal-eval algorithm
@@ -31,7 +32,7 @@ export const L3normalEval = (exp: CExp, env: Env): Result<Value> =>
     // This is the difference between applicative-eval and normal-eval
     // Substitute the arguments into the body without evaluating them first.
     isAppExp(exp) ? bind(L3normalEval(exp.rator, env), proc => L3normalApplyProc(proc, exp.rands, env)) :
-    makeFailure(`Bad ast: ${JSON.stringify(exp, null, 2)}`);
+    makeFailure(`Bad ast: ${format(exp)}`);
 
 const evalIf = (exp: IfExp, env: Env): Result<Value> =>
     bind(L3normalEval(exp.test, env), (test: SExpValue) => 
@@ -56,7 +57,7 @@ const L3normalApplyProc = (proc: Value, args: CExp[], env: Env): Result<Value> =
         const body = renameExps(proc.body);
         return L3normalEvalSeq(substitute(body, vars, args), env);
     } else {
-        return makeFailure(`Bad proc applied ${JSON.stringify(proc, null, 2)}`);
+        return makeFailure(`Bad proc applied ${format(proc)}`);
     }
 };
 
@@ -66,14 +67,14 @@ Signature: L3-normal-eval-sequence(exps, env)
 Type: [List(CExp) * Env -> Value]
 Pre-conditions: exps is not empty
 */
-const L3normalEvalSeq = (exps: CExp[], env: Env): Result<Value> => {
-    if (isEmpty(rest(exps)))
-        return L3normalEval(first(exps), env);
-    else {
-        L3normalEval(first(exps), env);
-        return L3normalEvalSeq(rest(exps), env);
-    }
-};
+const L3normalEvalSeq = (exps: List<CExp>, env: Env): Result<Value> =>
+    isNonEmptyList<CExp>(exps) ?
+        isEmpty(rest(exps)) ? L3normalEval(first(exps), env) :
+        (
+            L3normalEval(first(exps), env),
+            L3normalEvalSeq(rest(exps), env)
+        ) :
+    makeFailure(`Empty sequence`);
 
 /*
 Purpose: evaluate a program made up of a sequence of expressions. (Same as in L1)
@@ -85,11 +86,12 @@ export const evalNormalProgram = (program: Program): Result<Value> =>
     evalExps(program.exps, makeEmptyEnv());
 
 // Evaluate a sequence of expressions (in a program)
-export const evalExps = (exps: Exp[], env: Env): Result<Value> =>
-    isEmpty(exps) ? makeFailure("Empty program") :
-    isDefineExp(first(exps)) ? evalDefineExps(first(exps), rest(exps), env) :
-    evalCExps(first(exps), rest(exps), env);
-    
+export const evalExps = (exps: List<Exp>, env: Env): Result<Value> =>
+    isNonEmptyList<Exp>(exps) ?
+        isDefineExp(first(exps)) ? evalDefineExps(first(exps), rest(exps), env) :
+        evalCExps(first(exps), rest(exps), env) :
+    makeFailure("Empty program");
+
 const evalCExps = (exp1: Exp, exps: Exp[], env: Env): Result<Value> =>
     isCExp(exp1) && isEmpty(exps) ? L3normalEval(exp1, env) :
     isCExp(exp1) ? bind(L3normalEval(exp1, env), _ => evalExps(exps, env)) :
@@ -101,7 +103,7 @@ const evalCExps = (exp1: Exp, exps: Exp[], env: Env): Result<Value> =>
 const evalDefineExps = (def: Exp, exps: Exp[], env: Env): Result<Value> =>
     isDefineExp(def) ? bind(L3normalEval(def.val, env), (rhs: Value) => 
                                 evalExps(exps, makeEnv(def.var.var, rhs, env))) :
-    makeFailure(`Unexpected ${JSON.stringify(def, null, 2)}`);
+    makeFailure(`Unexpected ${format(def)}`);
 
 export const evalNormalParse = (s: string): Result<Value> =>
     bind(p(s), (parsed: Sexp) => 

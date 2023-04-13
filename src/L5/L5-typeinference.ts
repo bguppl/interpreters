@@ -5,16 +5,17 @@ import * as A from "./L5-ast";
 import * as TC from "./L5-typecheck";
 import * as E from "./TEnv";
 import * as T from "./TExp";
-import { allT, first, rest, isEmpty } from "../shared/list";
+import { allT, first, rest, isEmpty, isNonEmptyList } from "../shared/list";
 import { Result, makeFailure, makeOk, bind, zipWithResult, mapResult, mapv } from "../shared/result";
 import { parse as p } from "../shared/parser";
+import { format } from "../shared/format";
 
 // Purpose: Make type expressions equivalent by deriving a unifier
 // Return an error if the types are not unifiable.
 // Exp is only passed for documentation purposes.
 // te1 can be undefined when it is retrieved from a type variable which is not yet bound.
 const checkEqualType = (te1: T.TExp | undefined, te2: T.TExp, exp: A.Exp): Result<true> =>
-    te1 === undefined ? bind(T.unparseTExp(te2), (texp: string) => makeFailure(`Incompatible types: undefined - ${JSON.stringify(texp, null, 2)}`)) :
+    te1 === undefined ? bind(T.unparseTExp(te2), (texp: string) => makeFailure(`Incompatible types: undefined - ${format(texp)}`)) :
     T.isTVar(te1) && T.isTVar(te2) ? ((T.eqTVar(te1, te2) ? makeOk(true) : checkTVarEqualTypes(te1, te2, exp))) :
     T.isTVar(te1) ? checkTVarEqualTypes(te1, te2, exp) :
     T.isTVar(te2) ? checkTVarEqualTypes(te2, te1, exp) :
@@ -60,9 +61,9 @@ const checkNoOccurrence = (tvar: T.TVar, te: T.TExp, exp: A.Exp): Result<true> =
         T.isAtomicTExp(te1) ? makeOk(true) :
         T.isProcTExp(te1) ? checkList(T.procTExpComponents(te1)) :
         T.isTVar(te1) ? 
-            (T.eqTVar(te1, tvar) ? bind(A.unparse(exp), (exp: string) => makeFailure(`Occur check error - ${te1.var} - ${tvar.var} in ${JSON.stringify(exp, null, 2)}`)) : 
+            (T.eqTVar(te1, tvar) ? bind(A.unparse(exp), (exp: string) => makeFailure(`Occur check error - ${te1.var} - ${tvar.var} in ${format(exp)}`)) : 
              makeOk(true)) :
-        bind(A.unparse(exp), (exp: string) => makeFailure(`Bad type expression - ${JSON.stringify(te1)} in ${JSON.stringify(exp, null, 2)}`));
+        bind(A.unparse(exp), (exp: string) => makeFailure(`Bad type expression - ${format(te1)} in ${format(exp)}`));
 
     return loop(te);
 }
@@ -93,7 +94,7 @@ export const typeofExp = (exp: A.Parsed, tenv: E.TEnv): Result<T.TExp> =>
     A.isDefineExp(exp) ? typeofDefine(exp, tenv) :
     A.isProgram(exp) ? typeofProgram(exp, tenv) :
     // TODO: isSetExp(exp) isLitExp(exp)
-    makeFailure(`Unknown type: ${JSON.stringify(exp, null, 2)}`);
+    makeFailure(`Unknown type: ${format(exp)}`);
 
 // Purpose: Compute the type of a sequence of expressions
 // Signature: typeof-exps(exps, tenv)
@@ -101,8 +102,10 @@ export const typeofExp = (exp: A.Parsed, tenv: E.TEnv): Result<T.TExp> =>
 // Check all the exps in a sequence - return type of last.
 // Pre-conditions: exps is not empty.
 const typeofExps = (exps: A.Exp[], tenv: E.TEnv): Result<T.TExp> =>
-    isEmpty(rest(exps)) ? typeofExp(first(exps), tenv) :
-    bind(typeofExp(first(exps), tenv), _ => typeofExps(rest(exps), tenv));
+    isNonEmptyList<A.Exp>(exps) ?
+        isEmpty(rest(exps)) ? typeofExp(first(exps), tenv) :
+        bind(typeofExp(first(exps), tenv), _ => typeofExps(rest(exps), tenv)) :
+    makeFailure(`Unexpected empty sequence of exps`);
 
 // Purpose: compute the type of an if-exp
 // Typing rule:
@@ -185,7 +188,7 @@ export const typeofLetrec = (exp: A.LetrecExp, tenv: E.TEnv): Result<T.TExp> => 
     const procs = R.map((b) => b.val, exp.bindings);
     if (! allT(A.isProcExp, procs)) {
         return bind(A.unparse(exp), (exp: string) =>
-                    makeFailure(`letrec - only support binding of procedures - ${JSON.stringify(exp, null, 2)}`));
+                    makeFailure(`letrec - only support binding of procedures - ${format(exp)}`));
     }
     const paramss = R.map((p) => p.args, procs);
     const bodies = R.map((p) => p.body, procs);

@@ -18,11 +18,11 @@
         |  ( <cexpLA> <cexpLA>* )               / AppExpLA(rator:cexpLA, rands:List(cexpLA))
         |  ( quote <sexp> )                     / LitExp(val:sexp)
 */
-import { concat, map } from 'ramda';
+import { add, concat, map } from 'ramda';
 import { BoolExp, LitExp, NumExp, StrExp, VarDecl, VarRef } from './L3-ast';
 import { isBoolExp, isLitExp, isNumExp, isStrExp, isVarRef } from './L3-ast';
 import { makeBoolExp, makeNumExp, makeStrExp, makeVarDecl, makeVarRef } from './L3-ast';
-import { first, rest, isEmpty, allT, second, cons } from '../shared/list';
+import { first, rest, isEmpty, allT, second, cons, isNonEmptyList, List } from '../shared/list';
 import { isArray, isNumericString, isString } from "../shared/type-predicates";
 import { parseLitExp } from './L3-ast';
 import { Result, makeFailure, makeOk, bind, mapResult, mapv } from '../shared/result';
@@ -120,27 +120,40 @@ const parseLAAtomic = (sexp: Token): CExpLA =>
     isString(sexp) ? makeVarRef(sexp) :
     makeStrExp(sexp.toString());
 
-const parseLACompound = (sexps: Sexp[]): Result<CExpLA> =>
-    first(sexps) === "if" ? parseIfExpLA(sexps) :
-    first(sexps) === "lambda" ? parseProcExpLA(sexps) :
-    first(sexps) === "quote" ? parseLitExp(second(sexps)) :
-    parseAppExpLA(sexps);
+const parseLACompound = (sexps: List<Sexp>): Result<CExpLA> =>
+    isNonEmptyList<Sexp>(sexps) ?
+        first(sexps) === "if" ? parseIfExpLA(sexps) :
+        first(sexps) === "lambda" ? parseProcExpLA(sexps) :
+        first(sexps) === "quote" ? parseLitExp(second(sexps)) :
+        parseAppExpLA(sexps) :
+    makeFailure(`Empty compound`);
 
-const parseAppExpLA = (sexps: Sexp[]): Result<AppExpLA> =>
-    mapv(mapResult(parseLASExp, sexps), (cexps: CExpLA[]) => 
-         makeAppExpLA(first(cexps), rest(cexps)));
+const parseAppExpLA = (sexps: List<Sexp>): Result<AppExpLA> =>
+    bind(mapResult(parseLASExp, sexps), (cexps: List<CExpLA>) => 
+         isNonEmptyList<CExpLA>(cexps) ? makeOk(makeAppExpLA(first(cexps), rest(cexps))) :
+         makeFailure(`Empty app exp`));
 
 const parseIfExpLA = (sexps: Sexp[]): Result<IfExpLA> =>
-    mapv(mapResult(parseLASExp, rest(sexps)), (cexps: CExpLA[]) => 
-         makeIfExpLA(cexps[0], cexps[1], cexps[2]));
+    isNonEmptyList<Sexp>(sexps) ?
+        mapv(mapResult(parseLASExp, rest(sexps)), (cexps: CExpLA[]) => 
+                makeIfExpLA(cexps[0], cexps[1], cexps[2])) :
+    makeFailure(`Bad if exp: ${sexps}`);
 
 const parseProcExpLA = (sexps: Sexp[]): Result<ProcExpLA> => {
     const vars = sexps[1];
-    if (isArray(vars) && allT(isString, vars)) {
-        return mapv(mapResult(parseLASExp, rest(rest(sexps))), (body: CExpLA[]) => 
-                    makeProcExpLA(map(makeVarDecl, vars), body));
+    if (isNonEmptyList<string>(vars) && allT(isString, vars)) {
+        if (isNonEmptyList<Sexp>(sexps)) {
+            const sbody = rest(sexps);
+            if (isNonEmptyList<Sexp>(sbody)) {
+                return mapv(mapResult(parseLASExp, rest(sbody)), (body: CExpLA[]) => 
+                            makeProcExpLA(map(makeVarDecl, vars), body));
+            } else {
+                return makeFailure(`Bad ProcExp: ${format(sexps)}`);
+            }
+        }
+        return makeFailure(`Bad ProcExp: ${format(sexps)}`);
     } else {
-        return makeFailure(`Invalid vars for ProcExp: ${JSON.stringify(vars, null, 2)}`);
+        return makeFailure(`Invalid vars for ProcExp: ${format(vars)}`);
     }
 }
 
@@ -148,6 +161,7 @@ const parseProcExpLA = (sexps: Sexp[]): Result<ProcExpLA> => {
 // Unparse
 
 import { isCompoundSExp, isEmptySExp, isSymbolSExp, valueToString } from './L3-value';
+import { format } from '../shared/format';
 
 const unparseLitExp = (le: LitExp): Sexp =>
     isEmptySExp(le.val) ? ["quote", valueToString(le.val)] :
@@ -204,11 +218,12 @@ getLexicalAddress((var-ref c), [[lex-addr a 0 0], [lex-addr b 0 1]])
 getLexicalAddress((var-ref a), [[lex-addr a 0 0], [lex-addr b 0 1], [lex-add a 1 1]])
 => [LexAddr a 0 0]
 */
-export const getLexicalAddress = (v: VarRef, lexAddresses: LexicalAddress[]): LexAddress => {
-    const loop = (addresses: LexicalAddress[]): LexAddress =>
-        isEmpty(addresses) ? makeFreeVar(v.var) :
-        v.var === first(addresses).var ? first(addresses) :
-        loop(rest(addresses));
+export const getLexicalAddress = (v: VarRef, lexAddresses: List<LexicalAddress>): LexAddress => {
+    const loop = (addresses: List<LexicalAddress>): LexAddress =>
+        isNonEmptyList<LexicalAddress>(addresses) ? 
+            v.var === first(addresses).var ? first(addresses) :
+            loop(rest(addresses)) :
+        makeFreeVar(v.var);
     return loop(lexAddresses);
 }
 
@@ -222,9 +237,10 @@ indexOfVar((VarDecl c), [[VarDecl a], [VarDecl b]]) => -1
 */
 export const indexOfVar = (v: VarDecl, decls: VarDecl[]): number => {
     const loop = (decls: VarDecl[], index: number): number =>
-        isEmpty(decls) ? -1 :
-        first(decls).var === v.var ? index :
-        loop(rest(decls), index + 1);
+        isNonEmptyList<VarDecl>(decls) ?
+            first(decls).var === v.var ? index :
+            loop(rest(decls), index + 1) :
+        -1;
     return loop(decls, 0);
 }
 
@@ -281,8 +297,8 @@ export const addLexicalAddresses = (exp: CExpLA): Result<CExpLA> => {
         isNumExp(exp) ? makeOk(exp) :
         isStrExp(exp) ? makeOk(exp) :
         isVarRef(exp) ? makeOk(getLexicalAddress(exp, addresses)) :
-        isFreeVar(exp) ? makeFailure(`unexpected LA ${JSON.stringify(exp, null, 2)}`) :
-        isLexicalAddress(exp) ? makeFailure(`unexpected LA ${JSON.stringify(exp, null, 2)}`) :
+        isFreeVar(exp) ? makeFailure(`unexpected LA ${format(exp)}`) :
+        isLexicalAddress(exp) ? makeFailure(`unexpected LA ${format(exp)}`) :
         isLitExp(exp) ? makeOk(exp) :
         isIfExpLA(exp) ? bind(visit(exp.test, addresses), (test: CExpLA) =>
                               bind(visit(exp.then, addresses), (then: CExpLA) =>

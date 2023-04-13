@@ -14,6 +14,7 @@ import { applyPrimitive } from "../L5/evalPrimitive";
 import { isEmpty, first, rest } from '../shared/list';
 import { Result, makeOk, makeFailure, bind } from "../shared/result";
 import { parse as p } from "../shared/parser";
+import { format } from "../shared/format";
 
 // ========================================================
 // Continuation datatype
@@ -93,7 +94,7 @@ export const evalExps = (exps: Exp[], env: Env, cont: ContArray): Result<Value> 
     evalExpsFR(first(exps), rest(exps), env, cont)
 
 const evalExpsFR = (exp: Exp, exps: Exp[], env: Env, cont: ContArray): Result<Value> =>
-    isDefineExp(exp) ? cont(bind(unparse(exp), up => makeFailure(`Unexpected define: ${JSON.stringify(up, null, 2)}`))) :
+    isDefineExp(exp) ? cont(bind(unparse(exp), up => makeFailure(`Unexpected define: ${format(up)}`))) :
     evalCont(exp, env,
              (firstVal: Result<Value>) =>
                 bind(firstVal,
@@ -135,7 +136,7 @@ const evalApp = (exp: AppExp, env: Env, cont: Cont): Result<Value> =>
 const applyProcedure = (proc: Value, args: Value[], cont: Cont): Result<Value> =>
     isPrimOp(proc) ? cont(applyPrimitive(proc, args)) :
     isClosure(proc) ? applyClosure(proc, args, cont) :
-    cont(makeFailure(`Bad procedure ${JSON.stringify(proc, null, 2)}`));
+    cont(makeFailure(`Bad procedure ${format(proc)}`));
 
 const applyClosure = (proc: Closure, args: Value[], cont: Cont): Result<Value> => {
     const vars = map((v: VarDecl) => v.var, proc.params);

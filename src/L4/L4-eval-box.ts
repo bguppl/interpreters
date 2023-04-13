@@ -11,9 +11,10 @@ import { applyEnv, applyEnvBdg, globalEnvAddBinding, makeExtEnv, setFBinding,
             theGlobalEnv, Env, FBinding } from "./L4-env-box";
 import { isClosure, makeClosure, Closure, Value } from "./L4-value-box";
 import { applyPrimitive } from "./evalPrimitive-box";
-import { first, rest, isEmpty } from "../shared/list";
+import { first, rest, isEmpty, isNonEmptyList } from "../shared/list";
 import { Result, bind, mapv, mapResult, makeFailure, makeOk } from "../shared/result";
 import { parse as p } from "../shared/parser";
+import { format } from "../shared/format";
 
 // ========================================================
 // Eval functions
@@ -51,7 +52,7 @@ const evalProc = (exp: ProcExp, env: Env): Result<Closure> =>
 const applyProcedure = (proc: Value, args: Value[]): Result<Value> =>
     isPrimOp(proc) ? applyPrimitive(proc, args) :
     isClosure(proc) ? applyClosure(proc, args) :
-    makeFailure(`Bad procedure ${JSON.stringify(proc, null, 2)}`);
+    makeFailure(`Bad procedure ${format(proc)}`);
 
 const applyClosure = (proc: Closure, args: Value[]): Result<Value> => {
     const vars = map((v: VarDecl) => v.var, proc.params);
@@ -60,8 +61,8 @@ const applyClosure = (proc: Closure, args: Value[]): Result<Value> => {
 
 // Evaluate a sequence of expressions (in a program)
 export const evalSequence = (seq: Exp[], env: Env): Result<Value> =>
-    isEmpty(seq) ? makeFailure("Empty program") :
-    evalCExps(first(seq), rest(seq), env);
+    isNonEmptyList<Exp>(seq) ? evalCExps(first(seq), rest(seq), env) : 
+    makeFailure("Empty program");
     
 const evalCExps = (first: Exp, rest: Exp[], env: Env): Result<Value> =>
     isDefineExp(first) ? evalDefineExps(first, rest) :

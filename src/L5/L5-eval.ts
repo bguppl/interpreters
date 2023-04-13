@@ -10,10 +10,11 @@ import { isAppExp, isDefineExp, isIfExp, isLetrecExp, isLetExp,
 import { applyEnv, applyEnvBdg, globalEnvAddBinding, makeExtEnv, setFBinding,
          theGlobalEnv, Env, FBinding } from "./L5-env";
 import { isClosure, makeClosure, Closure, Value } from "./L5-value";
-import { isEmpty, first, rest } from '../shared/list';
+import { isEmpty, first, rest, isNonEmptyList } from '../shared/list';
 import { Result, makeOk, makeFailure, mapResult, bind, mapv } from "../shared/result";
 import { parse as p } from "../shared/parser";
 import { applyPrimitive } from "./evalPrimitive";
+import { format } from "../shared/format";
 
 // ========================================================
 // Eval functions
@@ -51,7 +52,7 @@ const evalProc = (exp: ProcExp, env: Env): Result<Closure> =>
 const applyProcedure = (proc: Value, args: Value[]): Result<Value> =>
     isPrimOp(proc) ? applyPrimitive(proc, args) :
     isClosure(proc) ? applyClosure(proc, args) :
-    makeFailure(`Bad procedure ${JSON.stringify(proc, null, 2)}`);
+    makeFailure(`Bad procedure ${format(proc)}`);
 
 const applyClosure = (proc: Closure, args: Value[]): Result<Value> => {
     const vars = map((v: VarDecl) => v.var, proc.params);
@@ -60,8 +61,8 @@ const applyClosure = (proc: Closure, args: Value[]): Result<Value> => {
 
 // Evaluate a sequence of expressions (in a program)
 export const evalSequence = (seq: Exp[], env: Env): Result<Value> =>
-    isEmpty(seq) ? makeFailure("Empty sequence") :
-    evalCExps(first(seq), rest(seq), env);
+    isNonEmptyList<Exp>(seq) ? evalCExps(first(seq), rest(seq), env) :
+    makeFailure("Empty sequence");
     
 const evalCExps = (first: Exp, rest: Exp[], env: Env): Result<Value> =>
     isDefineExp(first) ? evalDefineExps(first, rest) :
@@ -79,7 +80,7 @@ const evalDefineExps = (def: Exp, exps: Exp[]): Result<Value> =>
                             globalEnvAddBinding(def.var.var, rhs);
                             return evalSequence(exps, theGlobalEnv); 
                         }) :
-    makeFailure(`Unexpected define: ${JSON.stringify(def, null, 2)}`);
+    makeFailure(`Unexpected define: ${format(def)}`);
 
 // Main program
 export const evalProgram = (program: Program): Result<Value> =>
