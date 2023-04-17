@@ -547,7 +547,7 @@ export const isCondExp = (x:any): x is CondExp => x.tag === "CondExp";
 **Step-2**: Update the cexp disjoint union type
 
 ```typescript
-export type CExp = NumExp | BoolExp | PrimOp | VarRef | IfExp | CondExp | AppExp | Error;
+export type CExp = NumExp | BoolExp | PrimOp | VarRef | IfExp | CondExp | AppExp;
 export const isCExp = (x: any): x is CExp => isNumExp(x) || isBoolExp(x) || isPrimOp(x) ||
     isVarRef(x) || isIfExp(x) || isCondExp(x) || isAppExp(x);
 ```
