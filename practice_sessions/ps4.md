@@ -227,7 +227,9 @@ The following set of functions implement the parser.
 
 ```typescript
 import { Sexp, Token } from "s-expression";
-import { parse as parseSexp, isToken } from "../shared/parser";
+import { parse as parseSexp, isToken, isCompoundSexp } from "../shared/parser";
+import { all, find } from 'ramda';
+import { format } from '../shared/format';
 
 // combine Sexp parsing with the L1 parsing
 export const parseL1 = (x: string): Result<Program> =>
@@ -244,22 +246,27 @@ export const parseL1 = (x: string): Result<Program> =>
 // <Program> -> (L1 <Exp>+)
 export const parseL1Program = (sexp: Sexp): Result<Program> =>
     sexp === "" || isEmpty(sexp) ? makeFailure("Unexpected empty program") :
-    isToken(sexp) ? makeFailure("Program cannot be a single token") :
-    isArray(sexp) ? parseL1GoodProgram(first(sexp), rest(sexp)) :
+    isToken(sexp) ? makeFailure(`Program cannot be a single token: ${sexp}`) :
+    isCompoundSexp(sexp) ? 
+        isNonEmptyList<Sexp>(sexp) ? parseL1GoodProgram(first(sexp), rest(sexp)) : 
+        makeFailure(`Program cannot be a list of a single token: ${sexp}`) :
     sexp;
 
 const parseL1GoodProgram = (keyword: Sexp, body: Sexp[]): Result<Program> =>
-    keyword === "L1" && !isEmpty(body) ? bind(mapResult(parseL1Exp, body),
-                                              (exps: Exp[]) => makeOk(makeProgram(exps))) :
-    makeFailure("Program must be of the form (L1 <exp>+)");
+    keyword === "L1" && !isEmpty(body) ? mapv(mapResult(parseL1Exp, body), (exps: Exp[]) => 
+                                              makeProgram(exps)) :
+    makeFailure(`Program must be of the form (L1 <exp>+): ${format(keyword)}`);
 
 // Exp -> <DefineExp> | <Cexp>
+// <Sexp> = <CompoundSexp> | <Token>
 export const parseL1Exp = (sexp: Sexp): Result<Exp> =>
     isEmpty(sexp) ? makeFailure("Exp cannot be an empty list") :
-    isArray(sexp) ? parseL1CompoundExp(first(sexp), rest(sexp)) :
+    isCompoundSexp(sexp) ? 
+        isNonEmptyList<Sexp>(sexp) ? parseL1CompoundExp(first(sexp), rest(sexp)) :
+        makeFailure(`Exp cannot be a list of single token: ${sexp}`) :
     isToken(sexp) ? parseL1Atomic(sexp) :
     sexp;
-
+    
 // Compound -> DefineExp | CompoundCExp
 export const parseL1CompoundExp = (op: Sexp, params: Sexp[]): Result<Exp> => 
     op === "define"? parseDefine(params) :
@@ -270,21 +277,23 @@ export const parseL1CompoundCExp = (op: Sexp, params: Sexp[]): Result<CExp> =>
     parseAppExp(op, params);
 
 // DefineExp -> (define <varDecl> <CExp>)
-export const parseDefine = (params: Sexp[]): Result<DefineExp> =>
-    isEmpty(params) ? makeFailure("define missing 2 arguments") :
-    isEmpty(rest(params)) ? makeFailure("define missing 1 arguments") :
-    ! isEmpty(rest(rest(params))) ? makeFailure("define has too many arguments") :
-    parseGoodDefine(first(params), second(params));
+export const parseDefine = (params: List<Sexp>): Result<DefineExp> =>
+    isNonEmptyList<Sexp>(params) ?
+        isEmpty(rest(params)) ? makeFailure(`define missing 1 arguments: ${format(params)}`) :
+        (params.length > 2) ? makeFailure(`define has too many arguments: ${format(params)}`) :
+        parseGoodDefine(first(params), second(params)) :
+    makeFailure(`define missing 2 arguments: ${format(params)}`);
 
 const parseGoodDefine = (variable: Sexp, val: Sexp): Result<DefineExp> =>
-    ! isIdentifier(variable) ? makeFailure("First arg of define must be an identifier") :
-    bind(parseL1CExp(val),
-         (value: CExp) => makeOk(makeDefineExp(makeVarDecl(variable), value)));
+    ! isIdentifier(variable) ? makeFailure(`First arg of define must be an identifier: ${format(variable)}`) :
+    mapv(parseL1CExp(val), (value: CExp) => 
+         makeDefineExp(makeVarDecl(variable), value));
 
 // CExp -> AtomicExp | CompondCExp
 export const parseL1CExp = (sexp: Sexp): Result<CExp> =>
-    isEmpty(sexp) ? makeFailure("CExp cannot be an empty list") :
-    isArray(sexp) ? parseL1CompoundCExp(first(sexp), rest(sexp)) :
+    isCompoundSexp(sexp) ?
+        isNonEmptyList<Sexp>(sexp) ? parseL1CompoundCExp(first(sexp), rest(sexp)) :
+        makeFailure(`L1CExp cannot be an empty list`) :
     isToken(sexp) ? parseL1Atomic(sexp) :
     sexp;
 
@@ -295,15 +304,16 @@ export const parseL1Atomic = (token: Token): Result<CExp> =>
     isString(token) && isNumericString(token) ? makeOk(makeNumExp(+token)) :
     isString(token) && isPrimitiveOp(token) ? makeOk(makePrimOp(token)) :
     isString(token) ? makeOk(makeVarRef(token)) :
-    makeFailure("Invalid atomic token: " + token);
+    makeFailure(`Invalid atomic token: ${token}`);
 
 export const isPrimitiveOp = (x: string): boolean =>
     ["+", "-", "*", "/", ">", "<", "=", "not"].includes(x)
 
 // AppExp -> ( <cexp>+ )
 export const parseAppExp = (op: Sexp, params: Sexp[]): Result<CExp> =>
-    safe2((rator: CExp, rands: CExp[]) => makeOk(makeAppExp(rator, rands)))
-        (parseL1CExp(op), mapResult(parseL1CExp, params));
+    bind(parseL1CExp(op), (rator: CExp) =>
+         mapv(mapResult(parseL1CExp, params), (rands: CExp[]) =>
+              makeAppExp(rator, rands)));
 ```
 
 ## Using the Result Type for Error Processing
@@ -340,7 +350,6 @@ To compose functions that return a Result, we use the following Result-helper fu
 
 * `bind`
 * `mapResult`
-* `safe` and `safe2`
 
 ```typescript
 // Instead of f2(f1(x)) - we write:
@@ -361,9 +370,6 @@ mapResult(f:(x: T1) => Result<T2>, arr: T1[]) => Result<T2[]>
 
 It is used exactly like the traditional `map` function, but if `f` fails on any one of the items in `arr`, then the function fails and returns the first Failure value - else it returns a `Result<T2[]>` (and not an array of Result values).
 
-`safe` is used to transform a function `f: T1 => Result<T2>` (which only accepts `T1` values) into a function `safe(f): Result<T1> => Result<T2>` which can receive a `Result<T1>`. If `safe(f)` receives a Failure, it returns it, else it passes the ok value to `f`.
-
-Similarly, `safe2` works for a function receiving two parameters.
 
 
 ## Supporting `if` expressions
