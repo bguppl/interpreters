@@ -166,7 +166,7 @@ In TypeScript, we can introduce Disjoint Union data types according to the follo
 
 **For example:**
 ```typescript
-export interface NumExp {tag:"NumExp", val:number}; // The Num-Expression type
+export type NumExp = {tag:"NumExp", val:number}; // The Num-Expression type
 export const makeNumExp = (n: number):NumExp => ({tag:"NumExp", val:n}); // The value constructor for Num-Expression
 export const isNumExp = (x:any): x is NumExp => x.tag === 'NumExp'; // The type predicate function of Num-Expression
 ```
@@ -398,7 +398,7 @@ In order to add if in the concrete and abstract syntax, we must modify the synta
 
 ```typescript
 // Type definitions
-export interface IfExp { tag: "IfExp"; test:CExp; then: CExp; alt: CExp; };
+export type IfExp = { tag: "IfExp"; test:CExp; then: CExp; alt: CExp; };
 // Value constructors
 export const makeIfExp = (test: CExp, then: CExp, alt: CExp): IfExp =>
     ({ tag: "IfExp", test: test, then: then, alt: alt }); 
@@ -538,8 +538,8 @@ Pay attention! `cond` is a "special form": it is a compound expression which is 
 
 ```typescript
 // Type definitions
-export interface CondClause { tag: "CondClause", test: CExp, then: CExp[]; }
-export interface CondExp { tag: "CondExp", condclauses: CondClause[]; }
+export type CondClause = { tag: "CondClause", test: CExp, then: CExp[]; }
+export type CondExp = { tag: "CondExp", condclauses: CondClause[]; }
 // Value constructors
 export const makeCondClause = (test: CExp, then: CExp[]) : CondClause =>
     ({ tag: "CondClause", test: test, then: then });
