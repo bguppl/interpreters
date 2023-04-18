@@ -173,7 +173,7 @@ export const isNumExp = (x:any): x is NumExp => x.tag === 'NumExp'; // The type 
 
 **Remarks:**
 
-* Notice the keyword export which allows the interface/function to be imported into other modules where it is needed (by using the keyword import) such as the interpreter.
+* Notice the keyword export which allows the type/function to be imported into other modules where it is needed (by using the keyword import) such as the interpreter.
 * Notice as well the type expression x is NumExp which is Boolean. This type expression implies that the function isNumExp is actually a type predicate. Due to these kinds of type expressions that yield type predicates the type checker can do precise inference. As an example:
 
 ```typescript
