@@ -27,8 +27,8 @@ It supports the operation ***apply-env(env, var)*** which either returns the val
 We define the environment data type inductively by the following definition:
 ```typescript
 type Env = EmptyEnv | NonEmptyEnv;
-interface EmptyEnv {tag: "EmptyEnv"}
-interface NonEmptyEnv {tag: "Env"; var: string; val: Value; nextEnv: Env;}
+type EmptyEnv = {tag: "EmptyEnv"}
+type NonEmptyEnv = {tag: "Env"; var: string; val: Value; nextEnv: Env;}
 ```
 
 The ***apply-env*** operation is defined recursively according to the structure of the data type:
@@ -208,7 +208,7 @@ In more details, we define:
 ```typescript
 export type Value = number | boolean | PrimProc;
 type PrimitiveProcedure = (args: Value[]) => Value;
-interface PrimProc {
+type PrimProc = {
     tag: "PrimProc";
     op: PrimitiveProcedure;
 };
