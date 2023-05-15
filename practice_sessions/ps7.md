@@ -22,6 +22,7 @@ E.g.,  `{x:Number} ⊢ (+ 3 x):Number`  states that under the assumption that th
 
 * **{f:[Number->T1]} ⊢ (f 7): T1**	
 * **{y:Number, f:[T1->T1]} ⊢ (f x):T1**	
+* **{y:Number, f:[T1->T1]} ⊢ (f y):T1**	
 * **{x:Number} ⊢ x: Boolean**	
 * **{x:Boolean, y:Number} ⊢ x: Boolean**
 * **{f:[T1->T2], g:[T2->T3], x:T1} ⊢ (g (f x)):T3**
@@ -36,11 +37,11 @@ Note : assumptions in Tenv are an added part to the axioms we have.
 
 |Term 1                         | Term 2 
 |-------------------------------|-----------------------------|
-|{foo: [T1->T2]} ⊢ 5:N	        |{} ⊢ 5:N  
-|{x:N} ⊢ (+ x 3):N  	        |{y:N,x:N} ⊢ (+ x 3):N
-|{} ⊢ (lambda (x)(+ x 3)):[N->N]| {y:N} ⊢ (lambda (x)(+ x y)):[N->N] <br> (Can we compare these two?)
-|{} ⊢ (lambda (x)(+ x 3)):[N->N]| {y:N} ⊢ (lambda (z)(+ z 3)):[N->N]
-|{f:[N->N]} ⊢ ((lambda (f x) (f x))(lambda (x) (* x x)) 10):N | {} ⊢ ((lambda (f x) (f x)) (lambda (x) (* x x)) 10):N|
+|{foo: [T1->T2]} ⊢ 5:Number	|{} ⊢ 5:Number  
+|{x:Number} ⊢ (+ x 3):Number  	|{y:Number,x:Number} ⊢ (+ x 3):Number
+|{} ⊢ (lambda (x)(+ x 3)):[Number->Number]	| {y:Number} ⊢ (lambda (x)(+ x y)):[Number->Number] <br> (Can we compare these two?)
+|{} ⊢ (lambda (x)(+ x 3)):[Number->Number]	| {y:Number} ⊢ (lambda (z)(+ z 3)):[Number->Number]
+|{f:[Number->Number]} ⊢ ((lambda (f x) (f x))(lambda (x) (* x x)) 10):Number | {} ⊢ ((lambda (f x) (f x)) (lambda (x) (* x x)) 10):Number|
 
 Note: A typing statement has to be true in order to determine its strength.
 
@@ -66,11 +67,11 @@ All other unifiers are obtained from it by application of additional substitutio
 
 |Type expressions	            | MGU
 |-------------------------------|-----------------------------|
-|{x: T1}, {x: N}	            |{T1=N}  (a non-MGU unifier: {T1=N, T2=B})
-|{x: T1}, {x: T2}	            |{T1=T2}  (a non-MGU unifier: {T1=N, T2=N})
+|{x: T1}, {x: Number}	            |{T1=Number}  (a non-MGU unifier: {T1=Number, T2=B})
+|{x: T1}, {x: T2}	            |{T1=T2}  (a non-MGU unifier: {T1=Number, T2=Number})
 |{x: [T1*[T1->T2]->T2]},  {x: [Number * [T3->T4]->T4]}	    |{T1=Number, T3=Number, T4=T2}
-|{x: [T1*[T1->T2]->N]},   {x: [[T3->T4] * [T5->Number]->N]}  |{T1=[T3->T4], T5=[T3->T4], T2=Number}
-|{x: [T1*[T1->T2]->N]},   {x: [Number * [Symbol->T3]->N]}    |No unifier
+|{x: [T1*[T1->T2]->Number]},   {x: [[T3->T4] * [T5->Number]->Number]}  |{T1=[T3->T4], T5=[T3->T4], T2=Number}
+|{x: [T1*[T1->T2]->Number]},   {x: [Number * [Symbol->T3]->Number]}    |No unifier
 
 ## Type inference using type constraints
 
