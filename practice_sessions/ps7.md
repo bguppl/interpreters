@@ -86,8 +86,8 @@ All other unifiers are obtained from it by application of additional substitutio
 -   For primitive atomics / primitive procedures, construct type equations using their types.
 -   For procedure expressions  `(lambda (p1 ... pn) e1 ... em)`, construct:
 		-   `T_{(lambda (p1 ... pn) e1 ... em)} = [T_{p1} * ... * T_{pn} -> T_{em}]`
--   For application expressions  `(op p1 ... pn)`  construct:
-		-   `T_{op} = [T_{p1} * ... * T_{pn} -> T_{(op p1 ... pn)}]`
+-   For application expressions  `(op a1 ... an)`  construct:
+		-   `T_{op} = [T_{a1} * ... * T_{an} -> T_{(op a1 ... an)}]`
 
 ## Question 1
 
@@ -156,7 +156,7 @@ sqrt	                        |Tsqrt = [Number -> Number]
 
 **Step 2**:
 
-T1 = [Tf * Tx -> T2] ○ Substitution = ([Tsqrt * Tnum4 -> T0] = [Tf * Tx -> T2])
+`T1 = [Tf * Tx -> T2] ○ Substitution = ([Tsqrt * Tnum4 -> T0] = [Tf * Tx -> T2])`
 There is not type-sub since  both sides of the equation are composite **we split it into three** equations (6,7,8) and remove equation 2.
 
 |Equation| Substitution
@@ -171,12 +171,12 @@ There is not type-sub since  both sides of the equation are composite **we split
 
 **Step 3:**
 
-(Tf = [Tx -> T2]) ○ Substitution = (Tf = [Tx -> T2]).
-Substitution = Substitution ○ (Tf = [Tx -> T2]).
+`(Tf = [Tx -> T2]) ○ Substitution = (Tf = [Tx -> T2])`.
+`Substitution = Substitution ○ (Tf = [Tx -> T2])`.
 
 |Equation| Substitution
 |-------------------------------|-----------------------------|
-| 4. Tsqrt = [Number -> Number]	| {T1 := [Tsqrt * Tnum4 -> T0],  Tf := [Tx -> T2]}
+| 4. Tsqrt = [Number -> Number]	| {T1 := [Tsqrt * Tnum4 -> T0],  **Tf := [Tx -> T2]**}
 | 5. Tnum4 = Number	            |
 | 6. Tf = Tsqrt	                |
 | 7. Tx = Tnum4 (or Tnum4 = Tx)	|
@@ -185,12 +185,12 @@ Substitution = Substitution ○ (Tf = [Tx -> T2]).
 
 **Step 4**:
 
-(Tsqrt = [Number -> Number]) ○ Substitution = (Tsqrt = [Number -> Number]).
-Substitution = Substitution ○ (Tsqrt = [Number -> Number]).
+`(Tsqrt = [Number -> Number]) ○ Substitution = (Tsqrt = [Number -> Number])`.
+`Substitution = Substitution ○ (Tsqrt = [Number -> Number])`.
 
 |Equation| Substitution
 |-------------------------------|-----------------------------|
-|5. Tnum4 = Number	            | { [T1 :=[**[Number -> Number]** * Tnum4->T0],<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Tf := [Tx -> T2], Tsqrt := [Number -> Number]}                                                    
+|5. Tnum4 = Number	            | { [T1 :=[**[Number -> Number]** * Tnum4->T0],<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Tf := [Tx -> T2], **Tsqrt := [Number -> Number]**}                                                    
 |6. Tf = Tsqrt                  |
 |7. Tx = Tnum4                  |
 |8. T2 = T0                     |
@@ -198,8 +198,8 @@ Substitution = Substitution ○ (Tsqrt = [Number -> Number]).
 
 **Step 5**:
 
-(Tnum4 =Number) ○ Substitution = (Tnum4 =Number), is a type-sub.
-Substitution = Substitution ○ (Tnum4 =Number).
+`(Tnum4 = Number) ○ Substitution = (Tnum4 = Number)`, is a type-sub.
+`Substitution = Substitution ○ (Tnum4 = Number)`.
 
 |Equation                       | Substitution
 |-----------------|-----------------------------|                             
@@ -209,12 +209,9 @@ Substitution = Substitution ○ (Tnum4 =Number).
 
 **Step 6**:
 
-(Tf = Tsqrt) ○ Substitution = ([Tx -> T2]=[Number -> Number])
-There is no a sub-type. We split the equation into two equations 
-Tx = Number
-T2 = Number
-
- We remove the equation number 6.
+`(Tf = Tsqrt) ○ Substitution = ([Tx -> T2] = [Number -> Number])`
+There is no a sub-type.
+We split the equation into two equations (9,10) and remove equation 6.
 
 
 |Equation   | Substitution
@@ -228,8 +225,8 @@ T2 = Number
 
 **Step 7:**
 
-(Tx = Tnum4) ○ Substitution = ([Tx = Number]), type-sub.
-Substitution = Substitution ○ ([Tx = Number]).
+`(Tx = Tnum4) ○ Substitution = ([Tx = Number])`, type-sub.
+`Substitution = Substitution ○ ([Tx = Number])`.
 
 |Equation   | Substitution
 |------------------------------------------|-----------------------------|                             
@@ -240,8 +237,8 @@ Substitution = Substitution ○ ([Tx = Number]).
 
 **Step 8:**
 
-(T2 = T0) ○ Substitution = (T2 = T0), type-sub.
-Substitution = Substitution ○ (T2 = T0).
+`(T2 = T0) ○ Substitution = (T2 = T0)`, type-sub.
+`Substitution = Substitution ○ (T2 = T0)`.
 
 |Equation   | Substitution
 |------------------------------------------|-----------------------------|                             
@@ -249,7 +246,8 @@ Substitution = Substitution ○ (T2 = T0).
 |10. T2 = Number    |
 
 
-**Step 9:** `(Tx = Number) ○ Substitution = (Number = Number) always true.`
+**Step 9:** 
+`(Tx = Number) ○ Substitution = (Number = Number)` always true.
 
 
 |Equation   | Substitution
@@ -259,18 +257,18 @@ Substitution = Substitution ○ (T2 = T0).
 
 **Step 10:**
 
-(T2 = Number) ○ Substitution = (T0 = Number), type-sub.
-Substitution = Substitution ○ (T0 = Number).
+`(T2 = Number) ○ Substitution = (T0 = Number)`, type-sub.
+`Substitution = Substitution ○ (T0 = Number)`.
 
 |Equation   | Substitution
 |------------------------------------------|-----------------------------|                             
-| | {  &nbsp;&nbsp;&nbsp; T1 :=[[Number -> Number] * **Number->Number**],	 <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Tf := [Number-> **Number**], <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Tsqrt := [Number -> Number], <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  Tnum4 := Number, <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Tx = Number , <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  T2 := **Number** <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  **T0 := Number**   &nbsp;&nbsp;&nbsp;&nbsp;}                  
+| | {  &nbsp;&nbsp;&nbsp; T1 :=[[Number -> Number] * Number->**Number**],	 <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Tf := [Number-> **Number**], <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Tsqrt := [Number -> Number], <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  Tnum4 := Number, <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Tx = Number , <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  T2 := **Number** <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  **T0 := Number**   &nbsp;&nbsp;&nbsp;&nbsp;}                  
 
 
 The type inference succeeds since we have a type for T0, meaning that the expression is  **well typed**.
-Because there are no free variables, the inferred type of T0 is:  **Number.**
+Since there are no free variables, the inferred type of T0 is:  **Number.**
 
-**Note**: Our expression can be written now as  `((lambda ([f : (N -> N)] [x : N]) : N (f x)) sqrt 4)`
+**Note**: Our expression can be written now as  `((lambda ([f : (Number -> Number)] [x : Number]) : Number (f x)) sqrt 4)`
 
 ## Question 2
 
@@ -334,7 +332,8 @@ Example: type the expression `(if #t (+ 1 2) 3)`
 
 |Expression               	    | Equation
 |-------------------------------|-----------------------------|
-|(if #t (+ 1 2) 3)	            |T1 = Tnum3
+|(if #t (+ 1 2) 3)	        |T#t = Boolean
+|				|T1 = Tnum3
 |                               |T0 = T1
 |(+ 1 2)	                    |T+ = [Tnum1 * Tnum2 -> T1]
 
@@ -355,89 +354,118 @@ The equations for the primitives are:
 
 |Equation| Substitution
 |-------------------------------|-----------------------------|
-|1. T1 = Tnum3	                |{}
-|2. T0 = T1	                    |
-|3. T+ = [Tnum1 * Tnum2 -> T1]	|
-|4. T+ = [Number * Number -> Number] |	
-|5. T#t = Boolean	            |
-|6. Tnum1 = Number              |	
-|7. Tnum2 = Number              |	
-|8. Tnum3 = Number              |
-
+|1. T#t = Boolean	        |{}
+|2. T1 = Tnum3	                |
+|3. T0 = T1	                    |
+|4. T+ = [Tnum1 * Tnum2 -> T1]	|
+|5. T+ = [Number * Number -> Number] |	
+|6. T#t = Boolean	            |
+|7. Tnum1 = Number              |	
+|8. Tnum2 = Number              |	
+|9. Tnum3 = Number              |
 
 
 **Step 1:**
 
-(T1 = Tnum3) ○ Substitution = (T1 = Tnum3), type-sub.
+`(T#t = Boolean) ○ Substitution = (T#t = Boolean)`, type-sub.
 
-Substitution = Substitution ○ (T1 = Tnum3).
+`Substitution = Substitution ○ (T#t = Boolean)`.
 
 
 |Equation| Substitution
 |-------------------------------|-----------------------------|
-|2. T0 = T1	|   {&nbsp;&nbsp;&nbsp; **T1 := Tnum3** &nbsp;&nbsp;&nbsp; }
-|3. T+ = [Tnum1 * Tnum2 -> T1]	|
-|4. T+ = [Number * Number -> Number] |	
-|5. T#t = Boolean	|
-|6. Tnum1 = Number|	
-|7. Tnum2 = Number|	
-|8. Tnum3 = Number |	
-
-
+|2. T1 = Tnum3	|   {&nbsp;&nbsp;&nbsp; **T#t = Boolean** &nbsp;&nbsp;&nbsp; }
+|3. T0 = T1	                    |
+|4. T+ = [Tnum1 * Tnum2 -> T1]	|
+|5. T+ = [Number * Number -> Number] |	
+|6. T#t = Boolean	            |
+|7. Tnum1 = Number              |	
+|8. Tnum2 = Number              |	
+|9. Tnum3 = Number              |	
 
 
 **Step 2:**
 
-(T0 = T1) ○ Substitution = (T0 = Tnum3), type-sub.
+`(T1 = Tnum3) ○ Substitution = (T1 = Tnum3)`, type-sub.
 
-Substitution = Substitution ○ (T0 = Tnum3).
+`Substitution = Substitution ○ (T1 = Tnum3)`.
+
 
 |Equation| Substitution
 |-------------------------------|-----------------------------|
-|3. T+ = [Tnum1 * Tnum2 -> T1]	|   {&nbsp;&nbsp;&nbsp; T1 := Tnum3,<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; **T0 := Tnum3**  &nbsp;&nbsp;&nbsp; }
-|4. T+ = [Number * Number -> Number] |	
-|5. T#t = Boolean	|
-|6. Tnum1 = Number|	
-|7. Tnum2 = Number|	
-|8. Tnum3 = Number |	
+|3. T0 = T1	|   {T#t = Boolean, **T1 := Tnum3**}
+|4. T+ = [Tnum1 * Tnum2 -> T1]	|
+|5. T+ = [Number * Number -> Number] |	
+|6. T#t = Boolean	            |
+|7. Tnum1 = Number              |	
+|8. Tnum2 = Number              |	
+|9. Tnum3 = Number              |	
+
+
 
 
 **Step 3:**
 
-(T+ = [Tnum1 * Tnum2 -> T1]) ○ Substitution = (T+ = [Tnum1 * Tnum2 -> Tnum3]), type-sub.
+`(T0 = T1) ○ Substitution = (T0 = Tnum3)`, type-sub.
 
-Substitution = Substitution ○ (T+ = [Tnum1 * Tnum2 -> Tnum3]).
-
+`Substitution = Substitution ○ (T0 = Tnum3)`.
 
 |Equation| Substitution
 |-------------------------------|-----------------------------|
-|4. T+ = [Number * Number -> Number] |	 {&nbsp;&nbsp;&nbsp; T1 := Tnum3,<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; T0 := Tnum3,  <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; **T+ = [Tnum1 * Tnum2 -> Tnum3]** &nbsp;&nbsp;&nbsp; }
-|5. T#t = Boolean	|
-|6. Tnum1 = Number|	
-|7. Tnum2 = Number|	
-|8. Tnum3 = Number |	
+|4. T+ = [Tnum1 * Tnum2 -> T1]	|   {&nbsp;&nbsp;&nbsp; T#t = Boolean,<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; T1 := Tnum3,<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; **T0 := Tnum3**  &nbsp;&nbsp;&nbsp; }
+|5. T+ = [Number * Number -> Number] |	
+|6. T#t = Boolean	            |
+|7. Tnum1 = Number              |	
+|8. Tnum2 = Number              |	
+|9. Tnum3 = Number              |		
+
 
 **Step 4:**
 
-(T+ = [Number * Number -> Number]) ○ Substitution = ([Tnum1 * Tnum2 -> Tnum3] = [Number * Number -> Number])
+`(T+ = [Tnum1 * Tnum2 -> T1]) ○ Substitution = (T+ = [Tnum1 * Tnum2 -> Tnum3])`, type-sub.
 
-There is not  a type-sub. 
-We split the equation to  `Tnum1 = Number, Tnum2 = Number and Tnum3 = Number`, 
-and add them to the equations. Since they already exists,  **we only need to remove equation 4.**
+`Substitution = Substitution ○ (T+ = [Tnum1 * Tnum2 -> Tnum3])`.
+
 
 |Equation| Substitution
 |-------------------------------|-----------------------------|
-|4. T+ = [Number * Number -> Number] |	 {&nbsp;&nbsp;&nbsp; T1 := Tnum3,<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; T0 := Tnum3,  <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; **T+ = [Tnum1 * Tnum2 -> Tnum3]** &nbsp;&nbsp;&nbsp; }
-|5. T#t = Boolean	|
-|6. Tnum1 = Number|	
-|7. Tnum2 = Number|	
-|8. Tnum3 = Number |	
+|5. T+ = [Number * Number -> Number] |	 {&nbsp;&nbsp;&nbsp; T#t = Boolean,<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; T1 := Tnum3,<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; T0 := Tnum3,  <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; **T+ = [Tnum1 * Tnum2 -> Tnum3]** &nbsp;&nbsp;&nbsp; }
+|6. T#t = Boolean	            |
+|7. Tnum1 = Number              |	
+|8. Tnum2 = Number              |	
+|9. Tnum3 = Number              |	
+
+
+**Step 5:**
+
+`(T+ = [Number * Number -> Number]) ○ Substitution = ([Tnum1 * Tnum2 -> Tnum3] = [Number * Number -> Number])`
+
+There is not  a type-sub. 
+We split the equation to  `Tnum1 = Number, Tnum2 = Number and Tnum3 = Number`, 
+and add them to the equations. Since they already exists,  **we only need to remove equation 5.**
+
+|Equation| Substitution
+|-------------------------------|-----------------------------|
+|6. T#t = Boolean	|	 {&nbsp;&nbsp;&nbsp; T#t = Boolean,<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; T1 := Tnum3,<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; T0 := Tnum3,  <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; T+ = [Tnum1 * Tnum2 -> Tnum3] &nbsp;&nbsp;&nbsp; }
+|7. Tnum1 = Number              |	
+|8. Tnum2 = Number              |	
+|9. Tnum3 = Number              |		
+
+
+**Step 6:** 
+`(T#t = Boolean) ○ Substitution = (Boolean = Boolean)` always true.
+
+|Equation| Substitution
+|-------------------------------|-----------------------------|
+|7. Tnum1 = Number              |	 {&nbsp;&nbsp;&nbsp; T#t = Boolean,<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; T1 := Tnum3,<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; T0 := Tnum3,  <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; T+ = [Tnum1 * Tnum2 -> Tnum3] &nbsp;&nbsp;&nbsp; }	
+|8. Tnum2 = Number              |	
+|9. Tnum3 = Number              |		
 
 Skipping the trivial steps, we get:
 
 |Equation| Substitution
 |-------------------------------|-----------------------------|
-| | { &nbsp;&nbsp;&nbsp;  T1 := Number,<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; T0 := Number,<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;T#t := Boolean,<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tnum1 := Number,<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tnum2 := Number,<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tnum3 := Number,<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; T+ := [Number * Number -> Number]&nbsp;&nbsp;&nbsp; }
+| | { &nbsp;&nbsp;&nbsp;  T#t := Boolean,<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;T1 := **Number**,<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; T0 := **Number**,<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Tnum1 := Number**,<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Tnum2 := Number**,<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Tnum3 := Number**,<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; T+ := [Number * Number -> Number]&nbsp;&nbsp;&nbsp; }
 
 
 The type inference succeeds, meaning that the expression is  **well typed**.
@@ -469,8 +497,8 @@ sqrt	                        |Tsqrt
 
 |Expression               	    | Equation
 |-------------------------------|-----------------------------|
-|((lambda(f x) (f x)) 4 sqrt)   |T1 = [Tnum4 * Tsqrt -> T0]
-|(lambda(f x) (f x))	        |T1 = [Tf * Tx -> T2]
+|((lambda (f x) (f x)) 4 sqrt)   |T1 = [Tnum4 * Tsqrt -> T0]
+|(lambda (f x) (f x))	        |T1 = [Tf * Tx -> T2]
 |(f x)                     	    |Tf = [Tx -> T2]
 
 The equations for the primitives are:
@@ -506,7 +534,7 @@ The equations for the primitives are:
 
 **Step 2:**
 
-(T1 = [Tf * Tx -> T2]) ○ Substitution = ([Tf * Tx -> T2] = [Tnum4 * Tsqrt -> T0])
+`(T1 = [Tf * Tx -> T2]) ○ Substitution = ([Tf * Tx -> T2] = [Tnum4 * Tsqrt -> T0])`
 
 There is no type-sub. We split the equation to
 
@@ -514,7 +542,7 @@ There is no type-sub. We split the equation to
 * Tx = Tsqrt, 
 * T2 = T0
 
-We add them to the equations (6,7,8)  and remove equation 2.
+We add them to the equations (6,7,8) and remove equation 2.
 
 |Equation| Substitution
 |-------------------------------|-----------------------------|
@@ -528,8 +556,8 @@ We add them to the equations (6,7,8)  and remove equation 2.
 
 **Step 3:**
 
-(Tf = [Tx -> T2]) ○ Substitution = (Tf = [Tx -> T2]) , type-sub.
-Substitution = Substitution ○ (Tf = [Tx -> T2]).
+`(Tf = [Tx -> T2]) ○ Substitution = (Tf = [Tx -> T2])` , type-sub.
+`Substitution = Substitution ○ (Tf = [Tx -> T2])`.
 
 |Equation| Substitution
 |-------------------------------|-----------------------------|
@@ -539,9 +567,12 @@ Substitution = Substitution ○ (Tf = [Tx -> T2]).
 |7.  Tx = Tsqrt                 |
 |8.  T2 = T0	                |
 
-**Step 4:**  `(Tnum4 = Number) ○ Substitution = (Tnum4 = Number)`, type-sub.
 
-Substitution = Substitution ○ (Tnum4 = Number).
+**Step 4:** 
+
+`(Tnum4 = Number) ○ Substitution = (Tnum4 = Number)`, type-sub.
+
+`Substitution = Substitution ○ (Tnum4 = Number)`.
 
 |Equation| Substitution
 |-------------------------------|-----------------------------|
@@ -553,8 +584,8 @@ Substitution = Substitution ○ (Tnum4 = Number).
 
 **Step 5:**
 
-(Tsqrt = [Number -> Number]) ○ Substitution = (Tsqrt = [Number -> Number]) , type-sub.
-Substitution = Substitution ○ (Tsqrt = [Number -> Number]).
+`(Tsqrt = [Number -> Number]) ○ Substitution = (Tsqrt = [Number -> Number])` , type-sub.
+`Substitution = Substitution ○ (Tsqrt = [Number -> Number])`.
 
 
 |Equation| Substitution
@@ -565,10 +596,11 @@ Substitution = Substitution ○ (Tsqrt = [Number -> Number]).
 
 
 **Step 6:**  
+
 `(Tf = Tnum4) ○ Substitution = ([Tx -> T2] = Number)`  
 
 We get the conflicting equation:
 
-`[Tx -> T2] = Number`  and we can say that the expression is  **not well typed.**
+`[Tx -> T2] = Number` and we can say that the expression is **not well typed.**
 
 
