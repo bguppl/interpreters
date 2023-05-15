@@ -37,11 +37,11 @@ Note : assumptions in Tenv are an added part to the axioms we have.
 
 |Term 1                         | Term 2 
 |-------------------------------|-----------------------------|
-|{foo: [T1->T2]} ⊢ 5:Number|{} ⊢ 5:Number  
-|{x:Number} ⊢ (+ x 3):Number  |{y:Number,x:Number} ⊢ (+ x 3):Number
-|{} ⊢ (lambda (x)(+ x 3)):[Number->Number]| {y:Number} ⊢ (lambda (x)(+ x y)):[Number->Number] <br> (Can we compare these two?)
-|{} ⊢ (lambda (x)(+ x 3)):[Number->Number]| {y:Number} ⊢ (lambda (z)(+ z 3)):[Number->Number]
-|{f:[Number->Number]} ⊢ ((lambda (f x) (f x))(lambda (x) (* x x)) 10):Number | {} ⊢ ((lambda (f x) (f x)) (lambda (x) (* x x)) 10):Number|
+|{foo: [T1->T2]} ⊢ 5: Number|{} ⊢ 5: Number  
+|{x: Number} ⊢ (+ x 3): Number  |{y: Number,x: Number} ⊢ (+ x 3): Number
+|{} ⊢ (lambda (x)(+ x 3)):[Number -> Number]| {y: Number} ⊢ (lambda (x)(+ x y)):[Number -> Number] <br> (Can we compare these two?)
+|{} ⊢ (lambda (x)(+ x 3)):[Number -> Number]| {y:Number} ⊢ (lambda (z)(+ z 3)):[Number -> Number]
+|{f:[Number -> Number]} ⊢ ((lambda (f x) (f x))(lambda (x) (* x x)) 10): Number | {} ⊢ ((lambda (f x) (f x)) (lambda (x) (* x x)) 10): Number|
 
 Note: A typing statement has to be true in order to determine its strength.
 
@@ -52,6 +52,7 @@ For example:
 
 * **[[T1->T2]->T2] ○ {T1=Boolean, T2=[T3->T3]} = [[Boolean->[T3->T3]] -> [T3->T3]]**
 * **[[T1->T2]->T2] ○ {T1=Boolean, T2=[T3->T3],T3=Number} = [[Boolean->[T3->T3]] -> [T3->T3]]**
+* **[[T1->T2]->[T2->T3]] ○ {T1=Boolean, T2=[T3->T3],T3=Number} = [[Boolean->[T3->T3]] -> [[T3->T3]->Number]]**
 
 ## Question 3
 
