@@ -233,4 +233,12 @@ describe('L4 Box Eval', () => {
                 (define even? (lambda (n) (if (= n 0) #t (odd? (- n 1)))))
                 (and (odd? 5) (even? 6)))`), evalProgram)).toEqual(makeOk(true));
     });
+
+    it('cleans global env when evaluating two programs one after the other', () => {
+        expect(bind(parseL4(`
+            (L4 (define a 1)
+                (+ a a))`), evalProgram)).toEqual(makeOk(2));
+        expect(bind(parseL4(`
+            (L4 (+ a a))`), evalProgram)).toSatisfy(isFailure);
+    })
 });
