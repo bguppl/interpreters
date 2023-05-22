@@ -132,7 +132,11 @@ type GlobalEnv = {
 export const isGlobalEnv = (x: any): x is GlobalEnv => x.tag === "GlobalEnv";
 const makeGlobalEnv = (): GlobalEnv => ({tag: "GlobalEnv", frame: makeBox(makeFrame([], []))});
 // There is a single mutable value in the type Global-env
-export const theGlobalEnv = makeGlobalEnv();
+export let theGlobalEnv = makeGlobalEnv();
+export const initGlobalEnv = (): GlobalEnv => {
+    theGlobalEnv = makeGlobalEnv();
+    return theGlobalEnv;
+}
 
 const globalEnvSetFrame = (ge: GlobalEnv, f: Frame): void => setBox(ge.frame, f);
 

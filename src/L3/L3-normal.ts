@@ -35,7 +35,7 @@ export const L3normalEval = (exp: CExp, env: Env): Result<Value> =>
     makeFailure(`Bad ast: ${format(exp)}`);
 
 const evalIf = (exp: IfExp, env: Env): Result<Value> =>
-    bind(L3normalEval(exp.test, env), (test: SExpValue) => 
+    bind(L3normalEval(exp.test, env), (test: Value) => 
             isTrueValue(test) ? L3normalEval(exp.then, env) : 
             L3normalEval(exp.alt, env));
 

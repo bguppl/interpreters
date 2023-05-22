@@ -18,7 +18,7 @@
         |  ( <cexpLA> <cexpLA>* )               / AppExpLA(rator:cexpLA, rands:List(cexpLA))
         |  ( quote <sexp> )                     / LitExp(val:sexp)
 */
-import { add, concat, map } from 'ramda';
+import { concat, map } from 'ramda';
 import { BoolExp, LitExp, NumExp, StrExp, VarDecl, VarRef } from './L3-ast';
 import { isBoolExp, isLitExp, isNumExp, isStrExp, isVarRef } from './L3-ast';
 import { makeBoolExp, makeNumExp, makeStrExp, makeVarDecl, makeVarRef } from './L3-ast';
@@ -28,7 +28,8 @@ import { parseLitExp } from './L3-ast';
 import { Result, makeFailure, makeOk, bind, mapResult, mapv } from '../shared/result';
 import { isToken } from "../shared/parser";
 
-export type CExpLA = NumExp | BoolExp | StrExp | LitExp | VarRef | LexAddress | ProcExpLA | IfExpLA | AppExpLA;
+export type CExpLA = NumExp | BoolExp | StrExp | LitExp | VarRef | LexAddress | 
+                     ProcExpLA | IfExpLA | AppExpLA;
 export const isCExpLA = (x: any): x is CExpLA =>
     isNumExp(x) || isBoolExp(x) || isStrExp(x) || isLitExp(x) || isVarRef(x) ||
     isLexAddress(x) || isProcExpLA(x) || isIfExpLA(x) || isAppExpLA(x);

@@ -15,6 +15,8 @@ import { format } from "../shared/format";
 // --------------------------------------------
 // AST Type Definition
 
+// <E> ::= <NumExp> | ( <E> + <E> ) | ( <E> * <E> )
+
 // Disjoint type E
 type E = NumExp | AddExp | MulExp;
 const isE = (x: any): x is E => isNumExp(x) || isAddExp(x) || isMulExp(x);
@@ -49,6 +51,9 @@ const isMulExp = (x: any): x is MulExp => x.tag === "MulExp";
 export const parseE = (x: string): Result<E> =>
     bind(parse(x), (s: Sexp) => 
          parseESexp(s));
+
+// (define a "this is a string")
+
 
 // ========================================================
 // Parsing

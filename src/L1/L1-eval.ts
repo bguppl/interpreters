@@ -8,11 +8,11 @@ import { isAppExp, isBoolExp, isDefineExp, isNumExp, isPrimOp, isVarRef } from "
 import { format } from "../shared/format";
 
 // ========================================================
-// Value type definition
+// 1. Value type definition
 export type Value = number | boolean | PrimOp;
 
 // ========================================================
-// Environment data type
+// 2. Environment data type
 export type Env = EmptyEnv | NonEmptyEnv;
 export type EmptyEnv = {tag: "EmptyEnv" }
 export type NonEmptyEnv = {
@@ -34,21 +34,25 @@ const applyEnv = (env: Env, v: string): Result<Value> =>
     applyEnv(env.nextEnv, v);
 
 // ========================================================
-// Eval functions
+// 3. Eval functions
 
+// Inductive evaluation rules for L1
 const L1applicativeEval = (exp: CExp, env: Env): Result<Value> =>
     isNumExp(exp) ? makeOk(exp.val) :
     isBoolExp(exp) ? makeOk(exp.val) :
     isPrimOp(exp) ? makeOk(exp) :
     isVarRef(exp) ? applyEnv(env, exp.var) :
-    isAppExp(exp) ? bind(mapResult((rand: CExp) =>  L1applicativeEval(rand, env), exp.rands), (rands: Value[]) => 
-                         L1applyProcedure(exp.rator, rands)) :
+    isAppExp(exp) ? bind(mapResult((rand: CExp) =>  L1applicativeEval(rand, env), 
+                                   exp.rands), 
+                         (rands: Value[]) => L1applyProcedure(exp.rator, rands)) :
     exp;
 
 const L1applyProcedure = (proc: CExp, args: Value[]): Result<Value> =>
     isPrimOp(proc) ? applyPrimitive(proc, args) :
     makeFailure(`Bad procedure ${format(proc)}`);
 
+// ========================================================
+// 4. Primitives handling
 // There are type errors which we will address in L3
 const applyPrimitive = (proc: PrimOp, args: Value[]): Result<Value> =>
     // @ts-ignore: the rhs of an arithmetic operation must be a number
@@ -71,7 +75,9 @@ const applyPrimitive = (proc: PrimOp, args: Value[]): Result<Value> =>
     proc.op === "not" ? makeOk(!args[0]) :
     makeFailure("Bad primitive op " + proc.op);
 
-// Evaluate a sequence of expressions (in a program)
+// ========================================================
+// 5. Evaluate a sequence of expressions (in a program)
+// and thread the environment from one expression to the next
 export const evalSequence = (seq: List<Exp>, env: Env): Result<Value> =>
     isNonEmptyList<Exp>(seq) ? evalSequenceFirst(first(seq), rest(seq), env) :
     makeFailure("Empty sequence");
@@ -90,6 +96,6 @@ const evalDefineExps = (def: DefineExp, exps: Exp[], env: Env): Result<Value> =>
     bind(L1applicativeEval(def.val, env), (rhs: Value) => 
          evalSequence(exps, makeEnv(def.var.var, rhs, env)));
 
-// Main program
+// Main program: a program is a sequence of Exp
 export const evalL1program = (program: Program): Result<Value> =>
     evalSequence(program.exps, makeEmptyEnv());

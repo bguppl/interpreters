@@ -8,7 +8,7 @@ import { isBoolExp, isCExp, isLitExp, isNumExp, isPrimOp, isStrExp, isVarRef, is
          parseL4Exp, 
          DefineExp} from "./L4-ast";
 import { applyEnv, applyEnvBdg, globalEnvAddBinding, makeExtEnv, setFBinding,
-            theGlobalEnv, Env, FBinding } from "./L4-env-box";
+            theGlobalEnv, initGlobalEnv, Env, FBinding } from "./L4-env-box";
 import { isClosure, makeClosure, Closure, Value } from "./L4-value-box";
 import { applyPrimitive } from "./evalPrimitive-box";
 import { first, rest, isEmpty, isNonEmptyList } from "../shared/list";
@@ -83,9 +83,11 @@ const evalDefineExps = (def: DefineExp, exps: Exp[]): Result<Value> =>
         });
 
 // Main program
-// L4-BOX @@ Use GE instead of empty-env
+// L4-BOX @@ Use GE instead of empty-env - re-initialize GE each time we start a new program.
+// to avoid inheriting global variables from previously evaluated programs.
 export const evalProgram = (program: Program): Result<Value> =>
-    evalSequence(program.exps, theGlobalEnv);
+    evalSequence(program.exps, initGlobalEnv());
+
 
 export const evalParse = (s: string): Result<Value> =>
     bind(p(s), (x) =>

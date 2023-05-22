@@ -18,7 +18,7 @@ export const substitute = (body: CExp[], vars: string[], exps: CExp[]): CExp[] =
     const subProcExp = (e: ProcExp): ProcExp => {
         const argNames = map((x) => x.var, e.args);
         const subst = zip(vars, exps);
-        const freeSubst = filter((ve) => !includes(first(ve), argNames), subst);
+        const freeSubst = filter((ve) => !includes(ve[0], argNames), subst);
         return makeProcExp(
             e.args,
             substitute(
