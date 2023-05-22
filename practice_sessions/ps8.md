@@ -36,14 +36,14 @@ Implements parser and abstract syntax for the following BNF concrete syntax:
         |  <boolean>                       / BoolExp(val:boolean)
         |  <string>                        / StrExp(val:string)
         |  <var-ref>
-        |  ( lambda ( <var-decl>* ) <TExp>? <cexp>+ ) / ProcExp(args:VarDecl[], body:CExp[], returnTE: TExp))
+        |  ( lambda ( <var-decl>* ) <cexp>+ ) | ( lambda ( <var-decl>* ) : <TExp> <cexp>+ ) / ProcExp(args:VarDecl[], body:CExp[], returnTE: TExp))
         |  ( if <cexp> <cexp> <cexp> )     / IfExp(test: CExp, then: CExp, alt: CExp)
         |  ( quote <sexp> )                / LitExp(val:SExp)
         |  ( <cexp> <cexp>* )              / AppExp(operator:CExp, operands:CExp[]))
         |  ( let ( <binding>* ) <cexp>+ )  / LetExp(bindings:Binding[], body:CExp[]))
         |  ( letrec ( binding*) <cexp>+ )  / LetrecExp(bindings:Bindings[], body: CExp)
         |  ( set! <var> <cexp>)            / SetExp(var: varRef, val: CExp)
-<binding>  ::= ( <var> <cexp> )            / Binding(var:VarDecl, val:Cexp)
+<binding>  ::= ( <var-decl> <cexp> )            / Binding(var:VarDecl, val:Cexp)
 <prim-op>  ::= + | - | * | / | < | > | = | not |  eq? | string=?
                  | cons | car | cdr | list? | number?
                  | boolean? | symbol? | string?
