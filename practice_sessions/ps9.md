@@ -1,5 +1,5 @@
 # Asynchronous Programming in TypeScript
-<h2><b>Practical Session - Week #8</b></h2>
+<h2><b>Practical Session - Week #9</b></h2>
 
 We exercise techniques of asynchronous programming in TypeScript.
 * How to invoke Node methods that take a callback parameter - such as `fs.writeFile` or `http.get`.
