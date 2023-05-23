@@ -71,7 +71,7 @@ Type checking language
 Syntax with optional type annotations for var declarations and function return types.
 
 <texp>         ::= <atomic-te> | <compound-te> | <tvar>
-<atomic-te>    ::= <num-te> | <bool-te> | <void-te>
+<atomic-te>    ::= <num-te> | <bool-te> | <void-te> | <str-te>
 <num-te>       ::= number   // num-te()
 <bool-te>      ::= boolean  // bool-te()
 <str-te>       ::= string   // str-te()
