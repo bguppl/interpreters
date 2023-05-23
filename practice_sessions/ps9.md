@@ -1,5 +1,5 @@
 # Asynchronous Programming in TypeScript
-# Practical Session - Week #9
+## Practical Session - Week #9
 
 We exercise techniques of asynchronous programming in TypeScript.
 * How to invoke Node methods that take a callback parameter - such as `fs.writeFile` or `http.get`.
@@ -387,6 +387,7 @@ This special syntax enables us to write a promise based code that look more natu
 Here is an example of the `async` syntax alone:
 
 ```typescript
+//Asynchronous function
 async function greeting1() {
     return 'Hello, world!';
 }
@@ -476,9 +477,9 @@ for (const n of count3()) {
 }
 ```
 
-But what exactly did count3() return?
+***Question:*** But what exactly did count3() return?
 
-<br><br>
+<br>
 
 To understand this we need the following two protocols:
 
@@ -510,7 +511,7 @@ We can iterate over their return type because they return an iterable object, mo
 ***Question:*** Can you write the return type of the `count3` function?
 
 
-<br><br><br><br><br>
+<br><br>
 
 
 
