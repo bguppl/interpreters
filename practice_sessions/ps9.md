@@ -479,6 +479,14 @@ for (const n of count3()) {
 
 ***Question:*** But what exactly did count3() return?
 
+we can also use **yeild*** keyeord this way and get the same result
+
+```typescript
+function * count3() {
+    yield* [1, 2, 3];
+}
+```
+
 <br>
 
 To understand this we need the following two protocols:
