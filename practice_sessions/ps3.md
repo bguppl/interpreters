@@ -188,25 +188,6 @@ We can combine a `define` expression with `lambda` expressions to define named p
 #<procedure:average>
 ```
 
-Racket supports another syntax to define procedures (called MIT Style) which is slightly shorter - but means exactly the same thing.
-It's actually `syntactic sugar` (makes things easier to read or to express). 
-Note that we do not allow the use this syntactic sugar in the course. Always write the full form of the lambda expression.
-```scheme
-(define (<procedure-name> <formal-parameters>) <body>)
-
-> (define (average x y) 
-    (/ (+ x y) 2))
-
-> (average 4 6)
-5
-
-> (define (area rad) 
-    (* pi rad rad))
-
-> (area 1)
-3.14159
-```
-
 ### Procedures Summary
 
 The definition of a procedure consists of:
