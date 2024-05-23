@@ -781,6 +781,8 @@ for example:
 Normal eval will not have any side-effects while applicative eval will display "applic" to the screen.
 They both will return the value 1.
 
+<!---
+
 <h3><b> letrec </b></h3>
 
 Let us recall the exp procedure:
@@ -850,3 +852,5 @@ Can we do it better? Yes! By noticing that ***b*** stays constant throughout ***
                          (else (exp-iter (- e 1) (* b acc)))))))
     (exp-iter e 1))))
 ```
+
+-->
