@@ -88,7 +88,7 @@ Let us recall the syntax of L1 using the BNF + Abstract Syntax specification we 
 
 The values that can be returned in L1 are:
 
-Value = number | boolean | PrimOp
+Value = number \| boolean \| PrimOp
 
  **Note:**  In L1, the only side-effect that we can get is from a ***define*** expression.
 
@@ -197,8 +197,8 @@ The second change is now how to evaluate the sub-expression ```{ "tag": "VarRef"
 This has an impact on the structure of the values the interpreter can return:
 
 
-* In the class implementation, for L1, Value = number | boolean | PrimOp
-* In the new implementation, we have: Value = number | boolean | PrimProc
+* In the class implementation, for L1, Value = number \| boolean \| PrimOp
+* In the new implementation, we have: Value = number \| boolean \| <b>PrimProc</b>
 
 
 where ***PrimProc*** is the type of the values returned in the meta-language (TypeScript in our case) when we compute the expressions <b>+, *, -, /, not, <, >, =</b>.
@@ -351,7 +351,7 @@ The syntax of  L2  extends that of  L1  with two new expression types:
 
 The Value types includes closure values in addition to the previous types:
 
-Value = Number | Boolean | Prim-op | Closure
+Value = Number \| Boolean \| Prim-op \| <b>Closure</b>
 
 
 * ***We define the closure data type as a record with two fields:***
