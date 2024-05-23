@@ -420,10 +420,12 @@ Why renaming?
 (define z not)
 
 (((lambda (x)
-      (lambda (z) (x z)))
-    (lambda (w) (z w)))
-   ;; Note: z occurs free in the parent exp.
-   #f)
+     (lambda (z)
+        (x z)))
+  (lambda (w)
+     (z w)))
+  ;; Note: z occurs free in the parent exp.
+ #f)
 ```
 
 For renaming we use the ***renameExps*** procedure:
@@ -577,10 +579,12 @@ The replacement will lead to a capture of the free variable by the new binding.
 (define z not)
 
 (((lambda (x)
-      (lambda (z) (x z)))
-    (lambda (w) (z w)))
-   ;; Note: z occurs free in the parent exp.
-   #f)
+     (lambda (z)
+        (x z)))
+  (lambda (w)
+     (z w)))
+  ;; Note: z occurs free in the parent exp.
+ #f)
 ```
 Work out the capture - step by step...
 
@@ -591,14 +595,14 @@ How it works with renaming:
 ;; rename w in (lambda(w)(z w)) ==> (lambda(w1)(z w1))
 ;; substitute (lambda(z1)(x z1)) ∘ {x = (lambda(w1)(z w1))} ==> 
 (lambda (z1)
-    ((lambda (w1)
+   ((lambda (w1)
        (z w1)) ;z remains free!
-     z1))
+    z1))
 
 ;; substitute ((lambda (w1) (z w1)) z1)∘ {z1 = #f}==>
 ((lambda(w1)
-     (z w1))
-   #f)
+    (z w1))
+ #f)
 
 ;;substitute (z w1) ∘ {w1 = #f}==>
 (z #f)
@@ -613,8 +617,9 @@ How it works with renaming:
 Look at the next code:
 ```scheme
 ((lambda (x z) 
-     (* (+ x z) z))
-   1 (+ 1 2))
+    (* (+ x z) z))
+ 1
+ (+ 1 2))
 ```
 <b>Q: </b> Evaluate the following expression according to the applicative-eval algorithm
 
@@ -645,11 +650,11 @@ reduce:
 
 <b> Q:</b>  Evaluate the following expression according to the normal evaluation algorithm:
 ```scheme
-(((lambda (x) 
-      (lambda (y) 
+(((lambda (x)
+     (lambda (y) 
         (* x y))) 
-    (+ 1 2)) 
-   2)  
+  (+ 1 2)) 
+  2)  
 ```
 
 <b>A:</b>
