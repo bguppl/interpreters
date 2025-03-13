@@ -59,6 +59,10 @@ In order to work on the assignments in pairs, we recommend using the Visual Stud
 1. Upon first starting or joining a collaboration session on VS Live Share, you will be prompted to log in using either a GitHub account or a Microsoft account. We suggest logging in using a GitHub account. If you don't have one already, create a GitHub account using [this link](https://education.github.com/students).
 2. You can work on different files simultaneously and not necessarily work on the same file, as shown in the video.
 
+### Docker
+You may use [Docker](https://www.docker.com/) technology to install the needed software for this course.
+We have prepared a [Dockerfile](https://gist.github.com/yarongon/ea997b25faa7723fc648fa0710b883ea#file-dockerfile) with all the needed installations, and a [devcontainer.json](https://gist.github.com/yarongon/ea997b25faa7723fc648fa0710b883ea#file-devcontainer-json) if you wish to use VSCode.
+
 ## Scheme
 
 * The Racket [homepage](http://racket-lang.org/) includes downloads and documentation. Current version is Racket 8.8.
