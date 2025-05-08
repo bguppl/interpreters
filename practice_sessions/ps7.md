@@ -1,16 +1,5 @@
 ﻿# Type inference using type constraints
 
-## Definition (seen in class):
-
-A **Type-substitution** is a mapping, s, from a finite set of type-variables to a finite set of type-expressions, such that for every type-variable T, s(T) does not include T.
-A type-binding is a pair  `<T,s(T)>`  such that  `T = s(T)`.
-Type-Substitutions are written using set notation, for example :
-
-* **{T1 = Number, T2 = [Number -> T3]}**.
-* **{T1 = Number, T2 = [[Number -> T3]->T2]}, is this legal?**
-* **{T1 = Number, T1 = Boolean}, and this one?**
-
-
 ## Question 1 
 ### Typing statement
 
@@ -45,6 +34,16 @@ Note : assumptions in Tenv are an added part to the axioms we have.
 
 Note: A typing statement has to be true in order to determine its strength.
 
+## Definition (seen in class):
+
+A **Type-substitution** is a mapping, s, from a finite set of type-variables to a finite set of type-expressions, such that for every type-variable T, s(T) does not include T.
+A type-binding is a pair  `<T,s(T)>`  such that  `T = s(T)`.
+Type-Substitutions are written using set notation, for example :
+
+* **{T1 = Number, T2 = [Number -> T3]}**.
+* **{T1 = Number, T2 = [[Number -> T3]->T2]}, is this legal?**
+* **{T1 = Number, T1 = Boolean}, and this one?**
+
 ## Definitions (seen in class):
 
 An application of a type-substitution s to a type-expression TE, denoted by TE ○ s, is a consistent replacement of type-variables T in TE by their mapped type-expressions s(T).
@@ -62,7 +61,7 @@ The most general unifier (**MGU**), is a unifier such that any other unifier is 
 Recall the lecture's definition of "instance of type expression" :  **T'** is an instance of type expression **T**, if there is a type substitution **s** such that  `T o s = T'`.
 
 In case of an instance of the MGU type substitution, it is any type substitution s such that for each type expression e in s, e is an instance of a type expression in our MGU.
-All other unifiers are obtained from it by application of additional substitutions. 
+All other unifiers are obtained from it by application of additional substitutions.
 
 **Find the MGU**  for the following pairs of type-environments:
 
