@@ -2,7 +2,7 @@
 // AST type models
 import { map, zipWith } from "ramda";
 import { makeEmptySExp, makeSymbolSExp, SExpValue, makeCompoundSExp, valueToString } from './L3-value'
-import { first, second, rest, allT, isEmpty, isNonEmptyList, List } from "../shared/list";
+import { first, second, rest, allT, isEmpty, isNonEmptyList, List, NonEmptyList } from "../shared/list";
 import { isArray, isString, isNumericString, isIdentifier } from "../shared/type-predicates";
 import { Result, makeOk, makeFailure, bind, mapResult, mapv } from "../shared/result";
 import { parse as p, isSexpString, isToken, isCompoundSexp } from "../shared/parser";
@@ -229,7 +229,7 @@ const parseProcExp = (vars: Sexp, body: Sexp[]): Result<ProcExp> =>
 
 const isGoodBindings = (bindings: Sexp): bindings is [string, Sexp][] =>
     isArray(bindings) &&
-    allT(isNonEmptyList<Sexp>, bindings) &&
+    allT<NonEmptyList<Sexp>>(isNonEmptyList, bindings) &&
     allT(isIdentifier, map(first, bindings));
 
 const parseLetExp = (bindings: Sexp, body: Sexp[]): Result<LetExp> => {
