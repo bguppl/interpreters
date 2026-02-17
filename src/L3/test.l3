@@ -1,0 +1,29 @@
+(L3
+  ; Basic arithmetic
+  (define x 5)
+  (define y 3)
+  (+ x y)
+
+  ; Lambda and application
+  (define square (lambda (n) (* n n)))
+  (square x)
+
+  ; Recursive factorial
+  (define fact
+    (lambda (n)
+      (if (= n 0)
+          1
+          (* n (fact (- n 1))))))
+  (fact 6)
+
+  ; Higher-order map over a list
+  (define map
+    (lambda (f l)
+      (if (eq? l '())
+          l
+          (cons (f (car l)) (map f (cdr l))))))
+  (map square '(1 2 3 4 5))
+
+  ; Returning a closure (procedure value)
+  (define make-adder (lambda (n) (lambda (x) (+ x n))))
+  (make-adder 10))

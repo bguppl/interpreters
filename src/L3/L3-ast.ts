@@ -124,8 +124,11 @@ export const isCExp = (x: any): x is CExp =>
 // ========================================================
 // Parsing
 
+const stripComments = (x: string): string =>
+    x.replace(/;[^\r\n]*/g, '');
+
 export const parseL3 = (x: string): Result<Program> =>
-    bind(p(x), parseL3Program);
+    bind(p(stripComments(x)), parseL3Program);
 
 export const parseL3Program = (sexp: Sexp): Result<Program> =>
     sexp === "" || isEmpty(sexp) ? makeFailure("Unexpected empty program") :
