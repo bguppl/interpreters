@@ -36,7 +36,9 @@ const extendPoolVarDecl = (vd: A.VarDecl, pool: Pool): Pool =>
     cons({e: A.makeVarRef(vd.var), te: vd.texp}, pool);
 
 export const inPool = (pool: Pool, e: A.Exp): Opt.Optional<T.TExp> => {
-    const exp = R.find(R.propEq('e', e), pool);
+    const exp = R.find((item) => 
+        item.e === e || (A.isVarRef(item.e) && A.isVarRef(e) && item.e.var === e.var)
+    , pool);
     return exp ? Opt.makeSome(R.prop('te')(exp)) : Opt.makeNone();
 }
 
@@ -156,10 +158,10 @@ export const inferType = (exp: A.Exp): Opt.Optional<T.TExp> => {
     // Extract the computed type of the root expression from the pool
     const texp = inPool(pool, exp);
     // console.log(`TExp = ${format(bindResult(optionalToResult(texp, "TExp is None"), T.unparseTExp))}`);
-    // Replace all TVars in the computed type by their type expression
+    // Replace all TVars in the computed type by applying the substitution
     return Opt.bind(sub, (sub: S.Sub) =>
                 Opt.mapv(texp, (texp: T.TExp) =>
-                    T.isTVar(texp) ? S.subGet(sub, texp) : texp))
+                    S.applySub(sub, texp)))
 };
 
 // Type: [Concrete-Exp -> Concrete-TExp]
