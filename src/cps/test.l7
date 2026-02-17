@@ -1,0 +1,51 @@
+;; L7 test program - CPS interpreter with registerized concrete continuations
+;; Demonstrates features from L7.test.ts
+
+(L5
+  ;; Recursive factorial via define
+  (define fact
+    (letrec ((f (lambda (n)
+                  (if (= n 0)
+                      1
+                      (* n (f (- n 1)))))))
+      f))
+
+  ;; Higher-order map
+  (define map
+    (lambda (f l)
+      (if (eq? l '())
+          l
+          (cons (f (car l)) (map f (cdr l))))))
+
+  ;; Closure capture: makeAdder
+  (define makeAdder
+    (lambda (n) (lambda (y) (+ y n))))
+
+  (define a6 (makeAdder 6))
+  (define a7 (makeAdder 7))
+
+  ;; CPS iterative sum - runs in O(1) stack space in the registerized VM
+  (define sumCPS
+    (lambda (n cont)
+      (if (= n 0)
+          (cont 0)
+          (sumCPS (- n 1) (lambda (sn1) (cont (+ n sn1)))))))
+
+  ;; Y-combinator factorial of 6
+  (define yFact
+    ((lambda (f) (f f))
+     (lambda (fact)
+       (lambda (n)
+         (if (= n 0)
+             1
+             (* n ((fact fact) (- n 1))))))))
+
+  ;; Print results as a list:
+  ;; (fact 5)=120, (map square '(1 2 3))='(1 4 9),
+  ;; (a6 1)+(a7 1)=15, (sumCPS 1000 id)=500500, (yFact 6)=720
+  (cons (fact 5)
+    (cons (map (lambda (x) (* x x)) '(1 2 3))
+      (cons (+ (a6 1) (a7 1))
+        (cons (sumCPS 1000 (lambda (x) x))
+          (cons (yFact 6)
+            '()))))))

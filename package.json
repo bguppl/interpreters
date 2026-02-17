@@ -9,7 +9,8 @@
     "L1": "ts-node src/L1/L1.ts",
     "L3": "ts-node src/L3/L3.ts",
     "L4": "ts-node src/L4/L4.ts",
-    "L5": "ts-node src/L5/L5.ts"
+    "L5": "ts-node src/L5/L5.ts",
+    "L7": "ts-node src/cps/L7.ts"
   },
   "keywords": [],
   "author": "Michael Elhadad",
