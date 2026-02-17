@@ -11,7 +11,7 @@ import { isAppExp, isDefineExp, isIfExp, isLetrecExp, isLetExp,
 import { applyEnv, applyEnvBdg, globalEnvAddBinding, makeExtEnv, setFBinding,
          theGlobalEnv, Env, ExtEnv, FBinding } from "../L5/L5-env";
 import { isClosure, makeClosure, Closure, Value, valueToString } from "../L5/L5-value";
-import { isEmpty, first, rest } from '../shared/list';
+import { isEmpty, first, rest, isNonEmptyList } from '../shared/list';
 import { Result, makeFailure, makeOk, bind, either } from "../shared/result";
 import { applyPrimitive } from "../L5/evalPrimitive";
 import { parse as p } from "../shared/parser";
@@ -79,8 +79,8 @@ const makeLetCont = (exp: LetExp, env: Env, cont: Cont): ContArray =>
 // Evaluate an array of expressions in sequence - pass the result of the last element to cont
 // @Pre: exps is not empty
 export const evalSequence = (exps: Exp[], env: Env, cont: Cont): Result<Value> =>
-    isEmpty(exps) ? applyCont(cont, makeFailure("Empty Sequence")) :
-    evalSequenceFR(first(exps), rest(exps), env, cont);
+    isNonEmptyList<Exp>(exps) ? evalSequenceFR(first(exps), rest(exps), env, cont) :
+    applyCont(cont, makeFailure("Empty Sequence"));
 
 const evalSequenceFR = (exp: Exp, exps: Exp[], env: Env, cont: Cont): Result<Value> =>
     isDefineExp(exp) ? evalDefineExps(exp, exps, cont) :
@@ -104,8 +104,8 @@ const makeEvalDefineExpsCont = (exp: DefineExp, exps: Exp[], cont: Cont): Cont =
 
 // Evaluate an array of expressions - pass the result as an array to the continuation
 export const evalExps = (exps: Exp[], env: Env, cont: ContArray): Result<Value> =>
-    isEmpty(exps) ? applyContArray(cont, makeOk([])) :
-    evalExpsFR(first(exps), rest(exps), env, cont)
+    isNonEmptyList<Exp>(exps) ? evalExpsFR(first(exps), rest(exps), env, cont) :
+    applyContArray(cont, makeOk([]));
 
 const evalExpsFR = (exp: Exp, exps: Exp[], env: Env, cont: ContArray): Result<Value> =>
     isDefineExp(exp) ? applyContArray(cont, bind(unparse(exp), e => makeFailure(`Unexpected define: ${format(e)}`))) :

@@ -11,7 +11,7 @@ import { applyEnv, applyEnvBdg, globalEnvAddBinding, makeExtEnv, setFBinding,
          theGlobalEnv, Env, FBinding } from "../L5/L5-env";
 import { isClosure, makeClosure, Closure, Value } from "../L5/L5-value";
 import { applyPrimitive } from "../L5/evalPrimitive";
-import { isEmpty, first, rest } from '../shared/list';
+import { isEmpty, first, rest, isNonEmptyList } from '../shared/list';
 import { Result, makeOk, makeFailure, bind } from "../shared/result";
 import { parse as p } from "../shared/parser";
 import { format } from "../shared/format";
@@ -73,8 +73,8 @@ const evalLet = (exp: LetExp, env: Env, cont: Cont): Result<Value> =>
 // Evaluate an array of expressions in sequence - pass the result of the last element to cont
 // @Pre: exps is not empty
 export const evalSequence = (exps: Exp[], env: Env, cont: Cont): Result<Value> =>
-    isEmpty(exps) ? cont(makeFailure("Empty Sequence")) :
-    evalSequenceFR(first(exps), rest(exps), env, cont);
+    isNonEmptyList<Exp>(exps) ? evalSequenceFR(first(exps), rest(exps), env, cont) :
+    cont(makeFailure("Empty Sequence"));
 
 const evalSequenceFR = (exp: Exp, exps: Exp[], env: Env, cont: Cont): Result<Value> =>
     isDefineExp(exp) ? evalDefineExps(exp, exps, cont) :
@@ -90,8 +90,8 @@ const evalDefineExps = (exp: DefineExp, exps: Exp[], cont: Cont): Result<Value> 
 
 // Evaluate an array of expressions - pass the result as an array to the continuation
 export const evalExps = (exps: Exp[], env: Env, cont: ContArray): Result<Value> =>
-    isEmpty(exps) ? cont(makeOk([])) :
-    evalExpsFR(first(exps), rest(exps), env, cont)
+    isNonEmptyList<Exp>(exps) ? evalExpsFR(first(exps), rest(exps), env, cont) :
+    cont(makeOk([]));
 
 const evalExpsFR = (exp: Exp, exps: Exp[], env: Env, cont: ContArray): Result<Value> =>
     isDefineExp(exp) ? cont(bind(unparse(exp), up => makeFailure(`Unexpected define: ${format(up)}`))) :

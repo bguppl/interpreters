@@ -12,7 +12,7 @@ import { applyEnv, applyEnvBdg, globalEnvAddBinding, makeExtEnv, setFBinding,
          theGlobalEnv, Env, ExtEnv } from "../L5/L5-env";
 import { valueToString } from '../L5/L5-value';
 import { isClosure, makeClosure, Value } from "../L5/L5-value";
-import { isEmpty, first, rest } from '../shared/list';
+import { isEmpty, first, rest, isNonEmptyList } from '../shared/list';
 import { Result, either, makeOk, bind, makeFailure } from "../shared/result";
 import { parse as p } from "../shared/parser";
 import { applyPrimitive } from "../L5/evalPrimitive";
@@ -508,13 +508,13 @@ export const evalLet = (): void => {
 // export const evalSequence = (exps: Exp[], env: Env, cont: Cont): Value | Error =>
 export const evalSequence = (): void => {
     dumpREG();
-    if (isEmpty(expsREG)) {
-        valREG = makeFailure("Empty Sequence");
-        pcREG = 'applyCont';
-    } else {
+    if (isNonEmptyList<Exp>(expsREG)) {
         expREG = first(expsREG);
         expsREG = rest(expsREG);
         pcREG = 'evalSequenceFR';
+    } else {
+        valREG = makeFailure("Empty Sequence");
+        pcREG = 'applyCont';
     }
 }
 
@@ -658,13 +658,13 @@ export const applyClosure = (): void => {
 // export const evalExps = (exps: Exp[], env: Env, cont: ContArray): Value | Error =>
 export const evalExps = (): void => {
     dumpREG();
-    if (isEmpty(expsREG)) {
-        valsREG = makeOk([]);
-        pcREG = 'applyContArray';
-    } else {
+    if (isNonEmptyList<Exp>(expsREG)) {
         expREG = first(expsREG);
         expsREG = rest(expsREG);
         pcREG = 'evalExpsFR';
+    } else {
+        valsREG = makeOk([]);
+        pcREG = 'applyContArray';
     }
 }
 
