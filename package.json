@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "jest",
-    "coverage": "jest --coverage"
+    "coverage": "jest --coverage",
+    "L1": "ts-node src/L1/L1.ts"
   },
   "keywords": [],
   "author": "Michael Elhadad",
