@@ -1,0 +1,42 @@
+(L5
+  ; Type-annotated definitions
+  (define (a : number) 1)
+
+  ; Type-annotated lambda with return type
+  (define (square : (number -> number))
+    (lambda ((x : number)) : number (* x x)))
+
+  ; Let with type annotations
+  (define let-result
+    (let (((p : boolean) #t) ((q : number) 7))
+      (if p q (+ q q))))   ; let-result = 7
+
+  ; Letrec with type annotation - factorial
+  (define fact
+    (letrec (((f : (number -> number))
+              (lambda ((n : number)) : number
+                (if (= n 0)
+                    1
+                    (* n (f (- n 1)))))))
+      f))
+
+  ; Generic identity: type parameter T
+  (define (id : (T -> T))
+    (lambda ((x : T)) : T x))
+
+  ; Adder using type-annotated lambda
+  (define (make-adder : (number -> (number -> number)))
+    (lambda ((n : number)) : (number -> number)
+      (lambda ((x : number)) : number (+ n x))))
+
+  (define add10 (make-adder 10))
+
+  ; Final expression:
+  ;   square(4) => 16
+  ;   fact(5)   => 120
+  ;   let-result => 7
+  ;   add10(3)  => 13
+  ;   id(42)    => 42
+  ;   total => 198
+  (+ (square 4) (+ (fact 5) (+ let-result (+ (add10 3) (id 42)))))
+)
