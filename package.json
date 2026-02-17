@@ -7,7 +7,8 @@
     "test": "jest",
     "coverage": "jest --coverage",
     "L1": "ts-node src/L1/L1.ts",
-    "L3": "ts-node src/L3/L3.ts"
+    "L3": "ts-node src/L3/L3.ts",
+    "L4": "ts-node src/L4/L4.ts"
   },
   "keywords": [],
   "author": "Michael Elhadad",

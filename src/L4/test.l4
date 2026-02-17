@@ -1,0 +1,39 @@
+(L4
+  ; Basic arithmetic and defines
+  (define x 5)
+  (define y 3)
+
+  ; Let expression: binds a and b locally
+  (define let-result
+    (let ((a 10) (b 20))
+      (+ a b)))           ; let-result = 30
+
+  ; Higher-order function: apply f twice
+  (define twice
+    (lambda (f x)
+      (f (f x))))
+
+  (define add1 (lambda (n) (+ n 1)))
+
+  ; Letrec for recursion - factorial
+  (define fact
+    (letrec ((fact (lambda (n)
+                     (if (= n 0)
+                         1
+                         (* n (fact (- n 1)))))))
+      fact))
+
+  ; Closures capture their environment
+  (define make-adder
+    (lambda (n)
+      (lambda (x) (+ n x))))
+
+  (define add5 (make-adder 5))
+
+  ; Final expression:
+  ;   twice add1 applied to 0 => 2
+  ;   fact(5) => 120
+  ;   add5(3) => 8
+  ;   total => 130
+  (+ (twice add1 0) (+ (fact 5) (add5 3)))
+)
