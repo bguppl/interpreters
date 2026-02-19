@@ -96,6 +96,10 @@ const evalDefineExps = (def: Exp, exps: Exp[], env: Env): Result<Value> =>
 export const evalL3program = (program: Program): Result<Value> =>
     evalSequence(program.exps, makeEmptyEnv());
 
+// Evaluate a single CExp with an explicit environment (for REPL use)
+export const evalL3Exp = (exp: CExp, env: Env): Result<Value> =>
+    L3applicativeEval(exp, env);
+
 export const evalParse = (s: string): Result<Value> =>
     bind(p(s), (sexp: Sexp) => 
         bind(parseL3Exp(sexp), (exp: Exp) =>
