@@ -99,3 +99,7 @@ const evalDefineExps = (def: DefineExp, exps: Exp[], env: Env): Result<Value> =>
 // Main program: a program is a sequence of Exp
 export const evalL1program = (program: Program): Result<Value> =>
     evalSequence(program.exps, makeEmptyEnv());
+
+// Evaluate a single expression with an explicit environment (for REPL use)
+export const evalL1Exp = (exp: CExp, env: Env): Result<Value> =>
+    L1applicativeEval(exp, env);
