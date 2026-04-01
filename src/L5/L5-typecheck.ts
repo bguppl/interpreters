@@ -8,7 +8,8 @@ import { isAppExp, isBoolExp, isDefineExp, isIfExp, isLetrecExp, isLetExp, isNum
 import { applyTEnv, makeEmptyTEnv, makeExtendTEnv, TEnv } from "./TEnv";
 import { isProcTExp, makeBoolTExp, makeNumTExp, makeProcTExp, makeStrTExp, makeVoidTExp,
          parseTE, unparseTExp,
-         BoolTExp, NumTExp, StrTExp, TExp, VoidTExp } from "./TExp";
+         BoolTExp, NumTExp, StrTExp, TExp, VoidTExp, 
+         makeFreshTVar as T} from "./TExp";
 import { isEmpty, allT, first, rest, NonEmptyList, List, isNonEmptyList } from '../shared/list';
 import { Result, makeFailure, bind, makeOk, zipWithResult } from '../shared/result';
 import { parse as p } from "../shared/parser";
@@ -91,17 +92,17 @@ export const typeofPrim = (p: PrimOp): Result<TExp> =>
     (p.op === '<') ? numCompTExp :
     (p.op === '=') ? numCompTExp :
     // Important to use a different signature for each op with a TVar to avoid capture
-    (p.op === 'number?') ? parseTE('(T -> boolean)') :
-    (p.op === 'boolean?') ? parseTE('(T -> boolean)') :
-    (p.op === 'string?') ? parseTE('(T -> boolean)') :
-    (p.op === 'list?') ? parseTE('(T -> boolean)') :
-    (p.op === 'pair?') ? parseTE('(T -> boolean)') :
-    (p.op === 'symbol?') ? parseTE('(T -> boolean)') :
-    (p.op === 'not') ? parseTE('(boolean -> boolean)') :
-    (p.op === 'eq?') ? parseTE('(T1 * T2 -> boolean)') :
-    (p.op === 'string=?') ? parseTE('(T1 * T2 -> boolean)') :
-    (p.op === 'display') ? parseTE('(T -> void)') :
-    (p.op === 'newline') ? parseTE('(Empty -> void)') :
+    (p.op === 'number?') ? makeOk(makeProcTExp([T()] , makeBoolTExp())) :
+    (p.op === 'boolean?') ? makeOk(makeProcTExp([T()] , makeBoolTExp())) :
+    (p.op === 'string?') ? makeOk(makeProcTExp([T()] , makeBoolTExp())) :
+    (p.op === 'list?') ? makeOk(makeProcTExp([T()] , makeBoolTExp())) :
+    (p.op === 'pair?') ? makeOk(makeProcTExp([T()] , makeBoolTExp())) :
+    (p.op === 'symbol?') ? makeOk(makeProcTExp([T()] , makeBoolTExp())) :
+    (p.op === 'not') ? makeOk(makeProcTExp([makeBoolTExp()] , makeBoolTExp())) :
+    (p.op === 'eq?') ? makeOk(makeProcTExp([T(), T()] , makeBoolTExp())) :
+    (p.op === 'string=?') ? makeOk(makeProcTExp([T(), T()] , makeBoolTExp())) :
+    (p.op === 'display') ? makeOk(makeProcTExp([T()] , makeVoidTExp())) :
+    (p.op === 'newline') ? makeOk(makeProcTExp([] , makeVoidTExp())) :
     makeFailure(`Primitive not yet implemented: ${p.op}`);
 
 // Purpose: compute the type of an if-exp

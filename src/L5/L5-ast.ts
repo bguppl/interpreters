@@ -167,10 +167,17 @@ const isSpecialFormKeyword = (x: string): x is SpecialFormKeyword =>
 export type PrimOpKeyword = "+" | "-" | "*" | "/" | ">" | "<" | "=" | "not" | "and" | "or" | "eq?" | "string=?" | 
         "cons" | "car" | "cdr" | "list" | "pair?" | "list?" | "number?" | "boolean?" | "symbol?" | "string?" |
         "display" | "newline";
-const isPrimOpKeyword = (x: string): x is PrimOpKeyword =>
+
+export const primOpNamesList : PrimOpKeyword[] =
     ["+", "-", "*", "/", ">", "<", "=", "not", "and", "or", 
      "eq?", "string=?", "cons", "car", "cdr", "list", "pair?",
-     "list?", "number?", "boolean?", "symbol?", "string?", "display", "newline"].includes(x);
+     "list?", "number?", "boolean?", "symbol?", "string?", "display", "newline"]
+
+const isPrimOpKeyword = (x: any): x is PrimOpKeyword =>
+    primOpNamesList.includes(x);
+
+export const primOpList : PrimOp[] =
+    map(makePrimOp, primOpNamesList)
 
 // ========================================================
 // Parsing
