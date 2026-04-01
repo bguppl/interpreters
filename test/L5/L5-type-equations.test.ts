@@ -87,6 +87,11 @@ describe('L5 Type Equations', () => {
         expect(verifyTeOfExprWithEquations("(lambda (x y) x)", "(T1 * T2 -> T1)")).toEqual(makeOk(true));
         expect(verifyTeOfExprWithEquations("((lambda (x) 1) 2)", "number")).toEqual(makeOk(true));
     });
+    
+    it('infers the types of complex procedures', () => {
+        expect(verifyTeOfExprWithEquations("(lambda (f g h x) (h (h (f x) (g x)) (h (f x) (g x))))", "((T_4 -> T_7) * (T_4 -> T_7) * (T_7 * T_7 -> T_7) * T_4 -> T_7)")).toEqual(makeOk(true));
+        expect(verifyTeOfExprWithEquations("(lambda (f g h u x) (u (h (f x) (g x)) (h (g x) (f x))))", "((T_5 -> T_8) * (T_5 -> T_8) * (T_8 * T_8 -> T_9) * (T_9 * T_9 -> T_13) * T_5 -> T_13)")).toEqual(makeOk(true));
+    });
 
     it('returns an error for an incorrect number of parameters passed to procedure', () => {
         expect(verifyTeOfExprWithEquations("((lambda () 1) 2)", "Error")).toSatisfy(isFailure);
