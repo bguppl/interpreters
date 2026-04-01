@@ -100,7 +100,7 @@ export const typeofPrim = (p: PrimOp): Result<TExp> =>
     (p.op === 'symbol?') ? makeOk(makeProcTExp([T()] , makeBoolTExp())) :
     (p.op === 'not') ? makeOk(makeProcTExp([makeBoolTExp()] , makeBoolTExp())) :
     (p.op === 'eq?') ? makeOk(makeProcTExp([T(), T()] , makeBoolTExp())) :
-    (p.op === 'string=?') ? makeOk(makeProcTExp([T(), T()] , makeBoolTExp())) :
+    (p.op === 'string=?') ? makeOk(makeProcTExp([makeStrTExp(), makeStrTExp()] , makeBoolTExp())) :
     (p.op === 'display') ? makeOk(makeProcTExp([T()] , makeVoidTExp())) :
     (p.op === 'newline') ? makeOk(makeProcTExp([] , makeVoidTExp())) :
     makeFailure(`Primitive not yet implemented: ${p.op}`);
