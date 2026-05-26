@@ -198,6 +198,37 @@ export const makeEquation = (l: T.TExp, r: T.TExp): Equation => ({left: l, right
         return Opt.mapv(Opt.mapOptional((e: A.Exp) => makeEquationsFromExp(e, pool), R.map(R.prop('e'), poolWithoutVars)), (eqns: Equation[][]) => 
                     flatten(eqns));
     };
+    
+    // Signature: make-equation-from-exp(exp, pool)
+    // Purpose: Return a single equation
+    // @Pre: exp is a member of pool
+    export const makeEquationsFromExp = (exp: A.Exp, pool: Pool): Opt.Optional<Equation[]> =>
+        // An application must respect the type of its operator
+        // Type(Operator) = [T1 * .. * Tn -> Te]
+        // Type(Application) = Te
+        A.isAppExp(exp) ? Opt.bind(inPool(pool, exp.rator), (rator: T.TExp) =>
+                                Opt.bind(Opt.mapOptional((e) => inPool(pool, e), exp.rands), (rands: T.TExp[]) =>
+                                    Opt.mapv(inPool(pool, exp), (e: T.TExp) => 
+                                        [makeEquation(rator, T.makeProcTExp(rands, e))]))) :
+        // The type of procedure is (T1 * ... * Tn -> Te)
+        // where Te is the type of the last exp in the body of the proc.
+        // and   Ti is the type of each of the parameters.
+        // No need to traverse the other body expressions - they will be
+        // traversed by the overall loop of pool->equations
+        A.isProcExp(exp) ? Opt.bind(inPool(pool, exp), (left: T.TExp) =>
+                                    Opt.mapv(Opt.bind(safeLast(exp.body), (last: A.CExp) => inPool(pool, last)), (ret: T.TExp) =>
+                                        [makeEquation(left, T.makeProcTExp(R.map((vd) => vd. texp, exp.args), ret))])) :
+        // The type of a number is Number
+        A.isNumExp(exp) ? Opt.mapv(inPool(pool, exp), (left: T.TExp) => [makeEquation(left, T.makeNumTExp())]) :
+        // The type of a boolean is Boolean
+        A.isBoolExp(exp) ? Opt.mapv(inPool(pool, exp), (left: T.TExp) => [makeEquation(left, T.makeBoolTExp())]) :
+        // The type of a string is String
+        A.isStrExp(exp) ? Opt.mapv(inPool(pool, exp), (left: T.TExp) => [makeEquation(left, T.makeStrTExp())]) :
+        // The type of a primitive procedure is given by the primitive.
+        A.isPrimOp(exp) ? Opt.bind(inPool(pool, exp), (left: T.TExp) =>
+                                    Opt.mapv(Res.resultToOptional(TC.typeofPrim(exp)), (right: T.TExp) =>
+                                        [makeEquation(left, right)])) : Opt.makeNone();
+    
     ```
 
 * `inferType(L5expr)` - applies the whole logic of the type inference algorithm.
