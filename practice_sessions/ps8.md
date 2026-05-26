@@ -233,20 +233,33 @@ export const solveEquations = (equations: Equation[]): Res.Result<S.Sub> =>
 // Purpose: Solve the equations, starting from a given substitution.
 //          Returns the resulting substitution, or error, if not solvable
 const solve = (equations: Equation[], sub: S.Sub): Res.Result<S.Sub> => {
+    
+    if (!isNonEmptyList<Equation>(equations)) {
+        return Res.makeOk(sub);
+    }
+
     const solveVarEq = (tvar: T.TVar, texp: T.TExp): Res.Result<S.Sub> =>
         Res.bind(S.extendSub(sub, tvar, texp), sub2 => solve(rest(equations), sub2));
 
-    const bothSidesAtomic = (eq: Equation): boolean =>
-        T.isAtomicTExp(eq.left) && T.isAtomicTExp(eq.right);
-
-    const handleBothSidesAtomic = (eq: Equation): Res.Result<S.Sub> =>
-        T.isAtomicTExp(eq.left) && T.isAtomicTExp(eq.right) && T.eqAtomicTExp(eq.left, eq.right)
+    const bothSidesEqualVars = (eq: Equation): boolean =>
+        T.isTVar(eq.left) && T.isTVar(eq.right) && T.eqTVar(eq.left, eq.right);
+    
+    const handleBothSidesAtomic = (l: T.AtomicTExp , r: T.AtomicTExp): Res.Result<S.Sub> =>
+        T.eqAtomicTExp(l, r)
         ? solve(rest(equations), sub)
-        : Res.makeFailure(`Equation with non-equal atomic type ${JSON.stringify(eq, null, 2)}`);
+        : Res.makeFailure(`Equation with non-equal atomic type ${format(eq)}`);
 
-    if (isEmpty(equations)) {
-        return Res.makeOk(sub);
-    }
+    const eq = makeEquation(S.applySub(sub, first(equations).left),
+                            S.applySub(sub, first(equations).right));
+
+    return bothSidesEqualVars(eq) ? solve(rest(equations), sub) :
+           T.isTVar(eq.left) ? solveVarEq(eq.left, eq.right) :
+           T.isTVar(eq.right) ? solveVarEq(eq.right, eq.left) :
+           T.isAtomicTExp(eq.left) && T.isAtomicTExp(eq.right) ? handleBothSidesAtomic(eq.left , eq.right) :
+           T.isCompoundTExp(eq.left) && T.isCompoundTExp(eq.right) && canUnify(eq) ?
+                solve(R.concat(rest(equations), splitEquation(eq)), sub) :
+           Res.makeFailure(`Equation contains incompatible types ${format(eq)}`);
+};
 
     const eq = makeEquation(S.applySub(sub, first(equations).left),
                             S.applySub(sub, first(equations).right));
